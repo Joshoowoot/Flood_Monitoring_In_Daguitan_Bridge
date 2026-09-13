@@ -1,0 +1,16 @@
+{
+    "users": [
+        {
+            "username": "admin",
+            "name": "MDRRMO Administrator",
+            "role": "admin",
+            "password_hash": "$2y$10$/BvgafsVGC7yCpPhDVl42ONarf1OMRMOmGMw6GDfsgf7dGT/gbUCS"
+        },
+        {
+            "username": "resident",
+            "name": "Community Resident",
+            "role": "user",
+            "password_hash": "$2y$10$CAvebBXG0SyM/nd9/5ZZBeAnY6utv3U.IO.8ei27HL3v1bPcV18PS"
+        }
+    ]
+}

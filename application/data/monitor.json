@@ -1,0 +1,14 @@
+{
+    "current": {
+        "water_level_m": 2.2,
+        "distance_cm": 180,
+        "sensor_height_cm": 400,
+        "received_at": 1789193518
+    },
+    "history": [
+        {
+            "ts": 1789193518,
+            "water_level_m": 2.2
+        }
+    ]
+}
