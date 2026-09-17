@@ -31,7 +31,11 @@ $a = $announcement;
 	<main class="dash-main">
 		<p class="dash-hello">Signed in as <?php echo html_escape($auth_name); ?></p>
 		<h1>Daguitan Bridge station</h1>
-		<p class="lede">Live telemetry from the ESP32 ultrasonic sensor. The public website refreshes from the same readings.</p>
+		<p class="lede">Live telemetry from the ESP32 ultrasonic sensor. Readings are always saved in local SQL, then copied to the cloud database when the internet is available.</p>
+
+		<?php if ( ! empty($sync_notice)): ?>
+			<p class="auth-error" role="status" style="max-width:52rem;"><?php echo html_escape($sync_notice); ?></p>
+		<?php endif; ?>
 
 		<div class="dash-kpis">
 			<article class="glass-card">
@@ -56,6 +60,20 @@ $a = $announcement;
 
 		<div class="dash-grid">
 			<section class="glass-card">
+				<h2>Hybrid storage</h2>
+				<dl class="dash-dl">
+					<div><dt>Internet</dt><dd><?php echo html_escape($sync['internet_label']); ?></dd></div>
+					<div><dt>Local database</dt><dd>MDRRMO_DULAG</dd></div>
+					<div><dt>Cloud copy</dt><dd><?php echo html_escape($sync['cloud_database']); ?></dd></div>
+					<div><dt>Waiting to copy</dt><dd><?php echo (int) $sync['pending_total']; ?> row(s) (<?php echo (int) $sync['pending_readings']; ?> readings, <?php echo (int) $sync['pending_users']; ?> users)</dd></div>
+					<div><dt>Readings copied</dt><dd><?php echo (int) $sync['synced_readings']; ?></dd></div>
+					<div><dt>Last cloud copy</dt><dd><?php echo $sync['last_synced_at'] ? html_escape($sync['last_synced_at']) : 'Not yet'; ?></dd></div>
+				</dl>
+				<form method="post" action="<?php echo site_url('admin/sync'); ?>">
+					<button class="btn btn--primary" type="submit">Copy pending to cloud</button>
+				</form>
+			</section>
+			<section class="glass-card">
 				<h2>Station configuration</h2>
 				<dl class="dash-dl">
 					<div><dt>Yellow advisory</dt><dd><?php echo number_format((float) $thresholds['yellow'], 2); ?> m</dd></div>
@@ -79,13 +97,20 @@ $a = $announcement;
 			<?php else: ?>
 			<table class="dash-table">
 				<thead>
-					<tr><th>Time</th><th>Water level</th></tr>
+					<tr><th>Time</th><th>Water level</th><th>Storage</th></tr>
 				</thead>
 				<tbody>
 					<?php foreach (array_slice($history, 0, 18) as $row): ?>
 						<tr>
 							<td><?php echo html_escape(date('M j, g:i:s A', (int) $row['ts'])); ?></td>
 							<td><?php echo number_format((float) $row['water_level_m'], 3); ?> m</td>
+							<td>
+								<?php
+								$st = isset($row['sync_status']) ? $row['sync_status'] : 'pending';
+								$label = ($st === 'synced') ? 'Local + cloud' : (($st === 'failed') ? 'Local (cloud failed)' : 'Local only');
+								?>
+								<span class="sync-pill sync-pill--<?php echo html_escape($st); ?>"><?php echo html_escape($label); ?></span>
+							</td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

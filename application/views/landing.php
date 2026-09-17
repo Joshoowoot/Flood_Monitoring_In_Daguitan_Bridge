@@ -72,9 +72,9 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 					<a class="btn btn--ghost btn--compact" href="<?php echo html_escape($auth_role === 'admin' ? site_url('admin') : site_url('portal')); ?>"><?php echo html_escape($auth_name); ?></a>
 					<a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
 				<?php else: ?>
-				<div class="access-btns" role="group" aria-label="System access">
-					<a class="btn btn--ghost btn--compact" href="<?php echo html_escape($login_admin); ?>">Admin Login</a>
-					<a class="btn btn--primary btn--compact" href="<?php echo html_escape($login_user); ?>">Resident Login</a>
+				<div class="access-btns" role="group" aria-label="Resident access">
+					<a class="btn btn--ghost btn--compact" href="<?php echo html_escape($login_user); ?>">Sign in</a>
+					<a class="btn btn--primary btn--compact" href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 				</div>
 				<?php endif; ?>
 				<button class="icon-btn" type="button" id="notifyBtn" aria-label="Notifications, no unread alerts">
@@ -107,6 +107,9 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 				<?php if ( ! empty($auth_role)): ?>
 					<a href="<?php echo html_escape($auth_role === 'admin' ? site_url('admin') : site_url('portal')); ?>">Dashboard</a>
 					<a href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+				<?php else: ?>
+					<a href="<?php echo html_escape($login_user); ?>">Sign in</a>
+					<a href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 				<?php endif; ?>
 			</nav>
 			<a class="btn btn--primary btn--block" href="#monitor">View Live Status</a>

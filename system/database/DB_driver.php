@@ -208,6 +208,13 @@ abstract class CI_DB_driver {
 	public $save_queries		= TRUE;
 
 	/**
+	 * Failover connection settings
+	 *
+	 * @var	array
+	 */
+	public $failover		= array();
+
+	/**
 	 * Queries list
 	 *
 	 * @see	CI_DB_driver::$save_queries

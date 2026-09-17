@@ -13,14 +13,10 @@ class Auth extends CI_Controller {
 
 	public function login($role = 'user')
 	{
-		$query_role = $this->input->get('role');
-		if ($query_role === 'admin' || $role === 'admin')
+		if ($role === 'admin' || $this->input->get('role') === 'admin')
 		{
-			$role = 'admin';
-		}
-		else
-		{
-			$role = 'user';
+			redirect('admin');
+			return;
 		}
 
 		if ($this->session->userdata('auth_user'))
@@ -29,10 +25,9 @@ class Auth extends CI_Controller {
 		}
 
 		$error = '';
+		$username = '';
 		if ($this->input->method(TRUE) === 'POST')
 		{
-			$posted_role = $this->input->post('role') === 'admin' ? 'admin' : 'user';
-			$role = $posted_role;
 			$username = trim((string) $this->input->post('username'));
 			$password = (string) $this->input->post('password');
 			$user = $this->Auth_model->verify($username, $password);
@@ -41,28 +36,77 @@ class Auth extends CI_Controller {
 			{
 				$error = 'Incorrect username or password.';
 			}
-			elseif ($user['role'] !== $posted_role)
+			elseif ($user['role'] !== 'user')
 			{
-				$error = $posted_role === 'admin'
-					? 'This account is not an administrator. Use Resident Login instead.'
-					: 'This account is an administrator. Use Admin Login instead.';
+				$error = 'This sign-in page is for residents only.';
 			}
 			else
 			{
-				$this->session->set_userdata(array(
-					'auth_user' => $user['username'],
-					'auth_name' => $user['name'],
-					'auth_role' => $user['role'],
-				));
+				$this->establish_session($user);
 				return $this->redirect_for_role($user['role']);
 			}
 		}
 
-		$data = $this->shell($role === 'admin' ? 'Administrator Login' : 'Resident Login');
-		$data['role'] = $role;
+		$data = $this->shell('Sign in');
 		$data['error'] = $error;
-		$data['username'] = isset($username) ? $username : '';
+		$data['username'] = $username;
 		$this->load->view('auth/login', $data);
+	}
+
+	public function signup()
+	{
+		if ($this->session->userdata('auth_user'))
+		{
+			return $this->redirect_for_role($this->session->userdata('auth_role'));
+		}
+
+		$error = '';
+		$username = '';
+		$name = '';
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			$name = trim((string) $this->input->post('name'));
+			$username = strtolower(trim((string) $this->input->post('username')));
+			$password = (string) $this->input->post('password');
+			$confirm = (string) $this->input->post('password_confirm');
+
+			if (strlen($name) < 2)
+			{
+				$error = 'Please enter your full name.';
+			}
+			elseif ( ! preg_match('/^[a-z0-9_]{3,32}$/', $username))
+			{
+				$error = 'Username must be 3–32 characters using letters, numbers, or underscore.';
+			}
+			elseif (strlen($password) < 8)
+			{
+				$error = 'Password must be at least 8 characters.';
+			}
+			elseif ($password !== $confirm)
+			{
+				$error = 'Passwords do not match.';
+			}
+			else
+			{
+				$result = $this->Auth_model->register_resident($username, $name, $password);
+				if (empty($result['ok']))
+				{
+					$error = isset($result['error']) ? $result['error'] : 'Could not create your account.';
+				}
+				else
+				{
+					$this->establish_session($result['user']);
+					redirect('portal');
+					return;
+				}
+			}
+		}
+
+		$data = $this->shell('Sign up');
+		$data['error'] = $error;
+		$data['username'] = $username;
+		$data['name'] = $name;
+		$this->load->view('auth/signup', $data);
 	}
 
 	public function logout()
@@ -70,6 +114,15 @@ class Auth extends CI_Controller {
 		$this->session->unset_userdata(array('auth_user', 'auth_name', 'auth_role'));
 		$this->session->sess_destroy();
 		redirect('/');
+	}
+
+	protected function establish_session($user)
+	{
+		$this->session->set_userdata(array(
+			'auth_user' => $user['username'],
+			'auth_name' => $user['name'],
+			'auth_role' => $user['role'],
+		));
 	}
 
 	protected function redirect_for_role($role)

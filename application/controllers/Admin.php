@@ -7,17 +7,66 @@ class Admin extends CI_Controller {
 	public function __construct()
 	{
 		parent::__construct();
-		$this->load->helper('url');
-		$this->load->model('Monitor_model');
-		$this->config->load('monitor', TRUE);
-		$this->require_role('admin');
+		$this->load->helper(array('url', 'form'));
+		$this->load->model('Auth_model');
 	}
 
 	public function index()
 	{
-		$live = $this->Monitor_model->get_status();
-		$store = $this->read_history();
+		if ($this->session->userdata('auth_role') === 'admin')
+		{
+			return $this->dashboard();
+		}
+
+		$error = '';
+		$username = '';
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			$username = trim((string) $this->input->post('username'));
+			$password = (string) $this->input->post('password');
+			$user = $this->Auth_model->verify($username, $password);
+
+			if ( ! $user)
+			{
+				$error = 'Incorrect username or password.';
+			}
+			elseif ($user['role'] !== 'admin')
+			{
+				$error = 'This page is for MDRRMO administrators only.';
+			}
+			else
+			{
+				$this->session->set_userdata(array(
+					'auth_user' => $user['username'],
+					'auth_name' => $user['name'],
+					'auth_role' => $user['role'],
+				));
+				redirect('admin');
+				return;
+			}
+		}
+
 		$base = rtrim(base_url(), '/');
+		$this->load->view('auth/admin_login', array(
+			'base_url'   => $base . '/',
+			'asset_url'  => $base . '/assets/',
+			'page_title' => 'Administrator Sign in',
+			'error'      => $error,
+			'username'   => $username,
+		));
+	}
+
+	protected function dashboard()
+	{
+		$this->load->model('Monitor_model');
+		$this->config->load('monitor', TRUE);
+
+		$live = $this->Monitor_model->get_status();
+		$history = $this->Monitor_model->get_history(200);
+		$this->load->model('Sync_model');
+		$sync = $this->Sync_model->status();
+		$base = rtrim(base_url(), '/');
+		$notice = $this->session->flashdata('sync_notice');
 
 		$this->load->view('dash/admin', array(
 			'base_url'     => $base . '/',
@@ -25,7 +74,9 @@ class Admin extends CI_Controller {
 			'page_title'   => 'Operations Console',
 			'monitor'      => $live['monitor'],
 			'announcement' => $live['announcement'],
-			'history'      => $store,
+			'history'      => $history,
+			'sync'         => $sync,
+			'sync_notice'  => $notice,
 			'auth_name'    => $this->session->userdata('auth_name'),
 			'status_url'   => $base . '/index.php/api/status',
 			'ingest_url'   => $base . '/index.php/api/ingest',
@@ -38,23 +89,17 @@ class Admin extends CI_Controller {
 		));
 	}
 
-	protected function require_role($role)
+	public function sync()
 	{
-		if ($this->session->userdata('auth_role') !== $role)
+		if ($this->session->userdata('auth_role') !== 'admin')
 		{
-			redirect('auth/login?role=' . $role);
+			redirect('admin');
+			return;
 		}
-	}
 
-	protected function read_history()
-	{
-		$file = APPPATH . 'data/monitor.json';
-		if ( ! is_file($file))
-		{
-			return array();
-		}
-		$data = json_decode((string) file_get_contents($file), TRUE);
-		$history = (is_array($data) && isset($data['history'])) ? $data['history'] : array();
-		return array_reverse($history);
+		$this->load->model('Sync_model');
+		$result = $this->Sync_model->flush();
+		$this->session->set_flashdata('sync_notice', $result['message']);
+		redirect('admin');
 	}
 }

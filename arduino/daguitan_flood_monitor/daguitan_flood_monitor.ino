@@ -25,9 +25,9 @@
 #include <WiFiClient.h>
 
 // --- edit these ---
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char* PC_IP         = "10.114.181.74";   // your PC LAN IP
+const char* WIFI_SSID     = ".";
+const char* WIFI_PASSWORD = "ExtendCutie";
+const char* PC_IP         = "192.168.0.101";   // your PC LAN IP
 const char* API_KEY       = "daguitan-esp32-key";
 const float SENSOR_HEIGHT_CM = 400.0;          // sensor face -> river bed
 // ------------------
@@ -38,8 +38,16 @@ const int ECHO_PIN = 18;
 const unsigned long POST_EVERY_MS = 10000;
 const unsigned long WIFI_RETRY_MS = 5000;
 const int SAMPLE_COUNT = 5;
+const int QUEUE_MAX = 24;
+
+struct QueuedReading {
+  float distance;
+  char uid[32];
+};
 
 WiFiClient wifiClient;
+QueuedReading queue[QUEUE_MAX];
+int queueCount = 0;
 
 String ingestUrl() {
   String url = "http://";
@@ -131,7 +139,7 @@ float medianDistanceCm() {
   return samples[valid / 2];
 }
 
-bool postReading(float distanceCm) {
+bool postReading(float distanceCm, const char* uid) {
   if (WiFi.status() != WL_CONNECTED) {
     connectWifi();
     if (WiFi.status() != WL_CONNECTED) {
@@ -147,7 +155,7 @@ bool postReading(float distanceCm) {
     return false;
   }
 
-  http.setTimeout(12000);
+  http.setTimeout(8000);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   http.addHeader("X-Api-Key", API_KEY);
   http.addHeader("Connection", "close");
@@ -158,6 +166,10 @@ bool postReading(float distanceCm) {
   body += String(distanceCm, 1);
   body += "&sensor_height_cm=";
   body += String(SENSOR_HEIGHT_CM, 1);
+  if (uid && uid[0] != '\0') {
+    body += "&record_uid=";
+    body += uid;
+  }
 
   int code = http.POST(body);
   String response = http.getString();
@@ -169,6 +181,39 @@ bool postReading(float distanceCm) {
   Serial.println(response);
 
   return code >= 200 && code < 300;
+}
+
+void makeUid(char* dest, size_t n) {
+  snprintf(dest, n, "esp-%04X-%lu", (unsigned)(ESP.getEfuseMac() & 0xFFFF), (unsigned long)millis());
+}
+
+void enqueueReading(float distanceCm) {
+  if (queueCount >= QUEUE_MAX) {
+    for (int i = 1; i < QUEUE_MAX; i++) {
+      queue[i - 1] = queue[i];
+    }
+    queueCount = QUEUE_MAX - 1;
+    Serial.println("Local queue full — dropped oldest unread packet");
+  }
+  makeUid(queue[queueCount].uid, sizeof(queue[queueCount].uid));
+  queue[queueCount].distance = distanceCm;
+  queueCount++;
+  Serial.print("Queued locally (");
+  Serial.print(queueCount);
+  Serial.println(" waiting)");
+}
+
+void flushQueue() {
+  while (queueCount > 0) {
+    if (!postReading(queue[0].distance, queue[0].uid)) {
+      Serial.println("Server unreachable — keeping remaining packets on the ESP32");
+      return;
+    }
+    for (int i = 1; i < queueCount; i++) {
+      queue[i - 1] = queue[i];
+    }
+    queueCount--;
+  }
 }
 
 void loop() {
@@ -186,8 +231,9 @@ void loop() {
     Serial.print("  -> water_level_m: ");
     Serial.println(levelM, 2);
 
-    if (!postReading(distance)) {
-      Serial.println("Post failed — will retry next cycle");
+    enqueueReading(distance);
+    flushQueue();
+    if (queueCount > 0) {
       delay(WIFI_RETRY_MS);
     }
   }

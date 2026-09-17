@@ -4,26 +4,19 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 #[\AllowDynamicProperties]
 class Monitor_model extends CI_Model {
 
-	protected $data_file;
-
 	public function __construct()
 	{
 		parent::__construct();
 		date_default_timezone_set('Asia/Manila');
 		$this->config->load('monitor', TRUE);
-		$dir = APPPATH . 'data';
-		if ( ! is_dir($dir))
-		{
-			@mkdir($dir, 0755, TRUE);
-		}
-		$this->data_file = $dir . DIRECTORY_SEPARATOR . 'monitor.json';
+		$this->load->model('Sync_model');
+		$this->migrate_json_if_needed();
 	}
 
 	public function get_status()
 	{
-		$store = $this->read_store();
-		$current = isset($store['current']) ? $store['current'] : array();
-		$history = isset($store['history']) ? $store['history'] : array();
+		$current = $this->latest_reading();
+		$history = $this->recent_history(40);
 
 		$level = isset($current['water_level_m']) ? (float) $current['water_level_m'] : 0.0;
 		$received = isset($current['received_at']) ? (int) $current['received_at'] : 0;
@@ -126,37 +119,105 @@ class Monitor_model extends CI_Model {
 
 		$level = max(0, min(20, $level));
 		$now = time();
+		$uid = isset($input['record_uid']) && preg_match('/^[a-zA-Z0-9._-]{8,64}$/', (string) $input['record_uid'])
+			? (string) $input['record_uid']
+			: $this->Sync_model->new_uid();
 
-		$store = $this->read_store();
-		$history = isset($store['history']) ? $store['history'] : array();
-		$history[] = array(
-			'ts'            => $now,
-			'water_level_m' => round($level, 3),
-		);
-		if (count($history) > 40)
+		$existing = $this->db->where('record_uid', $uid)->get('water_readings')->row_array();
+		if ($existing)
 		{
-			$history = array_slice($history, -40);
+			$sync = $this->Sync_model->try_copy_now(FALSE);
+			$status = $this->get_status();
+			return array(
+				'ok'       => TRUE,
+				'code'     => 200,
+				'duplicate'=> TRUE,
+				'record_uid' => $uid,
+				'monitor'  => $status['monitor'],
+				'sync'     => array(
+					'internet' => ! empty($sync['online']),
+					'message'  => $sync['message'],
+				),
+			);
 		}
 
-		$store['current'] = array(
-			'water_level_m'     => round($level, 3),
-			'distance_cm'       => isset($input['distance_cm']) ? (float) $input['distance_cm'] : NULL,
-			'sensor_height_cm'  => $sensor_height_cm,
-			'received_at'       => $now,
-		);
-		$store['history'] = $history;
+		$ok = $this->db->insert('water_readings', array(
+			'record_uid'       => $uid,
+			'water_level_m'    => round($level, 3),
+			'distance_cm'      => isset($input['distance_cm']) ? (float) $input['distance_cm'] : NULL,
+			'sensor_height_cm' => $sensor_height_cm,
+			'received_at'      => $now,
+			'sync_status'      => 'pending',
+		));
 
-		if ( ! $this->write_store($store))
+		if ( ! $ok)
 		{
 			return array('ok' => FALSE, 'error' => 'write_failed', 'code' => 500);
 		}
 
+		$sync = $this->Sync_model->try_copy_now(FALSE);
 		$status = $this->get_status();
 		return array(
-			'ok'      => TRUE,
-			'code'    => 200,
-			'monitor' => $status['monitor'],
+			'ok'         => TRUE,
+			'code'       => 200,
+			'record_uid' => $uid,
+			'stored'     => 'local',
+			'monitor'    => $status['monitor'],
+			'sync'       => array(
+				'internet' => ! empty($sync['online']),
+				'message'  => $sync['message'],
+			),
 		);
+	}
+
+	public function get_history($limit = 200)
+	{
+		if ( ! $this->db->table_exists('water_readings'))
+		{
+			return array();
+		}
+
+		$rows = $this->db
+			->order_by('received_at', 'DESC')
+			->order_by('id', 'DESC')
+			->limit((int) $limit)
+			->get('water_readings')
+			->result_array();
+
+		$history = array();
+		foreach ($rows as $row)
+		{
+			$history[] = array(
+				'ts'            => (int) $row['received_at'],
+				'water_level_m' => (float) $row['water_level_m'],
+				'sync_status'   => isset($row['sync_status']) ? $row['sync_status'] : 'pending',
+			);
+		}
+
+		return $history;
+	}
+
+	protected function latest_reading()
+	{
+		if ( ! $this->db->table_exists('water_readings'))
+		{
+			return array();
+		}
+
+		$row = $this->db
+			->order_by('received_at', 'DESC')
+			->order_by('id', 'DESC')
+			->limit(1)
+			->get('water_readings')
+			->row_array();
+
+		return $row ? $row : array();
+	}
+
+	protected function recent_history($limit)
+	{
+		$newest_first = $this->get_history($limit);
+		return array_reverse($newest_first);
 	}
 
 	protected function classify_warning($level)
@@ -184,7 +245,7 @@ class Monitor_model extends CI_Model {
 			$prev = $history[0];
 			foreach (array_reverse($history) as $row)
 			{
-				if (($latest['ts'] - $row['ts']) >= 60)
+				if (($latest['ts'] - $row['ts']) >= 60) //Change to 60 seconds for trend calculation demo
 				{
 					$prev = $row;
 					break;
@@ -279,40 +340,45 @@ class Monitor_model extends CI_Model {
 		return ($val === NULL) ? $default : $val;
 	}
 
-	protected function read_store()
+	protected function migrate_json_if_needed()
 	{
-		if ( ! is_file($this->data_file))
+		if ( ! $this->db->table_exists('water_readings'))
 		{
-			return array('current' => array(), 'history' => array());
+			return;
 		}
-		$raw = @file_get_contents($this->data_file);
-		$data = json_decode($raw, TRUE);
-		if ( ! is_array($data))
-		{
-			return array('current' => array(), 'history' => array());
-		}
-		return $data;
-	}
 
-	protected function write_store($store)
-	{
-		$json = json_encode($store, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-		$fp = @fopen($this->data_file, 'c+');
-		if ( ! $fp)
+		if ((int) $this->db->count_all('water_readings') > 0)
 		{
-			return FALSE;
+			return;
 		}
-		if ( ! flock($fp, LOCK_EX))
+
+		$file = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'monitor.json';
+		if ( ! is_file($file))
 		{
-			fclose($fp);
-			return FALSE;
+			return;
 		}
-		ftruncate($fp, 0);
-		rewind($fp);
-		$ok = fwrite($fp, $json) !== FALSE;
-		fflush($fp);
-		flock($fp, LOCK_UN);
-		fclose($fp);
-		return $ok;
+
+		$data = json_decode((string) @file_get_contents($file), TRUE);
+		if ( ! is_array($data) || empty($data['history']) || ! is_array($data['history']))
+		{
+			return;
+		}
+
+		$current = isset($data['current']) && is_array($data['current']) ? $data['current'] : array();
+		foreach ($data['history'] as $row)
+		{
+			if ( ! isset($row['ts'], $row['water_level_m']))
+			{
+				continue;
+			}
+			$this->db->insert('water_readings', array(
+				'record_uid'       => $this->Sync_model->new_uid(),
+				'water_level_m'    => round((float) $row['water_level_m'], 3),
+				'distance_cm'      => isset($current['distance_cm']) ? $current['distance_cm'] : NULL,
+				'sensor_height_cm' => isset($current['sensor_height_cm']) ? $current['sensor_height_cm'] : $this->cfg('monitor_sensor_height_cm', 400),
+				'received_at'      => (int) $row['ts'],
+				'sync_status'      => 'pending',
+			));
+		}
 	}
 }

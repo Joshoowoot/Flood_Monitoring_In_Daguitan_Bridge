@@ -4,32 +4,23 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 #[\AllowDynamicProperties]
 class Auth_model extends CI_Model {
 
-	protected $users_file;
-
 	public function __construct()
 	{
 		parent::__construct();
 		$this->config->load('auth', TRUE);
-		$dir = APPPATH . 'data';
-		if ( ! is_dir($dir))
-		{
-			@mkdir($dir, 0755, TRUE);
-		}
-		$this->users_file = $dir . DIRECTORY_SEPARATOR . 'users.json';
+		$this->load->model('Sync_model');
 		$this->ensure_seed();
 	}
 
 	public function find_by_username($username)
 	{
 		$username = strtolower(trim((string) $username));
-		foreach ($this->all_users() as $user)
-		{
-			if (isset($user['username']) && strtolower($user['username']) === $username)
-			{
-				return $user;
-			}
-		}
-		return NULL;
+		$row = $this->db
+			->where('username', $username)
+			->get('users')
+			->row_array();
+
+		return $row ? $row : NULL;
 	}
 
 	public function verify($username, $password)
@@ -47,6 +38,40 @@ class Auth_model extends CI_Model {
 		return $user;
 	}
 
+	public function register_resident($username, $name, $password)
+	{
+		$username = strtolower(trim((string) $username));
+		$name = trim((string) $name);
+
+		if ($this->find_by_username($username))
+		{
+			return array('ok' => FALSE, 'error' => 'That username is already taken.');
+		}
+
+		$ok = $this->db->insert('users', array(
+			'record_uid'    => $this->Sync_model->new_uid(),
+			'username'      => $username,
+			'name'          => $name,
+			'role'          => 'user',
+			'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+			'sync_status'   => 'pending',
+		));
+
+		if ( ! $ok)
+		{
+			return array('ok' => FALSE, 'error' => 'Could not create your account. Please try again.');
+		}
+
+		$this->Sync_model->try_copy_now(FALSE);
+		$user = $this->find_by_username($username);
+		if ($user)
+		{
+			unset($user['password_hash']);
+		}
+
+		return array('ok' => TRUE, 'user' => $user);
+	}
+
 	public function public_user($user)
 	{
 		if ( ! is_array($user))
@@ -60,19 +85,15 @@ class Auth_model extends CI_Model {
 		);
 	}
 
-	protected function all_users()
-	{
-		if ( ! is_file($this->users_file))
-		{
-			return array();
-		}
-		$data = json_decode((string) @file_get_contents($this->users_file), TRUE);
-		return (is_array($data) && isset($data['users']) && is_array($data['users'])) ? $data['users'] : array();
-	}
-
 	protected function ensure_seed()
 	{
-		if (is_file($this->users_file) && filesize($this->users_file) > 20)
+		if ( ! $this->db->table_exists('users'))
+		{
+			return;
+		}
+
+		$count = (int) $this->db->count_all('users');
+		if ($count > 0)
 		{
 			return;
 		}
@@ -83,20 +104,16 @@ class Auth_model extends CI_Model {
 			return;
 		}
 
-		$users = array();
 		foreach ($seed as $row)
 		{
-			$users[] = array(
+			$this->db->insert('users', array(
+				'record_uid'    => $this->Sync_model->new_uid(),
 				'username'      => $row['username'],
 				'name'          => $row['name'],
 				'role'          => $row['role'],
 				'password_hash' => password_hash($row['password'], PASSWORD_DEFAULT),
-			);
+				'sync_status'   => 'pending',
+			));
 		}
-
-		@file_put_contents(
-			$this->users_file,
-			json_encode(array('users' => $users), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-		);
 	}
 }

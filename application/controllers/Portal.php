@@ -11,7 +11,7 @@ class Portal extends CI_Controller {
 		$this->load->model('Monitor_model');
 		if ($this->session->userdata('auth_role') !== 'user')
 		{
-			redirect('auth/login?role=user');
+			redirect('login');
 		}
 	}
 

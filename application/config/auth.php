@@ -2,8 +2,8 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 /*
-| Default accounts are created once into application/data/users.json
-| with hashed passwords. Change these before first login in production.
+| Default accounts are seeded into the users table if it is empty.
+| Change these before first login in production.
 */
 $config['auth_accounts'] = array(
 	array(

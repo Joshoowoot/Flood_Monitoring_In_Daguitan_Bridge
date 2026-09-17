@@ -25,6 +25,19 @@ class Api extends CI_Controller {
 		return $this->json(array('ok' => TRUE) + $payload);
 	}
 
+	public function sync()
+	{
+		if ($this->input->method(TRUE) === 'OPTIONS')
+		{
+			return $this->json(array('ok' => TRUE), 204);
+		}
+
+		$this->load->model('Sync_model');
+		$flush = $this->Sync_model->flush();
+		$status = $this->Sync_model->status();
+		return $this->json(array('ok' => TRUE, 'status' => $status, 'flush' => $flush));
+	}
+
 	public function ingest()
 	{
 		if ($this->input->method(TRUE) === 'OPTIONS')
@@ -65,7 +78,7 @@ class Api extends CI_Controller {
 			}
 		}
 
-		foreach (array('api_key', 'water_level_m', 'distance_cm', 'sensor_height_cm') as $key)
+		foreach (array('api_key', 'water_level_m', 'distance_cm', 'sensor_height_cm', 'record_uid') as $key)
 		{
 			$posted = $this->input->post($key);
 			if ($posted !== NULL && $posted !== FALSE && $posted !== '')
