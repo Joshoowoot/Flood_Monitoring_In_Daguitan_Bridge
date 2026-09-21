@@ -8,6 +8,11 @@ $gauge_pct = isset($m['gauge_pct']) ? (int) $m['gauge_pct'] : 8;
 $sensor_class = ($m['sensor_status'] === 'online') ? 'metric--online' : 'metric--offline';
 $sensor_label = isset($m['sensor_label']) ? $m['sensor_label'] : ucfirst($m['sensor_status']);
 $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
+$wx_theme = isset($w['theme']) ? (string) $w['theme'] : 'cloudy';
+if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
+{
+	$wx_theme = 'cloudy';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,6 +29,7 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
 </head>
 <body>
@@ -36,14 +42,27 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 		</div>
 	</div>
 
-	<div class="ambient" aria-hidden="true">
-		<div class="ambient__blob ambient__blob--one"></div>
-		<div class="ambient__blob ambient__blob--two"></div>
-		<div class="ambient__blob ambient__blob--three"></div>
-		<div class="ambient__particles" id="particles"></div>
-		<svg class="ambient__waves" viewBox="0 0 1440 320" preserveAspectRatio="none">
-			<path class="wave wave--a" d="M0,224L48,208C96,192,192,160,288,154.7C384,149,480,171,576,186.7C672,203,768,213,864,197.3C960,181,1056,139,1152,133.3C1248,128,1344,160,1392,176L1440,192L1440,320L0,320Z"></path>
-			<path class="wave wave--b" d="M0,256L60,245.3C120,235,240,213,360,208C480,203,600,213,720,229.3C840,245,960,267,1080,256C1200,245,1320,203,1380,181.3L1440,160L1440,320L0,320Z"></path>
+	<div class="wx-scene" id="wxScene" data-theme="<?php echo html_escape($wx_theme); ?>" aria-hidden="true">
+		<div class="wx-sky"></div>
+		<div class="wx-sun">
+			<div class="wx-sun__glow"></div>
+			<div class="wx-sun__disc"></div>
+		</div>
+		<div class="wx-clouds">
+			<div class="wx-cloud wx-cloud--1"></div>
+			<div class="wx-cloud wx-cloud--2"></div>
+			<div class="wx-cloud wx-cloud--3"></div>
+			<div class="wx-cloud wx-cloud--4"></div>
+			<div class="wx-cloud wx-cloud--5"></div>
+		</div>
+		<div class="wx-rain wx-rain--back" id="wxRainBack"></div>
+		<div class="wx-rain wx-rain--front" id="wxRainFront"></div>
+		<div class="wx-lightning" id="wxLightning"></div>
+		<div class="wx-fog"></div>
+		<div class="wx-ground"></div>
+		<svg class="wx-river" viewBox="0 0 1440 200" preserveAspectRatio="none" aria-hidden="true">
+			<path class="wx-river__wave wx-river__wave--1" d="M0,120 C240,90 480,150 720,110 S1200,80 1440,120 L1440,200 L0,200 Z"/>
+			<path class="wx-river__wave wx-river__wave--2" d="M0,140 C360,160 720,100 1080,130 S1320,150 1440,135 L1440,200 L0,200 Z"/>
 		</svg>
 	</div>
 
@@ -265,22 +284,18 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 			<article class="weather-card glass-card reveal" aria-labelledby="weatherTitle">
 				<p class="card-kicker">Supplementary Weather Information</p>
 				<div class="weather-card__row">
-					<div class="weather-card__icon" aria-hidden="true">
-						<svg viewBox="0 0 64 64" width="72" height="72">
-							<circle class="sun-soft" cx="22" cy="22" r="10" fill="#ffb4b8"/>
-							<path d="M18 40h28a10 10 0 0 0 1-20 14 14 0 0 0-26 4 9 9 0 0 0-3 16z" fill="rgba(155,18,36,.12)" stroke="#9b1224" stroke-width="1.6"/>
-						</svg>
-					</div>
+					<div class="weather-card__icon" id="wxCardIcon" aria-hidden="true" data-theme="<?php echo html_escape($wx_theme); ?>"></div>
 					<div>
 						<h2 id="weatherTitle">Current Weather</h2>
-						<p class="metric weather-card__temp"><?php echo (int) $w['temp_c']; ?>°C</p>
-						<p class="weather-card__cond"><?php echo html_escape($w['condition']); ?></p>
+						<p class="metric weather-card__temp" id="wxCardTemp"><?php echo (int) $w['temp_c']; ?>°C</p>
+						<p class="weather-card__cond" id="wxCardCond"><?php echo html_escape($w['condition']); ?></p>
+						<p class="weather-card__source" id="wxCardSource"><?php echo html_escape($w['source']); ?></p>
 					</div>
 				</div>
 				<dl class="weather-stats">
-					<div><dt>Humidity</dt><dd><?php echo (int) $w['humidity']; ?>%</dd></div>
-					<div><dt>Rainfall</dt><dd><?php echo number_format($w['rainfall_mm'], 1); ?> mm</dd></div>
-					<div><dt>Wind</dt><dd><?php echo (int) $w['wind_kmh']; ?> km/h</dd></div>
+					<div><dt>Humidity</dt><dd id="wxCardHumidity"><?php echo (int) $w['humidity']; ?>%</dd></div>
+					<div><dt>Rainfall</dt><dd id="wxCardRain"><?php echo number_format($w['rainfall_mm'], 1); ?> mm</dd></div>
+					<div><dt>Wind</dt><dd id="wxCardWind"><?php echo (int) $w['wind_kmh']; ?> km/h</dd></div>
 				</dl>
 			</article>
 
@@ -404,6 +419,7 @@ $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 			'pollMs' => 5000,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260320wx"></script>
 </body>
 </html>

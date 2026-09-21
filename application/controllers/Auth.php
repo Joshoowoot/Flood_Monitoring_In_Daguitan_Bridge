@@ -42,6 +42,7 @@ class Auth extends CI_Controller {
 			}
 			else
 			{
+				$this->Auth_model->record_login($user);
 				$this->establish_session($user);
 				return $this->redirect_for_role($user['role']);
 			}
@@ -63,10 +64,12 @@ class Auth extends CI_Controller {
 		$error = '';
 		$username = '';
 		$name = '';
+		$phone = '';
 		if ($this->input->method(TRUE) === 'POST')
 		{
 			$name = trim((string) $this->input->post('name'));
 			$username = strtolower(trim((string) $this->input->post('username')));
+			$phone = trim((string) $this->input->post('phone'));
 			$password = (string) $this->input->post('password');
 			$confirm = (string) $this->input->post('password_confirm');
 
@@ -88,13 +91,16 @@ class Auth extends CI_Controller {
 			}
 			else
 			{
-				$result = $this->Auth_model->register_resident($username, $name, $password);
+				$result = $this->Auth_model->register_resident($username, $name, $phone, $password);
 				if (empty($result['ok']))
 				{
 					$error = isset($result['error']) ? $result['error'] : 'Could not create your account.';
 				}
 				else
 				{
+					$this->load->model('Notification_model');
+					$this->Notification_model->on_resident_signup($result['user']);
+					$this->Auth_model->record_login($result['user']);
 					$this->establish_session($result['user']);
 					redirect('portal');
 					return;
@@ -106,12 +112,13 @@ class Auth extends CI_Controller {
 		$data['error'] = $error;
 		$data['username'] = $username;
 		$data['name'] = $name;
+		$data['phone'] = $phone;
 		$this->load->view('auth/signup', $data);
 	}
 
 	public function logout()
 	{
-		$this->session->unset_userdata(array('auth_user', 'auth_name', 'auth_role'));
+		$this->session->unset_userdata(array('auth_user', 'auth_name', 'auth_role', 'auth_phone', 'auth_uid', 'auth_id'));
 		$this->session->sess_destroy();
 		redirect('/');
 	}
@@ -119,9 +126,12 @@ class Auth extends CI_Controller {
 	protected function establish_session($user)
 	{
 		$this->session->set_userdata(array(
-			'auth_user' => $user['username'],
-			'auth_name' => $user['name'],
-			'auth_role' => $user['role'],
+			'auth_user'  => $user['username'],
+			'auth_name'  => $user['name'],
+			'auth_role'  => $user['role'],
+			'auth_phone' => isset($user['phone']) ? $user['phone'] : '',
+			'auth_uid'   => isset($user['record_uid']) ? $user['record_uid'] : '',
+			'auth_id'    => isset($user['id']) ? (int) $user['id'] : 0,
 		));
 	}
 

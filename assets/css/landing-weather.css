@@ -1,0 +1,439 @@
+/* Live weather backdrop — theme driven by Open-Meteo via data-theme on #wxScene */
+
+.wx-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #dfeaf5;
+}
+
+.wx-sky {
+  position: absolute;
+  inset: 0;
+  transition: background 1.2s ease;
+}
+
+.wx-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 38%;
+  background: linear-gradient(180deg, transparent 0%, rgba(18, 80, 60, 0.06) 35%, rgba(155, 18, 36, 0.04) 100%);
+  opacity: 0.7;
+}
+
+/* —— Sun —— */
+.wx-sun {
+  position: absolute;
+  top: 8%;
+  right: 10%;
+  width: min(22vw, 160px);
+  height: min(22vw, 160px);
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.wx-sun__glow {
+  position: absolute;
+  inset: -40%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 220, 120, 0.55) 0%, rgba(255, 200, 80, 0.15) 45%, transparent 70%);
+  animation: wx-sun-glow 6s ease-in-out infinite;
+}
+
+.wx-sun__disc {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff9e6 0%, #ffd54a 35%, #ffb300 100%);
+  box-shadow:
+    0 0 40px rgba(255, 193, 7, 0.55),
+    0 0 80px rgba(255, 193, 7, 0.25);
+}
+
+.wx-sun__disc::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 220, 100, 0.45) 0deg 8deg,
+    transparent 8deg 18deg
+  );
+  mask: radial-gradient(circle, transparent 42%, #000 43%);
+  -webkit-mask: radial-gradient(circle, transparent 42%, #000 43%);
+  animation: wx-sun-rays 24s linear infinite;
+}
+
+/* —— Clouds (realistic puffs) —— */
+.wx-clouds {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.wx-cloud {
+  position: absolute;
+  border-radius: 999px;
+  background: #fff;
+  filter: drop-shadow(0 8px 18px rgba(60, 80, 100, 0.12));
+  animation: wx-cloud-drift linear infinite;
+}
+
+.wx-cloud::before,
+.wx-cloud::after {
+  content: "";
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+
+.wx-cloud--1 {
+  width: 120px;
+  height: 38px;
+  top: 14%;
+  left: -15%;
+  animation-duration: 100s;
+}
+.wx-cloud--1::before { width: 48px; height: 48px; top: -22px; left: 18px; }
+.wx-cloud--1::after { width: 56px; height: 56px; top: -28px; left: 52px; }
+
+.wx-cloud--2 {
+  width: 160px;
+  height: 46px;
+  top: 22%;
+  left: -20%;
+  animation-duration: 130s;
+  animation-delay: -40s;
+  opacity: 0.92;
+}
+.wx-cloud--2::before { width: 58px; height: 58px; top: -26px; left: 24px; }
+.wx-cloud--2::after { width: 64px; height: 64px; top: -32px; left: 72px; }
+
+.wx-cloud--3 {
+  width: 90px;
+  height: 32px;
+  top: 10%;
+  left: -10%;
+  animation-duration: 85s;
+  animation-delay: -20s;
+  opacity: 0.85;
+}
+.wx-cloud--3::before { width: 40px; height: 40px; top: -18px; left: 12px; }
+.wx-cloud--3::after { width: 44px; height: 44px; top: -22px; left: 38px; }
+
+.wx-cloud--4 {
+  width: 200px;
+  height: 52px;
+  top: 32%;
+  left: -25%;
+  animation-duration: 150s;
+  animation-delay: -60s;
+}
+.wx-cloud--4::before { width: 70px; height: 70px; top: -32px; left: 30px; }
+.wx-cloud--4::after { width: 78px; height: 78px; top: -36px; left: 90px; }
+
+.wx-cloud--5 {
+  width: 140px;
+  height: 42px;
+  top: 42%;
+  left: -18%;
+  animation-duration: 110s;
+  animation-delay: -10s;
+  opacity: 0.88;
+}
+.wx-cloud--5::before { width: 52px; height: 52px; top: -24px; left: 20px; }
+.wx-cloud--5::after { width: 60px; height: 60px; top: -28px; left: 62px; }
+
+/* —— Rain —— */
+.wx-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.wx-rain span {
+  position: absolute;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent 0%, rgba(174, 194, 224, 0.15) 10%, rgba(140, 170, 210, 0.75) 100%);
+  transform: rotate(12deg);
+  animation: wx-rain-fall linear infinite;
+  will-change: transform;
+}
+
+.wx-rain--back span {
+  height: 22px;
+  opacity: 0.45;
+  filter: blur(0.3px);
+}
+
+.wx-rain--front span {
+  height: 32px;
+  opacity: 0.75;
+}
+
+/* —— Lightning —— */
+.wx-lightning {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  opacity: 0;
+  transition: opacity 0.05s ease;
+  pointer-events: none;
+}
+
+.wx-lightning.is-flash {
+  animation: wx-lightning-flash 0.35s ease-out;
+}
+
+/* —— Fog —— */
+.wx-fog {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background:
+    linear-gradient(180deg, rgba(220, 228, 235, 0.75) 0%, transparent 35%),
+    radial-gradient(ellipse 80% 40% at 50% 60%, rgba(255, 255, 255, 0.65), transparent 70%);
+  animation: wx-fog-drift 18s ease-in-out infinite alternate;
+  transition: opacity 1s ease;
+}
+
+/* —— River (always subtle) —— */
+.wx-river {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 160px;
+  opacity: 0.55;
+}
+
+.wx-river__wave {
+  fill: rgba(37, 99, 180, 0.14);
+}
+
+.wx-river__wave--1 {
+  animation: wx-river-sway 14s ease-in-out infinite;
+}
+
+.wx-river__wave--2 {
+  fill: rgba(155, 18, 36, 0.1);
+  animation: wx-river-sway 18s ease-in-out infinite reverse;
+}
+
+/* ===== THEMES ===== */
+
+.wx-scene[data-theme="sunny"] .wx-sky {
+  background: linear-gradient(180deg, #5eb3ff 0%, #9fd4ff 28%, #e8f4ff 55%, #fff5f6 100%);
+}
+
+.wx-scene[data-theme="sunny"] .wx-sun {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.wx-scene[data-theme="sunny"] .wx-clouds {
+  opacity: 0.35;
+}
+
+.wx-scene[data-theme="sunny"] .wx-cloud {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.wx-scene[data-theme="partly-cloudy"] .wx-sky {
+  background: linear-gradient(180deg, #6aabf0 0%, #b8d9f5 35%, #f0f4f8 70%, #fff5f6 100%);
+}
+
+.wx-scene[data-theme="partly-cloudy"] .wx-sun {
+  opacity: 0.85;
+  transform: scale(1);
+}
+
+.wx-scene[data-theme="partly-cloudy"] .wx-clouds {
+  opacity: 0.75;
+}
+
+.wx-scene[data-theme="cloudy"] .wx-sky {
+  background: linear-gradient(180deg, #8fa3b8 0%, #b8c5d4 40%, #e8eaee 75%, #f5f0f1 100%);
+}
+
+.wx-scene[data-theme="cloudy"] .wx-clouds {
+  opacity: 0.95;
+}
+
+.wx-scene[data-theme="cloudy"] .wx-cloud {
+  background: #f4f6f8;
+  filter: drop-shadow(0 10px 20px rgba(50, 60, 70, 0.15));
+}
+
+.wx-scene[data-theme="fog"] .wx-sky {
+  background: linear-gradient(180deg, #c5ced6 0%, #dde3e8 50%, #f0f2f4 100%);
+}
+
+.wx-scene[data-theme="fog"] .wx-fog {
+  opacity: 1;
+}
+
+.wx-scene[data-theme="fog"] .wx-clouds {
+  opacity: 0.5;
+}
+
+.wx-scene[data-theme="drizzle"] .wx-sky,
+.wx-scene[data-theme="rainy"] .wx-sky {
+  background: linear-gradient(180deg, #5a6d82 0%, #7a8fa3 35%, #a8b8c8 65%, #d8dee5 100%);
+}
+
+.wx-scene[data-theme="drizzle"] .wx-clouds,
+.wx-scene[data-theme="rainy"] .wx-clouds,
+.wx-scene[data-theme="storm"] .wx-clouds {
+  opacity: 1;
+}
+
+.wx-scene[data-theme="drizzle"] .wx-cloud,
+.wx-scene[data-theme="rainy"] .wx-cloud,
+.wx-scene[data-theme="storm"] .wx-cloud {
+  background: #9aa8b5;
+  filter: drop-shadow(0 12px 24px rgba(30, 40, 55, 0.25));
+}
+
+.wx-scene[data-theme="drizzle"] .wx-rain {
+  opacity: 0.45;
+}
+
+.wx-scene[data-theme="rainy"] .wx-rain {
+  opacity: 0.85;
+}
+
+.wx-scene[data-theme="storm"] .wx-sky {
+  background: linear-gradient(180deg, #3d4555 0%, #5a6275 30%, #6e7689 55%, #949aa8 100%);
+}
+
+.wx-scene[data-theme="storm"] .wx-rain {
+  opacity: 1;
+}
+
+.wx-scene[data-theme="storm"] .wx-cloud {
+  background: #6b7585;
+}
+
+/* Weather card icon mini-scenes */
+.weather-card__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #9fd4ff, #e8f4ff);
+  box-shadow: inset 0 0 0 1px rgba(155, 18, 36, 0.08);
+}
+
+.weather-card__icon[data-theme="sunny"]::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  top: 16px;
+  left: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff9e6, #ffb300);
+  box-shadow: 0 0 16px rgba(255, 193, 7, 0.5);
+}
+
+.weather-card__icon[data-theme="rainy"]::before,
+.weather-card__icon[data-theme="storm"]::before,
+.weather-card__icon[data-theme="drizzle"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #6a7a8a, #9aa8b5);
+}
+
+.weather-card__icon[data-theme="rainy"]::after,
+.weather-card__icon[data-theme="storm"]::after,
+.weather-card__icon[data-theme="drizzle"]::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: rgba(200, 220, 255, 0.9);
+  box-shadow:
+    12px 8px 0 rgba(200, 220, 255, 0.7),
+    24px 4px 0 rgba(200, 220, 255, 0.8),
+    36px 10px 0 rgba(200, 220, 255, 0.6),
+    48px 6px 0 rgba(200, 220, 255, 0.75);
+  top: 38px;
+  left: 10px;
+  transform: rotate(15deg);
+}
+
+.weather-card__source {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted, #6b5558);
+}
+
+@keyframes wx-cloud-drift {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100vw + 280px)); }
+}
+
+@keyframes wx-rain-fall {
+  0% { transform: translateY(-15vh) rotate(12deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(12deg); opacity: 0.3; }
+}
+
+@keyframes wx-sun-glow {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes wx-sun-rays {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes wx-river-sway {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-24px); }
+}
+
+@keyframes wx-fog-drift {
+  0% { transform: translateX(-2%); opacity: 0.85; }
+  100% { transform: translateX(2%); opacity: 1; }
+}
+
+@keyframes wx-lightning-flash {
+  0% { background: rgba(255, 255, 255, 0); }
+  15% { background: rgba(255, 255, 255, 0.35); }
+  30% { background: rgba(255, 255, 255, 0.08); }
+  45% { background: rgba(255, 255, 255, 0.5); }
+  100% { background: rgba(255, 255, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wx-cloud,
+  .wx-sun__glow,
+  .wx-sun__disc::before,
+  .wx-rain span,
+  .wx-fog,
+  .wx-river__wave {
+    animation: none !important;
+  }
+}
+
+.topbar,
+main,
+.footer,
+.bottom-nav {
+  position: relative;
+  z-index: 1;
+}

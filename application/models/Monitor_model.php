@@ -72,10 +72,229 @@ class Monitor_model extends CI_Model {
 			'age_seconds'      => $has_reading ? $age : null,
 		);
 
+		$announcement = $this->announcement_from($monitor, $online, $has_reading);
+		$custom = $this->published_announcement();
+		if ($custom)
+		{
+			$announcement = $custom;
+		}
+
 		return array(
 			'monitor'      => $monitor,
-			'weather'      => $this->default_weather(),
-			'announcement' => $this->announcement_from($monitor, $online, $has_reading),
+			'weather'      => $this->get_weather(),
+			'announcement' => $announcement,
+		);
+	}
+
+	public function get_weather()
+	{
+		$cached = $this->read_weather_cache();
+		$ttl = (int) $this->cfg('weather_cache_ttl', 1800);
+		if ($cached !== NULL && (time() - (int) $cached['fetched_at']) < $ttl)
+		{
+			return $cached['weather'];
+		}
+
+		$live = $this->fetch_open_meteo_weather();
+		if ($live !== NULL)
+		{
+			$this->write_weather_cache($live);
+			return $live;
+		}
+
+		if ($cached !== NULL)
+		{
+			return $cached['weather'];
+		}
+
+		return $this->default_weather();
+	}
+
+	protected function read_weather_cache()
+	{
+		$file = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'weather_cache.json';
+		if ( ! is_file($file))
+		{
+			return NULL;
+		}
+		$data = json_decode((string) @file_get_contents($file), TRUE);
+		if ( ! is_array($data) || empty($data['weather']))
+		{
+			return NULL;
+		}
+		return array(
+			'fetched_at' => isset($data['fetched_at']) ? (int) $data['fetched_at'] : 0,
+			'weather'    => $this->normalize_weather_row($data['weather']),
+		);
+	}
+
+	protected function write_weather_cache(array $weather)
+	{
+		$file = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'weather_cache.json';
+		@file_put_contents($file, json_encode(array(
+			'fetched_at' => time(),
+			'weather'    => $weather,
+		), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+	}
+
+	protected function fetch_open_meteo_weather()
+	{
+		$lat = (float) $this->cfg('weather_latitude', 10.9525);
+		$lon = (float) $this->cfg('weather_longitude', 125.0322);
+		$url = 'https://api.open-meteo.com/v1/forecast?latitude=' . rawurlencode((string) $lat)
+			. '&longitude=' . rawurlencode((string) $lon)
+			. '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m'
+			. '&timezone=Asia%2FManila';
+
+		$ctx = stream_context_create(array(
+			'http' => array(
+				'timeout' => 6,
+				'header'  => "User-Agent: DaguitanFloodMonitor/1.0\r\n",
+			),
+			'ssl' => array(
+				'verify_peer'      => TRUE,
+				'verify_peer_name' => TRUE,
+			),
+		));
+
+		$raw = @file_get_contents($url, FALSE, $ctx);
+		if ($raw === FALSE)
+		{
+			return NULL;
+		}
+		$json = json_decode($raw, TRUE);
+		if ( ! is_array($json) || empty($json['current']))
+		{
+			return NULL;
+		}
+		$c = $json['current'];
+		$code = isset($c['weather_code']) ? (int) $c['weather_code'] : 3;
+		$theme = $this->weather_theme_from_code($code);
+		$wind = isset($c['wind_speed_10m']) ? (float) $c['wind_speed_10m'] : 0.0;
+
+		return $this->normalize_weather_row(array(
+			'temp_c'        => isset($c['temperature_2m']) ? round((float) $c['temperature_2m']) : 29,
+			'condition'     => $this->weather_condition_from_code($code),
+			'theme'         => $theme,
+			'humidity'      => isset($c['relative_humidity_2m']) ? (int) $c['relative_humidity_2m'] : 0,
+			'rainfall_mm'   => isset($c['precipitation']) ? round((float) $c['precipitation'], 1) : 0.0,
+			'wind_kmh'      => (int) round($wind),
+			'weather_code'  => $code,
+			'source'        => 'Open-Meteo · Dulag area',
+		));
+	}
+
+	protected function normalize_weather_row($row)
+	{
+		if ( ! is_array($row))
+		{
+			return $this->default_weather();
+		}
+		$code = isset($row['weather_code']) ? (int) $row['weather_code'] : 3;
+		$theme = isset($row['theme']) ? (string) $row['theme'] : $this->weather_theme_from_code($code);
+		return array(
+			'temp_c'       => isset($row['temp_c']) ? (int) $row['temp_c'] : 29,
+			'condition'    => isset($row['condition']) ? (string) $row['condition'] : $this->weather_condition_from_code($code),
+			'theme'        => $theme,
+			'humidity'     => isset($row['humidity']) ? (int) $row['humidity'] : 0,
+			'rainfall_mm'  => isset($row['rainfall_mm']) ? (float) $row['rainfall_mm'] : 0.0,
+			'wind_kmh'     => isset($row['wind_kmh']) ? (int) $row['wind_kmh'] : 0,
+			'weather_code' => $code,
+			'source'       => isset($row['source']) ? (string) $row['source'] : 'Weather data',
+		);
+	}
+
+	protected function weather_theme_from_code($code)
+	{
+		$code = (int) $code;
+		if ($code === 0)
+		{
+			return 'sunny';
+		}
+		if (in_array($code, array(1, 2), TRUE))
+		{
+			return 'partly-cloudy';
+		}
+		if ($code === 3)
+		{
+			return 'cloudy';
+		}
+		if (in_array($code, array(45, 48), TRUE))
+		{
+			return 'fog';
+		}
+		if ($code >= 51 && $code <= 57)
+		{
+			return 'drizzle';
+		}
+		if (($code >= 61 && $code <= 67) || ($code >= 80 && $code <= 82))
+		{
+			return 'rainy';
+		}
+		if ($code >= 95)
+		{
+			return 'storm';
+		}
+		return 'cloudy';
+	}
+
+	protected function weather_condition_from_code($code)
+	{
+		$labels = array(
+			0  => 'Clear sky',
+			1  => 'Mainly clear',
+			2  => 'Partly cloudy',
+			3  => 'Overcast',
+			45 => 'Fog',
+			48 => 'Depositing rime fog',
+			51 => 'Light drizzle',
+			53 => 'Drizzle',
+			55 => 'Dense drizzle',
+			56 => 'Freezing drizzle',
+			57 => 'Freezing drizzle',
+			61 => 'Slight rain',
+			63 => 'Rain',
+			65 => 'Heavy rain',
+			66 => 'Freezing rain',
+			67 => 'Freezing rain',
+			71 => 'Snow fall',
+			80 => 'Rain showers',
+			81 => 'Rain showers',
+			82 => 'Violent rain showers',
+			95 => 'Thunderstorm',
+			96 => 'Thunderstorm with hail',
+			99 => 'Thunderstorm with hail',
+		);
+		return isset($labels[$code]) ? $labels[$code] : 'Cloudy';
+	}
+
+	protected function published_announcement()
+	{
+		if ( ! $this->db->table_exists('announcements'))
+		{
+			return NULL;
+		}
+
+		$row = $this->db
+			->where('is_published', 1)
+			->order_by('updated_at', 'DESC')
+			->limit(1)
+			->get('announcements')
+			->row_array();
+
+		if ( ! $row)
+		{
+			return NULL;
+		}
+
+		$level = ($row['level'] === 'info') ? NULL : $row['level'];
+
+		return array(
+			'active' => TRUE,
+			'level'  => $level,
+			'title'  => $row['title'],
+			'body'   => $row['body'],
+			'issuer' => 'MDRRMO Dulag',
 		);
 	}
 
@@ -325,17 +544,35 @@ class Monitor_model extends CI_Model {
 	protected function default_weather()
 	{
 		return array(
-			'temp_c'      => 29,
-			'condition'   => 'Cloudy',
-			'humidity'    => 82,
-			'rainfall_mm' => 2.4,
-			'wind_kmh'    => 12,
-			'source'      => 'Supplementary weather information',
+			'temp_c'       => 29,
+			'condition'    => 'Cloudy',
+			'theme'        => 'cloudy',
+			'humidity'     => 82,
+			'rainfall_mm'  => 0.0,
+			'wind_kmh'     => 12,
+			'weather_code' => 3,
+			'source'       => 'Supplementary weather information',
 		);
 	}
 
 	protected function cfg($key, $default = NULL)
 	{
+		static $overrides = NULL;
+		if ($overrides === NULL)
+		{
+			$file = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'admin_settings.json';
+			$overrides = is_file($file)
+				? json_decode((string) @file_get_contents($file), TRUE)
+				: array();
+			if ( ! is_array($overrides))
+			{
+				$overrides = array();
+			}
+		}
+		if (array_key_exists($key, $overrides))
+		{
+			return $overrides[$key];
+		}
 		$val = $this->config->item($key, 'monitor');
 		return ($val === NULL) ? $default : $val;
 	}

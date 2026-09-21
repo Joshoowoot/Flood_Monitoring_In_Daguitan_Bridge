@@ -25,3 +25,8 @@ $config['monitor_threshold_red_m'] = 2.50;
 
 $config['monitor_station'] = 'Daguitan Bridge Monitoring Station';
 $config['monitor_location'] = 'Daguitan Bridge, Dulag, Leyte';
+
+/* Open-Meteo (no API key) — Dulag, Leyte area */
+$config['weather_latitude']  = 10.9525;
+$config['weather_longitude'] = 125.0322;
+$config['weather_cache_ttl'] = 1800;

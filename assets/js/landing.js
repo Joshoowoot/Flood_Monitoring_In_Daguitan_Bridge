@@ -3,18 +3,6 @@
 
   const data = window.DAGUITAN || {};
 
-  const particles = document.getElementById("particles");
-  if (particles) {
-    const count = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 18;
-    for (let i = 0; i < count; i += 1) {
-      const dot = document.createElement("span");
-      dot.style.left = `${Math.random() * 100}%`;
-      dot.style.top = `${Math.random() * 100}%`;
-      dot.style.animationDelay = `${Math.random() * 8}s`;
-      particles.append(dot);
-    }
-  }
-
   const topbar = document.getElementById("topbar");
   const onScroll = () => topbar?.classList.toggle("is-scrolled", window.scrollY > 8);
   window.addEventListener("scroll", onScroll, { passive: true });
@@ -64,7 +52,7 @@
   counters.forEach(animateCount);
 
   const navLinks = document.querySelectorAll(".bottom-nav a");
-  const sections = ["home", "monitor", "alerts", "safety", "about"]
+  const sections = ["home", "monitor", "guidance", "alerts", "safety", "about"]
     .map((id) => document.getElementById(id))
     .filter(Boolean);
 
@@ -168,6 +156,10 @@
     setText("phoneRate", `${ratePrefix}${Number(m.rate_cm_min).toFixed(2)}`);
     setText("phoneSensor", m.sensor_label || m.sensor_status);
 
+    if (payload.weather && window.DaguitanWeather) {
+      window.DaguitanWeather.apply(payload.weather);
+    }
+
     if (a) {
       setText("announcePill", a.active ? "Active" : "Quiet");
       const body = document.getElementById("announceBody");
@@ -179,6 +171,35 @@
         copy.textContent = a.body;
         body.replaceChildren(title, copy);
       }
+    }
+
+    const actionRoot = document.getElementById("portalActions");
+    const actionMap = data.actions || {};
+    const actionItems = actionMap[m.warning_level] || actionMap.green;
+    const titles = data.guidanceTitles || ["Do this first", "Then", "Keep in mind"];
+    if (actionRoot && Array.isArray(actionItems)) {
+      const signature = `${m.warning_level}|${actionItems.join("|")}`;
+      if (actionRoot.dataset.signature !== signature) {
+        actionRoot.dataset.signature = signature;
+        const next = actionItems.map((text, index) => {
+          const li = document.createElement("li");
+          li.className = "process__step";
+          const num = document.createElement("span");
+          num.className = "process__num";
+          num.textContent = String(index + 1).padStart(2, "0");
+          const heading = document.createElement("h3");
+          heading.textContent = titles[index] || "Next";
+          const copy = document.createElement("p");
+          copy.textContent = text;
+          li.append(num, heading, copy);
+          return li;
+        });
+        actionRoot.replaceChildren(...next);
+      }
+    }
+    const kicker = document.getElementById("portalGuidanceKicker");
+    if (kicker && m.warning_label) {
+      kicker.textContent = `${String(m.warning_label).toUpperCase()} · What to do now`;
     }
   };
 

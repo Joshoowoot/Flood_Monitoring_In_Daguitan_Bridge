@@ -9,8 +9,10 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`record_uid` CHAR(36) NOT NULL,
 	`username` VARCHAR(64) NOT NULL,
 	`name` VARCHAR(120) NOT NULL,
+	`phone` VARCHAR(20) NULL,
 	`role` ENUM('admin','user') NOT NULL,
 	`password_hash` VARCHAR(255) NOT NULL,
+	`last_login_at` DATETIME NULL,
 	`sync_status` ENUM('pending','synced','failed') NOT NULL DEFAULT 'pending',
 	`synced_at` DATETIME NULL,
 	`sync_error` VARCHAR(255) NULL,
@@ -18,7 +20,24 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `uk_users_username` (`username`),
-	UNIQUE KEY `uk_users_uid` (`record_uid`)
+	UNIQUE KEY `uk_users_uid` (`record_uid`),
+	UNIQUE KEY `uk_users_phone` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `user_logins` (
+	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	`user_id` INT UNSIGNED NOT NULL,
+	`record_uid` CHAR(36) NULL,
+	`username` VARCHAR(64) NOT NULL,
+	`name` VARCHAR(120) NOT NULL,
+	`phone` VARCHAR(20) NULL,
+	`role` ENUM('admin','user') NOT NULL,
+	`ip_address` VARCHAR(45) NULL,
+	`user_agent` VARCHAR(255) NULL,
+	`logged_in_at` DATETIME NOT NULL,
+	PRIMARY KEY (`id`),
+	KEY `idx_user_logins_user_id` (`user_id`),
+	KEY `idx_user_logins_logged_in_at` (`logged_in_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `water_readings` (
@@ -38,9 +57,9 @@ CREATE TABLE IF NOT EXISTS `water_readings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `users` (`record_uid`, `username`, `name`, `role`, `password_hash`)
-SELECT UUID(), 'admin', 'MDRRMO Administrator', 'admin', '$2y$10$/BvgafsVGC7yCpPhDVl42ONarf1OMRMOmGMw6GDfsgf7dGT/gbUCS'
-WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'admin');
+SELECT UUID(), 'MDRRMO_DULAG', 'MDRRMO Dulag', 'admin', '$2y$10$JyOP4GVWDSnZiNDMr1lrA.dZQf6HmXrnR1x5c/gXiu7rAv.2nkeNG'
+WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'MDRRMO_DULAG');
 
 INSERT INTO `users` (`record_uid`, `username`, `name`, `role`, `password_hash`)
-SELECT UUID(), 'resident', 'Community Resident', 'user', '$2y$10$CAvebBXG0SyM/nd9/5ZZBeAnY6utv3U.IO.8ei27HL3v1bPcV18PS'
-WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'resident');
+SELECT UUID(), 'John Rouque B. Abina', 'John Rouque B. Abina', 'user', '$2y$10$93VD7fPzU2ldvL6lD8SU3.Vs8zhLoHOQIA8MOsrbIUL4JXWzOINma'
+WHERE NOT EXISTS (SELECT 1 FROM `users` WHERE `username` = 'John Rouque B. Abina');

@@ -236,10 +236,11 @@ class Sync_model extends CI_Model {
 	{
 		$uid = ! empty($row['record_uid']) ? $row['record_uid'] : $this->new_uid();
 		$sql = 'INSERT INTO `users`
-			(`record_uid`, `username`, `name`, `role`, `password_hash`)
-			VALUES (?, ?, ?, ?, ?)
+			(`record_uid`, `username`, `name`, `phone`, `role`, `password_hash`)
+			VALUES (?, ?, ?, ?, ?, ?)
 			ON DUPLICATE KEY UPDATE
 				`name` = VALUES(`name`),
+				`phone` = VALUES(`phone`),
 				`role` = VALUES(`role`),
 				`password_hash` = VALUES(`password_hash`),
 				`record_uid` = VALUES(`record_uid`)';
@@ -248,6 +249,7 @@ class Sync_model extends CI_Model {
 			$uid,
 			$row['username'],
 			$row['name'],
+			isset($row['phone']) ? $row['phone'] : NULL,
 			$row['role'],
 			$row['password_hash'],
 		));
@@ -298,13 +300,16 @@ class Sync_model extends CI_Model {
 			`record_uid` CHAR(36) NOT NULL,
 			`username` VARCHAR(64) NOT NULL,
 			`name` VARCHAR(120) NOT NULL,
+			`phone` VARCHAR(20) NULL,
 			`role` ENUM('admin','user') NOT NULL,
 			`password_hash` VARCHAR(255) NOT NULL,
+			`last_login_at` DATETIME NULL,
 			`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			PRIMARY KEY (`id`),
 			UNIQUE KEY `uk_users_username` (`username`),
-			UNIQUE KEY `uk_users_uid` (`record_uid`)
+			UNIQUE KEY `uk_users_uid` (`record_uid`),
+			UNIQUE KEY `uk_users_phone` (`phone`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
 		$cloud->query("CREATE TABLE IF NOT EXISTS `water_readings` (
@@ -352,11 +357,33 @@ class Sync_model extends CI_Model {
 		if ($this->db->table_exists('users'))
 		{
 			$this->add_column('users', 'record_uid', "CHAR(36) NULL AFTER `id`");
+			$this->add_column('users', 'phone', "VARCHAR(20) NULL AFTER `name`");
+			$this->add_column('users', 'last_login_at', "DATETIME NULL AFTER `password_hash`");
 			$this->add_column('users', 'sync_status', "ENUM('pending','synced','failed') NOT NULL DEFAULT 'pending' AFTER `password_hash`");
 			$this->add_column('users', 'synced_at', "DATETIME NULL AFTER `sync_status`");
 			$this->add_column('users', 'sync_error', "VARCHAR(255) NULL AFTER `synced_at`");
 			$this->backfill_uids('users');
 			$this->add_unique('users', 'uk_users_uid', 'record_uid');
+			$this->add_unique('users', 'uk_users_phone', 'phone');
+		}
+
+		if ( ! $this->db->table_exists('user_logins'))
+		{
+			$this->db->query("CREATE TABLE IF NOT EXISTS `user_logins` (
+				`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+				`user_id` INT UNSIGNED NOT NULL,
+				`record_uid` CHAR(36) NULL,
+				`username` VARCHAR(64) NOT NULL,
+				`name` VARCHAR(120) NOT NULL,
+				`phone` VARCHAR(20) NULL,
+				`role` ENUM('admin','user') NOT NULL,
+				`ip_address` VARCHAR(45) NULL,
+				`user_agent` VARCHAR(255) NULL,
+				`logged_in_at` DATETIME NOT NULL,
+				PRIMARY KEY (`id`),
+				KEY `idx_user_logins_user_id` (`user_id`),
+				KEY `idx_user_logins_logged_in_at` (`logged_in_at`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 		}
 	}
 

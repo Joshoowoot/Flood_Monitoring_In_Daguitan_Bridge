@@ -7,15 +7,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 */
 $config['auth_accounts'] = array(
 	array(
-		'username' => 'admin',
-		'password' => 'DulagAdmin2026!',
+		'username' => 'MDRRMO_DULAG',
+		'password' => 'One Dulag',
 		'role'     => 'admin',
-		'name'     => 'MDRRMO Administrator',
+		'name'     => 'MDRRMO Dulag',
 	),
 	array(
-		'username' => 'resident',
-		'password' => 'DulagUser2026!',
+		'username' => 'John Rouque B. Abina',
+		'password' => 'John123!',
 		'role'     => 'user',
-		'name'     => 'Community Resident',
+		'name'     => 'John Rouque B. Abina',
 	),
 );

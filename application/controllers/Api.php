@@ -22,7 +22,95 @@ class Api extends CI_Controller {
 		}
 
 		$payload = $this->Monitor_model->get_status();
+		$this->load->model('Admin_portal_model');
+		$payload['monitor'] = $this->Admin_portal_model->enrich_monitor($payload['monitor']);
+		$this->load->model('Sync_model');
+		$payload['sync'] = $this->Sync_model->status();
 		return $this->json(array('ok' => TRUE) + $payload);
+	}
+
+	public function notifications()
+	{
+		if ($this->input->method(TRUE) === 'OPTIONS')
+		{
+			return $this->json(array('ok' => TRUE), 204);
+		}
+		if ($this->input->method(TRUE) !== 'GET')
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'method_not_allowed'), 405);
+		}
+
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$role = (string) $this->session->userdata('auth_role');
+		if ($user_id <= 0 || ! in_array($role, array('admin', 'user'), TRUE))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
+		}
+
+		return $this->json(array(
+			'ok'     => TRUE,
+			'unread' => $this->Notification_model->count_unread($user_id, $role),
+			'items'  => $this->Notification_model->list_for_user($user_id, $role, 25),
+		));
+	}
+
+	public function notifications_read()
+	{
+		if ($this->input->method(TRUE) === 'OPTIONS')
+		{
+			return $this->json(array('ok' => TRUE), 204);
+		}
+		if ($this->input->method(TRUE) !== 'POST')
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'method_not_allowed'), 405);
+		}
+
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$role = (string) $this->session->userdata('auth_role');
+		if ($user_id <= 0 || ! in_array($role, array('admin', 'user'), TRUE))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
+		}
+
+		$id = (int) $this->input->post('id');
+		if ($id <= 0)
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'invalid_id'), 400);
+		}
+
+		$this->Notification_model->mark_read($id, $user_id);
+		return $this->json(array(
+			'ok'     => TRUE,
+			'unread' => $this->Notification_model->count_unread($user_id, $role),
+		));
+	}
+
+	public function notifications_read_all()
+	{
+		if ($this->input->method(TRUE) === 'OPTIONS')
+		{
+			return $this->json(array('ok' => TRUE), 204);
+		}
+		if ($this->input->method(TRUE) !== 'POST')
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'method_not_allowed'), 405);
+		}
+
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$role = (string) $this->session->userdata('auth_role');
+		if ($user_id <= 0 || ! in_array($role, array('admin', 'user'), TRUE))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
+		}
+
+		$this->Notification_model->mark_all_read($user_id, $role);
+		return $this->json(array(
+			'ok'     => TRUE,
+			'unread' => 0,
+		));
 	}
 
 	public function sync()

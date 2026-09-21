@@ -10,7 +10,7 @@
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=20260320c">
 </head>
 <body class="auth-body auth-body--admin">
 	<div class="auth-bg" aria-hidden="true"></div>

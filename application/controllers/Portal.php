@@ -39,6 +39,8 @@ class Portal extends CI_Controller {
 			),
 		);
 
+		$this->load->model('Notification_model');
+		$notify_uid = $this->Notification_model->resolve_user_id_from_session();
 		$this->load->view('dash/portal', array(
 			'base_url'     => $base . '/',
 			'asset_url'    => $base . '/assets/',
@@ -47,7 +49,20 @@ class Portal extends CI_Controller {
 			'announcement' => $live['announcement'],
 			'weather'      => $live['weather'],
 			'auth_name'    => $this->session->userdata('auth_name'),
+			'auth_phone'   => $this->session->userdata('auth_phone'),
+			'logout_url'   => site_url('auth/logout'),
 			'status_url'   => $base . '/index.php/api/status',
+			'notify_audience' => 'user',
+			'notify_unread'   => ($notify_uid > 0)
+				? $this->Notification_model->count_unread($notify_uid, 'user')
+				: 0,
+			'notify_config' => array(
+				'listUrl'    => $base . '/index.php/api/notifications',
+				'readUrl'    => $base . '/index.php/api/notifications/read',
+				'readAllUrl' => $base . '/index.php/api/notifications/read_all',
+				'pollMs'     => 30000,
+			),
+			'actions_map'  => $actions,
 			'actions'      => isset($actions[$level]) ? $actions[$level] : $actions['green'],
 		));
 	}
