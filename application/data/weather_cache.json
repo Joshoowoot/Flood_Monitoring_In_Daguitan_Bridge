@@ -1,13 +1,13 @@
 {
-    "fetched_at": 1790136012,
+    "fetched_at": 1790317879,
     "weather": {
-        "temp_c": 29,
-        "condition": "Overcast",
-        "theme": "cloudy",
-        "humidity": 81,
-        "rainfall_mm": 0,
-        "wind_kmh": 9,
-        "weather_code": 3,
+        "temp_c": 27,
+        "condition": "Dense drizzle",
+        "theme": "drizzle",
+        "humidity": 91,
+        "rainfall_mm": 0.3,
+        "wind_kmh": 6,
+        "weather_code": 55,
         "source": "Open-Meteo · Dulag area"
     }
 }
