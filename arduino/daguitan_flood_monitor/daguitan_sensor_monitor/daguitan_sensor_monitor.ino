@@ -67,8 +67,8 @@ const int ECHO_PIN = 18;  // ESP32 D18 / GPIO 18
 // Replace these with your actual Wi-Fi information.
 // DO NOT share your Wi-Fi password with anyone.
 
-const char* WIFI_SSID     = ".";
-const char* WIFI_PASSWORD = "ExtendCutie";
+const char* WIFI_SSID     = "Haha";
+const char* WIFI_PASSWORD = "00000001";
 
 
 // ======================================================
@@ -76,7 +76,7 @@ const char* WIFI_PASSWORD = "ExtendCutie";
 // ======================================================
 
 // PC running XAMPP / CodeIgniter
-const char* PC_IP = "192.168.0.101";
+const char* PC_IP = "10.81.86.245";
 
 // Must match application/config/monitor.php
 const char* API_KEY = "daguitan-esp32-key";
