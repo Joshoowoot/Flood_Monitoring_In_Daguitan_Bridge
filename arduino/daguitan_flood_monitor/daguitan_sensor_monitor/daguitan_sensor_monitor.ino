@@ -76,7 +76,7 @@ const char* WIFI_PASSWORD = "ExtendCutie";
 // ======================================================
 
 // PC running XAMPP / CodeIgniter
-const char* PC_IP = "192.168.0.101";
+const char* PC_IP = "192.168.0.100";
 
 // Must match application/config/monitor.php
 const char* API_KEY = "daguitan-esp32-key";

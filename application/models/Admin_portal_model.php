@@ -86,9 +86,6 @@ class Admin_portal_model extends CI_Model {
 		$yellow = (float) $settings['monitor_threshold_yellow_m'];
 		$red = (float) $settings['monitor_threshold_red_m'];
 
-		$ett = $this->estimate_time_to_threshold($level, $rate, $monitor['warning_level'], $yellow, $red);
-		$monitor['ett_minutes'] = $ett['minutes'];
-		$monitor['ett_label'] = $ett['label'];
 		$monitor['threshold_yellow_m'] = $yellow;
 		$monitor['threshold_red_m'] = $red;
 
