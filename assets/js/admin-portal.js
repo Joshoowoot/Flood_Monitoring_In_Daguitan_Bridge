@@ -49,7 +49,38 @@
     });
     ctx.setLineDash([]);
 
+    ctx.strokeStyle = 'rgba(107, 85, 88, 0.12)';
+    ctx.lineWidth = 1;
+    [0, maxY / 2, maxY].forEach(function (lv) {
+      var y = yScale(lv);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(w - pad.r, y);
+      ctx.stroke();
+    });
+
+    ctx.fillStyle = 'rgba(107, 85, 88, 0.78)';
+    ctx.font = '700 10px Times New Roman, serif';
+    ctx.fillText('CRITICAL', w - pad.r - 48, yScale(red) - 6);
+    ctx.fillText('MONITOR', w - pad.r - 43, yScale(yellow) - 6);
+    ctx.fillText('SAFE', w - pad.r - 25, yScale(yellow) + 15);
+
     var innerW = w - pad.l - pad.r;
+    var lastX = pad.l + ((points.length - 1) / Math.max(1, points.length - 1)) * innerW;
+    var lastY = yScale(points[points.length - 1].water_level_m);
+    ctx.beginPath();
+    points.forEach(function (p, i) {
+      var x = pad.l + (i / Math.max(1, points.length - 1)) * innerW;
+      var y = yScale(p.water_level_m);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.lineTo(lastX, yScale(0));
+    ctx.lineTo(pad.l, yScale(0));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(155, 18, 36, 0.08)';
+    ctx.fill();
+
     ctx.strokeStyle = '#9b1224';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -66,6 +97,17 @@
     ctx.fillText('0 m', 6, yScale(0) + 4);
     ctx.fillText(yellow.toFixed(1) + ' m', 6, yScale(yellow) + 4);
     ctx.fillText(red.toFixed(1) + ' m', 6, yScale(red) + 4);
+
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#9b1224';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#1a1012';
+    ctx.font = '700 12px Times New Roman, serif';
+    ctx.fillText(Number(points[points.length - 1].water_level_m).toFixed(2) + ' m', Math.max(pad.l, lastX - 20), Math.max(14, lastY - 10));
   }
 
   function setText(id, text) {
@@ -125,6 +167,21 @@
           if (key === 'esp32' || key === 'ultrasonic') {
             pill.textContent = online ? 'Online' : 'Offline';
             pill.className = 'admin-pill admin-pill--' + (online ? 'online' : 'offline');
+          }
+        });
+        document.querySelectorAll('[data-infra-key]').forEach(function (card) {
+          var key = card.getAttribute('data-infra-key');
+          var status = card.querySelector('.admin-sensor-status');
+          var detail = card.querySelector('p:not(.admin-sensor-status)');
+          if (!status || !detail) return;
+          if (key === 'power') {
+            status.textContent = m.sensor_status === 'online' ? 'Online' : 'Offline';
+            status.className = 'admin-sensor-status admin-sensor-status--' + (m.sensor_status === 'online' ? 'online' : 'offline');
+            detail.textContent = m.sensor_status === 'online' ? 'Telemetry connected; source not reported' : 'No telemetry available';
+          } else if (key === 'solar' || key === 'battery') {
+            status.textContent = 'Telemetry unavailable';
+            status.className = 'admin-sensor-status admin-sensor-status--warning';
+            detail.textContent = 'Waiting for ESP power telemetry';
           }
         });
         var recentBody = document.getElementById('admRecentBody');

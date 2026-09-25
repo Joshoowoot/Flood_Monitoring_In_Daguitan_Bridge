@@ -5,10 +5,8 @@ $w = $weather;
 $trend_arrow = ($m['trend'] === 'falling') ? '↓' : (($m['trend'] === 'steady') ? '→' : '↑');
 $warning_key = $m['warning_level'];
 $gauge_pct = isset($m['gauge_pct']) ? (int) $m['gauge_pct'] : 8;
-$sensor_class = ($m['sensor_status'] === 'online') ? 'metric--online' : 'metric--offline';
-$sensor_label = isset($m['sensor_label']) ? $m['sensor_label'] : ucfirst($m['sensor_status']);
+$ett_label = isset($m['ett_label']) ? $m['ett_label'] : '—';
 $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
-$guidance_titles = array('Do this first', 'Then', 'Keep in mind');
 $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 ?>
 <!DOCTYPE html>
@@ -25,10 +23,11 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260924m">
 </head>
-<body class="portal-page">
+<body class="portal-page resident-portal">
 	<a class="skip-link" href="#main">Skip to content</a>
 
 	<div class="gov-bar">
@@ -43,10 +42,6 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 		<div class="ambient__blob ambient__blob--two"></div>
 		<div class="ambient__blob ambient__blob--three"></div>
 		<div class="ambient__particles" id="particles"></div>
-		<svg class="ambient__waves" viewBox="0 0 1440 320" preserveAspectRatio="none">
-			<path class="wave wave--a" d="M0,224L48,208C96,192,192,160,288,154.7C384,149,480,171,576,186.7C672,203,768,213,864,197.3C960,181,1056,139,1152,133.3C1248,128,1344,160,1392,176L1440,192L1440,320L0,320Z"></path>
-			<path class="wave wave--b" d="M0,256L60,245.3C120,235,240,213,360,208C480,203,600,213,720,229.3C840,245,960,267,1080,256C1200,245,1320,203,1380,181.3L1440,160L1440,320L0,320Z"></path>
-		</svg>
 	</div>
 
 	<header class="topbar" id="topbar">
@@ -61,17 +56,8 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				</span>
 			</a>
 
-			<nav class="nav-desktop" aria-label="Portal">
-				<a href="#home">Status</a>
-				<a href="#monitor">Live data</a>
-				<a href="#guidance">Guidance</a>
-				<a href="#alerts">Alerts</a>
-				<a href="#safety">Safety</a>
-			</nav>
-
 			<div class="topbar__actions">
 				<?php $this->load->view('partials/notifications_bell'); ?>
-				<span class="btn btn--ghost btn--compact portal-user" title="<?php echo html_escape($auth_name . ( ! empty($auth_phone) ? ' · ' . $auth_phone : '')); ?>"><?php echo html_escape($auth_name); ?></span>
 				<a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
 				<button class="icon-btn hamburger" type="button" id="menuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
 					<span></span><span></span><span></span>
@@ -91,26 +77,41 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			<nav class="drawer__nav" aria-label="Mobile">
 				<a href="#home">Status</a>
 				<a href="#monitor">Live data</a>
-				<a href="#guidance">Guidance</a>
 				<a href="#alerts">Alerts</a>
 				<a href="#safety">Safety</a>
 				<a href="<?php echo site_url('/'); ?>">Public site</a>
 				<a href="<?php echo html_escape($logout_url); ?>">Sign out</a>
 			</nav>
-			<a class="btn btn--primary btn--block" href="#guidance">What to do now</a>
 		</div>
 	</div>
 
-	<main id="main">
+	<main id="main" class="resident-layout">
+		<aside class="resident-sidebar" aria-label="Resident portal navigation">
+			<div class="resident-sidebar__profile">
+				<button class="resident-sidebar__avatar-button" type="button" id="profileImageButton" aria-label="Choose profile image" title="Choose profile image">
+					<img class="resident-sidebar__avatar resident-sidebar__avatar--logo" id="profileImage" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="">
+				</button>
+				<input class="resident-sidebar__file" type="file" id="profileImageInput" accept="image/*" hidden>
+				<div>
+					<strong><?php echo html_escape($auth_name); ?></strong>
+					<span>Resident account</span>
+				</div>
+			</div>
+			<nav class="resident-sidebar__nav" aria-label="Resident portal">
+				<a class="is-active" href="#home" aria-current="page">Dashboard</a>
+				<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation Centers</a>
+				<a href="<?php echo html_escape(site_url('portal/announcements')); ?>">Announcements</a>
+				<a href="#alerts">Flood Alerts</a>
+				<a href="#safety">Emergency Contacts</a>
+			</nav>
+			<a class="resident-sidebar__signout" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+		</aside>
+		<div class="resident-layout__content">
 		<section class="hero" id="home">
 			<div class="hero__copy reveal">
 				<p class="eyebrow">Resident portal · Daguitan Bridge</p>
 				<h1>Welcome, <?php echo html_escape($auth_name); ?></h1>
 				<p class="lede">Your flood watch for Daguitan Bridge. Live water level, warning status, and MDRRMO guidance — this does not replace official evacuation orders.</p>
-				<div class="hero__actions">
-					<a class="btn btn--primary" href="#guidance">What to do now</a>
-					<a class="btn btn--ghost" href="#alerts">Emergency desk</a>
-				</div>
 			</div>
 
 			<article class="status-panel reveal" aria-labelledby="statusTitle">
@@ -137,6 +138,38 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				</div>
 				<div class="gauge gauge--<?php echo html_escape($warning_key); ?>" id="heroGauge" aria-hidden="true">
 					<div class="gauge__fill" id="heroGaugeFill" style="--level: <?php echo (int) $gauge_pct; ?>%"></div>
+				</div>
+			</article>
+		</section>
+
+		<section class="section section--tight" id="alerts">
+			<article class="glass-card warn-board reveal" aria-labelledby="warningBoardTitle">
+				<div class="warn-board__head">
+					<p class="card-kicker" id="warningBoardTitle">Flood warning level</p>
+					<p class="card-kicker">Status</p>
+				</div>
+				<div class="warn-board__list" role="list" aria-label="Flood warning levels">
+					<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
+							<strong>Safe</strong>
+						</div>
+						<p class="warn-board__status">Below advisory threshold.</p>
+					</div>
+					<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
+							<strong>Monitor</strong>
+						</div>
+						<p class="warn-board__status">Approaching caution. Stay alert.</p>
+					</div>
+					<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
+							<strong>Critical</strong>
+						</div>
+						<p class="warn-board__status">Critical threshold reached.</p>
+					</div>
 				</div>
 			</article>
 		</section>
@@ -170,94 +203,54 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				</article>
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>
 					</div>
-					<h3>Sensor Status</h3>
-					<p class="metric <?php echo $sensor_class; ?>" id="cardSensor"><span class="live-dot" aria-hidden="true"></span> <span id="cardSensorLabel"><?php echo html_escape($sensor_label); ?></span></p>
+					<h3>Est. time-to-threshold</h3>
+					<p class="metric" id="cardEtt"><?php echo html_escape($ett_label); ?></p>
 				</article>
 			</div>
 		</section>
 
-		<section class="section" id="guidance">
-			<header class="section__head reveal">
-				<p class="eyebrow" id="portalGuidanceKicker"><?php echo strtoupper(html_escape($m['warning_label'])); ?> · What to do now</p>
-				<h2>Your next steps</h2>
-				<p>These actions change with the live warning. Follow barangay and MDRRMO instructions if they differ.</p>
-			</header>
-			<ol class="process" id="portalActions">
-				<?php foreach ($actions as $i => $item): ?>
-					<li class="process__step reveal">
-						<span class="process__num"><?php echo str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT); ?></span>
-						<h3><?php echo html_escape(isset($guidance_titles[$i]) ? $guidance_titles[$i] : 'Next'); ?></h3>
-						<p><?php echo html_escape($item); ?></p>
-					</li>
-				<?php endforeach; ?>
-			</ol>
-		</section>
-
-		<section class="section" id="alerts">
-			<header class="section__head reveal">
-				<h2>Flood Warning Status</h2>
-				<p>Classification follows the station thresholds used on the public Daguitan monitor.</p>
-			</header>
-			<div class="warning-track reveal" role="list" aria-label="Flood warning levels">
-				<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
-					<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
-					<strong>Safe</strong>
-					<p>Water remains below the advisory threshold.</p>
-				</div>
-				<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
-					<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
-					<strong>Monitor</strong>
-					<p>Water is approaching caution levels. Stay alert.</p>
-				</div>
-				<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
-					<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
-					<strong>Critical</strong>
-					<p>Water has reached the critical threshold.</p>
-				</div>
-			</div>
-		</section>
-
-		<section class="section section--split">
-			<article class="weather-card glass-card reveal" aria-labelledby="weatherTitle">
-				<p class="card-kicker">Supplementary Weather Information</p>
-				<div class="weather-card__row">
-					<div class="weather-card__icon" aria-hidden="true">
-						<svg viewBox="0 0 64 64" width="72" height="72">
-							<circle class="sun-soft" cx="22" cy="22" r="10" fill="#ffb4b8"/>
-							<path d="M18 40h28a10 10 0 0 0 1-20 14 14 0 0 0-26 4 9 9 0 0 0-3 16z" fill="rgba(155,18,36,.12)" stroke="#9b1224" stroke-width="1.6"/>
-						</svg>
+		<section class="section">
+					<article class="wx-now glass-card reveal" aria-labelledby="weatherTitle">
+				<div class="wx-now__now">
+					<div class="weather-card__icon" aria-hidden="true" data-theme="<?php echo html_escape(isset($w['theme']) ? $w['theme'] : 'cloudy'); ?>"></div>
+					<div class="wx-now__tempwrap">
+						<p class="wx-now__temp"><?php echo (int) $w['temp_c']; ?>°</p>
+						<p class="wx-now__feels">Feels like <?php echo (int) (isset($w['feels_like_c']) ? $w['feels_like_c'] : $w['temp_c']); ?>°</p>
 					</div>
-					<div>
-						<h2 id="weatherTitle">Current Weather</h2>
-						<p class="metric weather-card__temp"><?php echo (int) $w['temp_c']; ?>°C</p>
-						<p class="weather-card__cond"><?php echo html_escape($w['condition']); ?></p>
+					<div class="wx-now__meta">
+						<h2 id="weatherTitle">Dulag weather</h2>
+						<p class="wx-now__cond"><?php echo html_escape($w['condition']); ?></p>
+						<p class="wx-now__source"><?php echo html_escape(isset($w['source']) ? $w['source'] : ''); ?></p>
 					</div>
 				</div>
-				<dl class="weather-stats">
-					<div><dt>Humidity</dt><dd><?php echo (int) $w['humidity']; ?>%</dd></div>
-					<div><dt>Rainfall</dt><dd><?php echo number_format($w['rainfall_mm'], 1); ?> mm</dd></div>
-					<div><dt>Wind</dt><dd><?php echo (int) $w['wind_kmh']; ?> km/h</dd></div>
-				</dl>
-			</article>
-
-			<article class="announce-card glass-card reveal" aria-labelledby="announceTitle">
-				<div class="announce-card__head">
-					<h2 id="announceTitle">Emergency Announcements</h2>
-					<span class="pill" id="announcePill"><?php echo $a['active'] ? 'Active' : 'Quiet'; ?></span>
+				<ul class="wx-now__stats">
+					<li><span>Humidity</span><strong><?php echo (int) $w['humidity']; ?>%</strong></li>
+					<li><span>Rain</span><strong><?php echo number_format($w['rainfall_mm'], 1); ?> mm</strong></li>
+					<li><span>Wind</span><strong><?php echo (int) $w['wind_kmh']; ?> km/h <?php echo html_escape(isset($w['wind_dir']) ? $w['wind_dir'] : ''); ?></strong></li>
+					<li><span>Rain chance</span><strong><?php echo (int) (isset($w['rain_chance']) ? $w['rain_chance'] : 0); ?>%</strong></li>
+					<li><span>Clouds</span><strong><?php echo (int) (isset($w['cloud_pct']) ? $w['cloud_pct'] : 0); ?>%</strong></li>
+					<li><span>Pressure</span><strong><?php echo (int) (isset($w['pressure_hpa']) ? $w['pressure_hpa'] : 1013); ?> hPa</strong></li>
+				</ul>
+				<?php $forecast = (isset($w['forecast']) && is_array($w['forecast'])) ? $w['forecast'] : array(); ?>
+				<?php if ( ! empty($forecast)): ?>
+				<div class="wx-now__week">
+					<div class="wx-now__days">
+						<?php foreach ($forecast as $i => $day): ?>
+							<article class="wx-now__day<?php echo $i === 0 ? ' is-today' : ''; ?>" title="<?php echo html_escape($day['condition']); ?>">
+								<p class="wx-now__dlabel"><?php echo html_escape($day['label']); ?></p>
+								<p class="wx-now__dcond"><?php echo html_escape($day['condition']); ?></p>
+								<p class="wx-now__dhi"><?php echo (int) $day['temp_max']; ?>°</p>
+								<p class="wx-now__dlo"><?php echo (int) $day['temp_min']; ?>°</p>
+								<p class="wx-now__drain"><?php echo (int) $day['rain_chance']; ?>%</p>
+							</article>
+						<?php endforeach; ?>
+					</div>
 				</div>
-				<div id="announceBody">
-				<?php if ($a['active']): ?>
-					<p class="status-badge status-badge--<?php echo html_escape($a['level']); ?>"><?php echo html_escape($a['title']); ?></p>
-					<p><?php echo html_escape($a['body']); ?></p>
-				<?php else: ?>
-					<p class="announce-card__empty"><?php echo html_escape($a['title']); ?></p>
-					<p><?php echo html_escape($a['body']); ?></p>
 				<?php endif; ?>
-				</div>
-				<p class="issuer">Issued by <?php echo html_escape($a['issuer']); ?></p>
 			</article>
+
 		</section>
 
 		<section class="section" id="safety">
@@ -289,17 +282,11 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			</div>
 		</section>
 
-		<section class="emergency-cta" id="about">
-			<div class="emergency-cta__waves" aria-hidden="true"></div>
-			<div class="emergency-cta__inner reveal">
-				<h2>When the warning rises, be ready to act.</h2>
-				<p>Stay with this page during rainfall. Move to higher ground only when MDRRMO or barangay officials instruct you — or immediately at red alert.</p>
-				<a class="btn btn--light" href="<?php echo site_url('/'); ?>">Open public site</a>
-			</div>
-		</section>
+		</div>
 	</main>
 
-	<footer class="footer">
+	<footer class="footer portal-footer">
+		<div class="portal-footer__inner">
 		<div class="footer__grid">
 			<div>
 				<p class="footer__brand">
@@ -311,18 +298,17 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			<nav aria-label="Footer">
 				<a href="#home">Status</a>
 				<a href="#monitor">Live data</a>
-				<a href="#guidance">Guidance</a>
 				<a href="#alerts">Alerts</a>
 				<a href="<?php echo site_url('/'); ?>">Public site</a>
 			</nav>
 		</div>
 		<p class="footer__note">Developed for community flood awareness and early warning.</p>
+		</div>
 	</footer>
 
 	<nav class="bottom-nav" aria-label="Portal">
 		<a href="#home" class="is-active"><span aria-hidden="true">⌂</span> Status</a>
 		<a href="#monitor"><span aria-hidden="true">🌊</span> Live</a>
-		<a href="#guidance"><span aria-hidden="true">✓</span> Guide</a>
 		<a href="#alerts"><span aria-hidden="true">🔔</span> Alerts</a>
 	</nav>
 
@@ -331,10 +317,10 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			'statusUrl' => $status_url,
 			'pollMs' => 5000,
 			'actions' => $actions_map,
-			'guidanceTitles' => $guidance_titles,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;

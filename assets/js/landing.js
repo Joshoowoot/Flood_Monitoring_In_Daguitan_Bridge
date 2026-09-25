@@ -52,18 +52,24 @@
   counters.forEach(animateCount);
 
   const navLinks = document.querySelectorAll(".bottom-nav a");
+  const isAnnouncePage = document.body.classList.contains("announce-page");
   const sections = ["home", "monitor", "guidance", "alerts", "safety", "about"]
     .map((id) => document.getElementById(id))
     .filter(Boolean);
 
   const syncNav = () => {
+    if (isAnnouncePage) return;
     const y = window.scrollY + 120;
     let current = "home";
     sections.forEach((section) => {
       if (section.offsetTop <= y) current = section.id;
     });
     navLinks.forEach((link) => {
-      link.classList.toggle("is-active", link.getAttribute("href") === `#${current}`);
+      const href = link.getAttribute("href") || "";
+      const hash = href.includes("#") ? href.slice(href.indexOf("#")) : "";
+      const isHomeLink = !href.includes("#");
+      const active = current === "home" ? isHomeLink : hash === `#${current}`;
+      link.classList.toggle("is-active", active);
     });
   };
   window.addEventListener("scroll", syncNav, { passive: true });
@@ -96,6 +102,10 @@
   }
 
   document.getElementById("notifyBtn")?.addEventListener("click", () => {
+    if (isAnnouncePage) {
+      window.location.href = `${data.homeUrl || ""}#alerts`;
+      return;
+    }
     window.location.hash = "alerts";
   });
 
@@ -139,11 +149,7 @@
     setText("cardTrend", `${arrow} ${m.trend_label}`);
     setText("cardRate", fmtRate(m.rate_cm_min));
 
-    const sensor = document.getElementById("cardSensor");
-    if (sensor) {
-      sensor.className = `metric ${m.sensor_status === "online" ? "metric--online" : "metric--offline"}`;
-    }
-    setText("cardSensorLabel", m.sensor_label || m.sensor_status);
+    setText("cardEtt", m.ett_label || "—");
 
     document.querySelectorAll(".warning-track__item").forEach((item) => {
       item.classList.toggle("is-active", item.dataset.level === m.warning_level);
@@ -154,7 +160,7 @@
     setText("phoneWater", fmtLevel(m.water_level_m));
     setText("phoneTrend", `${arrow} ${m.trend_label}`);
     setText("phoneRate", `${ratePrefix}${Number(m.rate_cm_min).toFixed(2)}`);
-    setText("phoneSensor", m.sensor_label || m.sensor_status);
+    setText("phoneEtt", m.ett_label || "—");
 
     if (payload.weather && window.DaguitanWeather) {
       window.DaguitanWeather.apply(payload.weather);

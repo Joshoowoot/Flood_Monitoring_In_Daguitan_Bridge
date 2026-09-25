@@ -12,11 +12,11 @@ $m = $monitor;
 <div class="admin-sensor-grid">
 	<?php foreach (array('esp32' => 'ESP32', 'ultrasonic' => 'JSN-SR04T', 'internet' => 'Internet', 'power' => 'Power supply', 'solar' => 'Solar panel', 'battery' => 'Battery') as $key => $title): ?>
 		<?php $d = $i[$key]; ?>
-		<article class="glass-card admin-sensor-card">
+		<article class="glass-card admin-sensor-card" data-infra-key="<?php echo html_escape($key); ?>">
 			<h3><?php echo html_escape($title); ?></h3>
 			<p class="admin-sensor-status admin-sensor-status--<?php echo html_escape($d['status']); ?>"><?php echo html_escape(ucfirst($d['status'])); ?></p>
 			<p><?php echo html_escape($d['detail']); ?></p>
-			<?php if ($key === 'battery'): ?>
+			<?php if ($key === 'battery' && isset($d['pct'])): ?>
 				<div class="gauge gauge--green"><div class="gauge__fill" style="width:<?php echo (int) $d['pct']; ?>%"></div></div>
 			<?php endif; ?>
 		</article>

@@ -78,14 +78,80 @@
       const el = document.getElementById(id);
       if (el) el.textContent = text;
     };
-    set("wxCardTemp", `${Number(weather.temp_c)}°C`);
+    const windDir = weather.wind_dir ? ` ${weather.wind_dir}` : "";
+    set("wxCardTemp", `${Number(weather.temp_c)}°`);
     set("wxCardCond", weather.condition || "—");
     set("wxCardHumidity", `${Number(weather.humidity)}%`);
     set("wxCardRain", `${Number(weather.rainfall_mm).toFixed(1)} mm`);
-    set("wxCardWind", `${Number(weather.wind_kmh)} km/h`);
+    set("wxCardWind", `${Number(weather.wind_kmh)} km/h${windDir}`);
+    set("wxCardFeels", `${Number(weather.feels_like_c != null ? weather.feels_like_c : weather.temp_c)}°`);
+    set("wxCardChance", `${Number(weather.rain_chance || 0)}%`);
+    set("wxCardCloud", `${Number(weather.cloud_pct || 0)}%`);
+    set("wxCardPressure", `${Number(weather.pressure_hpa || 1013)} hPa`);
     set("wxCardSource", weather.source || "");
     const icon = document.getElementById("wxCardIcon");
     if (icon) icon.dataset.theme = theme;
+    renderWeek(Array.isArray(weather.forecast) ? weather.forecast : []);
+  }
+
+  function shortCondition(value) {
+    const labels = {
+      Thunderstorm: "Storm",
+      "Thunderstorm with hail": "Hail",
+      "Violent rain showers": "Showers",
+      "Rain showers": "Showers",
+      "Depositing rime fog": "Fog",
+      "Mainly clear": "Clear",
+      "Partly cloudy": "Partly",
+      "Light drizzle": "Drizzle",
+      "Dense drizzle": "Drizzle",
+      "Slight rain": "Rain",
+      "Heavy rain": "Rain",
+    };
+    return labels[value] || value || "—";
+  }
+
+  function renderWeek(forecast) {
+    const root = document.getElementById("wxWeek");
+    if (!root) return;
+    const days = root.querySelector(".wx-now__days") || root.querySelector(".wx-week__days");
+    if (!days) return;
+    if (!forecast.length) {
+      root.hidden = true;
+      days.replaceChildren();
+      return;
+    }
+    root.hidden = false;
+    days.replaceChildren(
+      ...forecast.slice(0, 7).map((day, index) => {
+        const article = document.createElement("article");
+        article.className = `wx-now__day${index === 0 ? " is-today" : ""}`;
+        article.title = day.condition || "";
+
+        const label = document.createElement("p");
+        label.className = "wx-now__dlabel";
+        label.textContent = day.label || (index === 0 ? "Today" : "Day");
+
+        const cond = document.createElement("p");
+        cond.className = "wx-now__dcond";
+        cond.textContent = shortCondition(day.condition);
+
+        const high = document.createElement("p");
+        high.className = "wx-now__dhi";
+        high.textContent = `${Number(day.temp_max)}°`;
+
+        const low = document.createElement("p");
+        low.className = "wx-now__dlo";
+        low.textContent = `${Number(day.temp_min)}°`;
+
+        const rain = document.createElement("p");
+        rain.className = "wx-now__drain";
+        rain.textContent = `${Number(day.rain_chance || 0)}%`;
+
+        article.append(label, cond, high, low, rain);
+        return article;
+      })
+    );
   }
 
   function applyWeather(weather) {

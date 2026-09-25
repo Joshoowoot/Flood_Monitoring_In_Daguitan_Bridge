@@ -1,5 +1,5 @@
 /* PWA shell cache — landing assets only. Sensor data must remain network-first later. */
-const CACHE_NAME = 'daguitan-flood-monitor-v1';
+const CACHE_NAME = 'daguitan-flood-monitor-v2';
 const PRECACHE = [
   './',
   './index.php',
@@ -26,6 +26,24 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  const isPage = event.request.mode === 'navigate'
+    || (event.request.headers.get('accept') || '').includes('text/html');
+
+  if (isPage) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {

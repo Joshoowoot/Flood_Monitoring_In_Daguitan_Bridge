@@ -4,18 +4,6 @@ $i = $infra;
 $s = isset($snapshot) ? $snapshot : array();
 $wl = html_escape($m['warning_level']);
 ?>
-<div class="admin-quick-links glass-card">
-	<h2>Quick actions</h2>
-	<div class="admin-quick-links__grid">
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/live'); ?>">Live monitoring</a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/alerts'); ?>">Flood alerts <?php if (!empty($s['active_alerts'])): ?>(<?php echo (int) $s['active_alerts']; ?>)<?php endif; ?></a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/announcements'); ?>">Announcements</a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/residents'); ?>">Residents (<?php echo (int) (isset($s['residents']) ? $s['residents'] : 0); ?>)</a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/history'); ?>">Full history</a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/settings'); ?>">Threshold settings</a>
-	</div>
-</div>
-
 <div class="admin-kpi-grid">
 	<article class="glass-card admin-kpi">
 		<h3>Water level</h3>
@@ -56,15 +44,22 @@ $wl = html_escape($m['warning_level']);
 <section class="glass-card admin-chart-card">
 	<div class="admin-chart-card__head">
 		<h2>Real-time water level</h2>
-		<p>Threshold bands: green below <?php echo number_format($thresholds['yellow'], 2); ?> m · yellow to <?php echo number_format($thresholds['red'], 2); ?> m · red at critical. Updates every 5 seconds.</p>
+		<p>Updates every 5 seconds.</p>
 	</div>
-	<div class="admin-chart-wrap">
-		<canvas id="adminWaterChart" height="280" aria-label="Water level chart"></canvas>
-	</div>
-	<div class="warning-track admin-threshold-legend">
-		<div class="warning-track__item" data-level="green"><strong>Safe</strong><span>&lt; <?php echo number_format($thresholds['yellow'], 2); ?> m</span></div>
-		<div class="warning-track__item" data-level="yellow"><strong>Monitor</strong><span><?php echo number_format($thresholds['yellow'], 2); ?>–<?php echo number_format($thresholds['red'], 2); ?> m</span></div>
-		<div class="warning-track__item" data-level="red"><strong>Critical</strong><span>&ge; <?php echo number_format($thresholds['red'], 2); ?> m</span></div>
+	<div class="admin-chart-layout">
+		<aside class="admin-threshold-meter" aria-label="Flood threshold levels">
+			<p class="admin-kicker">Current warning</p>
+			<strong class="admin-threshold-meter__current"><?php echo html_escape($m['warning_label']); ?></strong>
+			<span class="admin-threshold-meter__reading"><?php echo number_format($m['water_level_m'], 2); ?> m water level</span>
+			<div class="admin-threshold-meter__scale">
+				<div class="admin-threshold-meter__level<?php echo $wl === 'red' ? ' is-active' : ''; ?> admin-threshold-meter__level--red"><span>RED <b>Critical</b></span><small>&ge; <?php echo number_format($thresholds['red'], 2); ?> m</small></div>
+				<div class="admin-threshold-meter__level<?php echo $wl === 'yellow' ? ' is-active' : ''; ?> admin-threshold-meter__level--yellow"><span>YELLOW <b>Monitor</b></span><small><?php echo number_format($thresholds['yellow'], 2); ?>–<?php echo number_format($thresholds['red'], 2); ?> m</small></div>
+				<div class="admin-threshold-meter__level<?php echo $wl === 'green' ? ' is-active' : ''; ?> admin-threshold-meter__level--green"><span>GREEN <b>Safe</b></span><small>&lt; <?php echo number_format($thresholds['yellow'], 2); ?> m</small></div>
+			</div>
+		</aside>
+		<div class="admin-chart-wrap">
+			<canvas id="adminWaterChart" height="190" aria-label="Water level chart"></canvas>
+		</div>
 	</div>
 </section>
 

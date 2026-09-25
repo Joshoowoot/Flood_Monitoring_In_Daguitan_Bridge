@@ -66,4 +66,64 @@ class Portal extends CI_Controller {
 			'actions'      => isset($actions[$level]) ? $actions[$level] : $actions['green'],
 		));
 	}
+
+	public function announcements()
+	{
+		$live = $this->Monitor_model->get_status();
+		$base = rtrim(base_url(), '/');
+		$this->load->view('announcements', array(
+			'base_url'          => $base . '/',
+			'asset_url'         => $base . '/assets/',
+			'status_url'        => $base . '/index.php/api/status',
+			'home_url'          => site_url('portal'),
+			'announcements_url' => site_url('portal/announcements'),
+			'login_user'        => site_url('login'),
+			'signup_url'        => site_url('signup'),
+			'logout_url'        => site_url('auth/logout'),
+			'auth_role'         => 'user',
+			'auth_name'         => $this->session->userdata('auth_name'),
+			'page_title'        => 'Resident Announcements',
+			'resident_portal'   => TRUE,
+			'nav_page'          => 'announcements',
+			'monitor'           => $live['monitor'],
+			'weather'           => $live['weather'],
+			'announcement'      => $live['announcement'],
+			'announcements'     => $this->Monitor_model->list_published_announcements(),
+		));
+	}
+
+	public function evacuation_centers()
+	{
+		$base = rtrim(base_url(), '/');
+		$centers = array(
+			array(
+				'name' => 'Dulag Municipal Evacuation Center',
+				'address' => 'Municipal Complex, Dulag, Leyte',
+				'distance' => 'Approx. 2.4 km from Daguitan Bridge',
+				'capacity' => 'Confirm current capacity with MDRRMO',
+				'phone' => '053 325 0000',
+				'phone_link' => 'tel:0533250000',
+				'maps' => 'https://www.google.com/maps/search/?api=1&query=Dulag+Municipal+Evacuation+Center+Leyte',
+			),
+			array(
+				'name' => 'Dulag Central School Evacuation Site',
+				'address' => 'Dulag Central School, Dulag, Leyte',
+				'distance' => 'Approx. 3.1 km from Daguitan Bridge',
+				'capacity' => 'Confirm current capacity with MDRRMO',
+				'phone' => '053 325 0000',
+				'phone_link' => 'tel:0533250000',
+				'maps' => 'https://www.google.com/maps/search/?api=1&query=Dulag+Central+School+Leyte',
+			),
+		);
+
+		$this->load->view('dash/evacuation_centers', array(
+			'base_url' => $base . '/',
+			'asset_url' => $base . '/assets/',
+			'page_title' => 'Evacuation Centers',
+			'auth_name' => $this->session->userdata('auth_name'),
+			'logout_url' => site_url('auth/logout'),
+			'portal_url' => site_url('portal'),
+			'centers' => $centers,
+		));
+	}
 }

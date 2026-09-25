@@ -51,6 +51,9 @@ class Auth extends CI_Controller {
 		$data = $this->shell('Sign in');
 		$data['error'] = $error;
 		$data['username'] = $username;
+		$data['name'] = '';
+		$data['phone'] = '';
+		$data['auth_mode'] = 'signin';
 		$this->load->view('auth/login', $data);
 	}
 
@@ -113,7 +116,8 @@ class Auth extends CI_Controller {
 		$data['username'] = $username;
 		$data['name'] = $name;
 		$data['phone'] = $phone;
-		$this->load->view('auth/signup', $data);
+		$data['auth_mode'] = 'signup';
+		$this->load->view('auth/login', $data);
 	}
 
 	public function logout()

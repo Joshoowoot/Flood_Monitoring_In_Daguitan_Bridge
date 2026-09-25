@@ -1,13 +1,104 @@
 {
-    "fetched_at": 1789962164,
+    "fetched_at": 1790253061,
     "weather": {
-        "temp_c": 28,
-        "condition": "Thunderstorm with hail",
-        "theme": "storm",
-        "humidity": 89,
-        "rainfall_mm": 1.9,
-        "wind_kmh": 11,
-        "weather_code": 96,
-        "source": "Open-Meteo · Dulag area"
+        "temp_c": 26,
+        "feels_like_c": 32,
+        "condition": "Overcast",
+        "theme": "cloudy",
+        "humidity": 99,
+        "rainfall_mm": 0,
+        "rain_chance": 100,
+        "cloud_pct": 93,
+        "pressure_hpa": 1013,
+        "wind_kmh": 2,
+        "wind_dir": "W",
+        "weather_code": 3,
+        "source": "Open-Meteo · Dulag area",
+        "forecast": [
+            {
+                "date": "2026-09-24",
+                "label": "Today",
+                "temp_max": 31,
+                "temp_min": 24,
+                "rain_mm": 2.5,
+                "rain_chance": 100,
+                "wind_kmh": 10,
+                "condition": "Rain showers",
+                "theme": "rainy",
+                "weather_code": 80
+            },
+            {
+                "date": "2026-09-25",
+                "label": "Fri",
+                "temp_max": 31,
+                "temp_min": 24,
+                "rain_mm": 5,
+                "rain_chance": 90,
+                "wind_kmh": 12,
+                "condition": "Thunderstorm",
+                "theme": "storm",
+                "weather_code": 95
+            },
+            {
+                "date": "2026-09-26",
+                "label": "Sat",
+                "temp_max": 30,
+                "temp_min": 24,
+                "rain_mm": 8.8,
+                "rain_chance": 100,
+                "wind_kmh": 9,
+                "condition": "Thunderstorm",
+                "theme": "storm",
+                "weather_code": 95
+            },
+            {
+                "date": "2026-09-27",
+                "label": "Sun",
+                "temp_max": 30,
+                "temp_min": 24,
+                "rain_mm": 9.2,
+                "rain_chance": 99,
+                "wind_kmh": 11,
+                "condition": "Thunderstorm",
+                "theme": "storm",
+                "weather_code": 95
+            },
+            {
+                "date": "2026-09-28",
+                "label": "Mon",
+                "temp_max": 30,
+                "temp_min": 24,
+                "rain_mm": 19.7,
+                "rain_chance": 99,
+                "wind_kmh": 7,
+                "condition": "Thunderstorm with hail",
+                "theme": "storm",
+                "weather_code": 96
+            },
+            {
+                "date": "2026-09-29",
+                "label": "Tue",
+                "temp_max": 30,
+                "temp_min": 23,
+                "rain_mm": 6.6,
+                "rain_chance": 99,
+                "wind_kmh": 8,
+                "condition": "Thunderstorm",
+                "theme": "storm",
+                "weather_code": 95
+            },
+            {
+                "date": "2026-09-30",
+                "label": "Wed",
+                "temp_max": 29,
+                "temp_min": 23,
+                "rain_mm": 4.8,
+                "rain_chance": 87,
+                "wind_kmh": 7,
+                "condition": "Thunderstorm",
+                "theme": "storm",
+                "weather_code": 95
+            }
+        ]
     }
 }

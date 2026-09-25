@@ -53,6 +53,11 @@ class Monitor_model extends CI_Model {
 
 		$max_level = max(3.0, (float) $this->cfg('monitor_threshold_red_m', 2.5) * 1.2);
 		$gauge = (int) min(100, max(4, round(($level / $max_level) * 100)));
+		$yellow = (float) $this->cfg('monitor_threshold_yellow_m', 1.5);
+		$red = (float) $this->cfg('monitor_threshold_red_m', 2.5);
+		$ett = $online
+			? $this->estimate_time_to_threshold($level, $trend['rate_cm_min'], $warning['level'], $yellow, $red)
+			: array('minutes' => NULL, 'label' => $has_reading ? 'Station offline' : 'Waiting for telemetry');
 
 		$monitor = array(
 			'station'          => $this->cfg('monitor_station', 'Daguitan Bridge Monitoring Station'),
@@ -63,6 +68,8 @@ class Monitor_model extends CI_Model {
 			'rate_cm_min'      => $trend['rate_cm_min'],
 			'sensor_status'    => $sensor_status,
 			'sensor_label'     => $sensor_label,
+			'ett_minutes'      => $ett['minutes'],
+			'ett_label'        => $ett['label'],
 			'warning_level'    => $warning['level'],
 			'warning_label'    => $warning['label'],
 			'last_updated'     => $display_time,
@@ -90,9 +97,12 @@ class Monitor_model extends CI_Model {
 	{
 		$cached = $this->read_weather_cache();
 		$ttl = (int) $this->cfg('weather_cache_ttl', 1800);
-		if ($cached !== NULL && (time() - (int) $cached['fetched_at']) < $ttl)
+		$cached_wx = ($cached !== NULL) ? $cached['weather'] : NULL;
+		$fresh = $cached !== NULL && (time() - (int) $cached['fetched_at']) < $ttl;
+		$has_forecast = is_array($cached_wx) && ! empty($cached_wx['forecast']);
+		if ($fresh && $has_forecast)
 		{
-			return $cached['weather'];
+			return $cached_wx;
 		}
 
 		$live = $this->fetch_open_meteo_weather();
@@ -102,9 +112,9 @@ class Monitor_model extends CI_Model {
 			return $live;
 		}
 
-		if ($cached !== NULL)
+		if ($cached_wx !== NULL)
 		{
-			return $cached['weather'];
+			return $cached_wx;
 		}
 
 		return $this->default_weather();
@@ -143,7 +153,9 @@ class Monitor_model extends CI_Model {
 		$lon = (float) $this->cfg('weather_longitude', 125.0322);
 		$url = 'https://api.open-meteo.com/v1/forecast?latitude=' . rawurlencode((string) $lat)
 			. '&longitude=' . rawurlencode((string) $lon)
-			. '&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m'
+			. '&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m'
+			. '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max'
+			. '&forecast_days=7'
 			. '&timezone=Asia%2FManila';
 
 		$ctx = stream_context_create(array(
@@ -171,17 +183,104 @@ class Monitor_model extends CI_Model {
 		$code = isset($c['weather_code']) ? (int) $c['weather_code'] : 3;
 		$theme = $this->weather_theme_from_code($code);
 		$wind = isset($c['wind_speed_10m']) ? (float) $c['wind_speed_10m'] : 0.0;
+		$dir = isset($c['wind_direction_10m']) ? (float) $c['wind_direction_10m'] : 0.0;
+		$forecast = $this->forecast_from_open_meteo(isset($json['daily']) ? $json['daily'] : array());
+		$rain_chance = 0;
+		if ( ! empty($forecast[0]['rain_chance']))
+		{
+			$rain_chance = (int) $forecast[0]['rain_chance'];
+		}
 
 		return $this->normalize_weather_row(array(
 			'temp_c'        => isset($c['temperature_2m']) ? round((float) $c['temperature_2m']) : 29,
+			'feels_like_c'  => isset($c['apparent_temperature']) ? round((float) $c['apparent_temperature']) : (isset($c['temperature_2m']) ? round((float) $c['temperature_2m']) : 29),
 			'condition'     => $this->weather_condition_from_code($code),
 			'theme'         => $theme,
 			'humidity'      => isset($c['relative_humidity_2m']) ? (int) $c['relative_humidity_2m'] : 0,
 			'rainfall_mm'   => isset($c['precipitation']) ? round((float) $c['precipitation'], 1) : 0.0,
+			'rain_chance'   => $rain_chance,
+			'cloud_pct'     => isset($c['cloud_cover']) ? (int) $c['cloud_cover'] : 0,
+			'pressure_hpa'  => isset($c['surface_pressure']) ? (int) round((float) $c['surface_pressure']) : 1013,
 			'wind_kmh'      => (int) round($wind),
+			'wind_dir'      => $this->wind_dir_from_deg($dir),
 			'weather_code'  => $code,
 			'source'        => 'Open-Meteo · Dulag area',
+			'forecast'      => $forecast,
 		));
+	}
+
+	protected function forecast_from_open_meteo($daily)
+	{
+		if ( ! is_array($daily) || empty($daily['time']) || ! is_array($daily['time']))
+		{
+			return array();
+		}
+
+		$out = array();
+		$count = min(7, count($daily['time']));
+		for ($i = 0; $i < $count; $i++)
+		{
+			$code = isset($daily['weather_code'][$i]) ? (int) $daily['weather_code'][$i] : 3;
+			$date = (string) $daily['time'][$i];
+			$stamp = strtotime($date . ' 12:00:00');
+			$out[] = array(
+				'date'        => $date,
+				'label'       => ($i === 0) ? 'Today' : date('D', $stamp ? $stamp : time()),
+				'temp_max'    => isset($daily['temperature_2m_max'][$i]) ? (int) round((float) $daily['temperature_2m_max'][$i]) : 0,
+				'temp_min'    => isset($daily['temperature_2m_min'][$i]) ? (int) round((float) $daily['temperature_2m_min'][$i]) : 0,
+				'rain_mm'     => isset($daily['precipitation_sum'][$i]) ? round((float) $daily['precipitation_sum'][$i], 1) : 0.0,
+				'rain_chance' => isset($daily['precipitation_probability_max'][$i]) ? (int) $daily['precipitation_probability_max'][$i] : 0,
+				'wind_kmh'    => isset($daily['wind_speed_10m_max'][$i]) ? (int) round((float) $daily['wind_speed_10m_max'][$i]) : 0,
+				'condition'   => $this->weather_condition_from_code($code),
+				'theme'       => $this->weather_theme_from_code($code),
+				'weather_code'=> $code,
+			);
+		}
+
+		return $out;
+	}
+
+	protected function wind_dir_from_deg($deg)
+	{
+		$dirs = array('N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW');
+		$index = (int) round(fmod((float) $deg, 360.0) / 22.5) % 16;
+		if ($index < 0)
+		{
+			$index += 16;
+		}
+		return $dirs[$index];
+	}
+
+	protected function normalize_forecast($rows)
+	{
+		if ( ! is_array($rows))
+		{
+			return array();
+		}
+
+		$out = array();
+		foreach ($rows as $i => $day)
+		{
+			if ( ! is_array($day) || count($out) >= 7)
+			{
+				continue;
+			}
+			$code = isset($day['weather_code']) ? (int) $day['weather_code'] : 3;
+			$out[] = array(
+				'date'         => isset($day['date']) ? (string) $day['date'] : '',
+				'label'        => isset($day['label']) ? (string) $day['label'] : (($i === 0) ? 'Today' : 'Day'),
+				'temp_max'     => isset($day['temp_max']) ? (int) $day['temp_max'] : 0,
+				'temp_min'     => isset($day['temp_min']) ? (int) $day['temp_min'] : 0,
+				'rain_mm'      => isset($day['rain_mm']) ? (float) $day['rain_mm'] : 0.0,
+				'rain_chance'  => isset($day['rain_chance']) ? (int) $day['rain_chance'] : 0,
+				'wind_kmh'     => isset($day['wind_kmh']) ? (int) $day['wind_kmh'] : 0,
+				'condition'    => isset($day['condition']) ? (string) $day['condition'] : $this->weather_condition_from_code($code),
+				'theme'        => isset($day['theme']) ? (string) $day['theme'] : $this->weather_theme_from_code($code),
+				'weather_code' => $code,
+			);
+		}
+
+		return $out;
 	}
 
 	protected function normalize_weather_row($row)
@@ -192,15 +291,22 @@ class Monitor_model extends CI_Model {
 		}
 		$code = isset($row['weather_code']) ? (int) $row['weather_code'] : 3;
 		$theme = isset($row['theme']) ? (string) $row['theme'] : $this->weather_theme_from_code($code);
+		$temp = isset($row['temp_c']) ? (int) $row['temp_c'] : 29;
 		return array(
-			'temp_c'       => isset($row['temp_c']) ? (int) $row['temp_c'] : 29,
+			'temp_c'       => $temp,
+			'feels_like_c' => isset($row['feels_like_c']) ? (int) $row['feels_like_c'] : $temp,
 			'condition'    => isset($row['condition']) ? (string) $row['condition'] : $this->weather_condition_from_code($code),
 			'theme'        => $theme,
 			'humidity'     => isset($row['humidity']) ? (int) $row['humidity'] : 0,
 			'rainfall_mm'  => isset($row['rainfall_mm']) ? (float) $row['rainfall_mm'] : 0.0,
+			'rain_chance'  => isset($row['rain_chance']) ? (int) $row['rain_chance'] : 0,
+			'cloud_pct'    => isset($row['cloud_pct']) ? (int) $row['cloud_pct'] : 0,
+			'pressure_hpa' => isset($row['pressure_hpa']) ? (int) $row['pressure_hpa'] : 1013,
 			'wind_kmh'     => isset($row['wind_kmh']) ? (int) $row['wind_kmh'] : 0,
+			'wind_dir'     => isset($row['wind_dir']) ? (string) $row['wind_dir'] : 'N',
 			'weather_code' => $code,
 			'source'       => isset($row['source']) ? (string) $row['source'] : 'Weather data',
+			'forecast'     => $this->normalize_forecast(isset($row['forecast']) ? $row['forecast'] : array()),
 		);
 	}
 
@@ -296,6 +402,20 @@ class Monitor_model extends CI_Model {
 			'body'   => $row['body'],
 			'issuer' => 'MDRRMO Dulag',
 		);
+	}
+
+	public function list_published_announcements()
+	{
+		if ( ! $this->db->table_exists('announcements'))
+		{
+			return array();
+		}
+
+		return $this->db
+			->where('is_published', 1)
+			->order_by('updated_at', 'DESC')
+			->get('announcements')
+			->result_array();
 	}
 
 	public function ingest($input)
@@ -455,6 +575,35 @@ class Monitor_model extends CI_Model {
 		return array('level' => 'green', 'label' => 'Safe');
 	}
 
+	public function estimate_time_to_threshold($level, $rate_cm_min, $warning_level, $yellow, $red)
+	{
+		$rate_cm_min = (float) $rate_cm_min;
+		if ( ! is_finite($rate_cm_min) || $rate_cm_min <= 0.01)
+		{
+			return array('minutes' => NULL, 'label' => 'No rising trend');
+		}
+		$target = ($warning_level === 'green') ? $yellow : (($warning_level === 'yellow') ? $red : NULL);
+		if ($target === NULL)
+		{
+			return array('minutes' => NULL, 'label' => 'At or above critical band');
+		}
+		$gap_cm = ($target - $level) * 100;
+		if ($gap_cm <= 0)
+		{
+			return array('minutes' => 0, 'label' => 'Threshold reached');
+		}
+		$minutes = $gap_cm / $rate_cm_min;
+		if ($minutes > 24 * 60)
+		{
+			return array('minutes' => $minutes, 'label' => '> 24 hours');
+		}
+		if ($minutes >= 60)
+		{
+			return array('minutes' => $minutes, 'label' => round($minutes / 60, 1) . ' hr');
+		}
+		return array('minutes' => $minutes, 'label' => round($minutes) . ' min');
+	}
+
 	protected function compute_trend($history)
 	{
 		$rate = 0.0;
@@ -474,12 +623,12 @@ class Monitor_model extends CI_Model {
 			$rate = (($latest['water_level_m'] - $prev['water_level_m']) * 100) / $minutes;
 		}
 
-		$rate = round($rate, 2);
-		if ($rate > 0.03)
+		$rate = round($rate, 4);
+		if ($rate > 0.01)
 		{
 			return array('trend' => 'rising', 'trend_label' => 'Rising', 'rate_cm_min' => $rate);
 		}
-		if ($rate < -0.03)
+		if ($rate < -0.01)
 		{
 			return array('trend' => 'falling', 'trend_label' => 'Falling', 'rate_cm_min' => $rate);
 		}
@@ -545,13 +694,19 @@ class Monitor_model extends CI_Model {
 	{
 		return array(
 			'temp_c'       => 29,
+			'feels_like_c' => 32,
 			'condition'    => 'Cloudy',
 			'theme'        => 'cloudy',
 			'humidity'     => 82,
 			'rainfall_mm'  => 0.0,
+			'rain_chance'  => 20,
+			'cloud_pct'    => 70,
+			'pressure_hpa' => 1010,
 			'wind_kmh'     => 12,
+			'wind_dir'     => 'NE',
 			'weather_code' => 3,
 			'source'       => 'Supplementary weather information',
+			'forecast'     => array(),
 		);
 	}
 

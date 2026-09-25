@@ -2,7 +2,7 @@
 $section = isset($admin_section) ? $admin_section : 'dashboard';
 $nav_groups = array(
 	'Overview' => array('dashboard', 'live', 'history', 'analytics'),
-	'Operations' => array('alerts', 'announcements', 'sensors'),
+	'Operations' => array('alerts', 'announcements', 'sms', 'sensors'),
 	'Administration' => array('residents', 'reports', 'settings'),
 );
 function admin_nav_icon($key) {
@@ -32,7 +32,7 @@ function admin_nav_icon($key) {
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=6">
 </head>
 <body class="admin-portal">
 	<div class="admin-layout">
@@ -71,13 +71,6 @@ function admin_nav_icon($key) {
 			</div>
 
 			<div class="admin-sidebar__foot">
-				<div class="admin-sidebar__user">
-					<span class="admin-sidebar__avatar" aria-hidden="true"><?php echo html_escape(strtoupper(substr((string) $auth_name, 0, 1))); ?></span>
-					<div>
-						<strong><?php echo html_escape($auth_name); ?></strong>
-						<span>Administrator</span>
-					</div>
-				</div>
 				<a class="admin-nav__link admin-nav__link--logout" href="<?php echo html_escape($logout_url); ?>">
 					<span class="admin-nav__icon"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17l5-5-5-5"/><path d="M15 12H4"/><path d="M19 4v16"/></svg></span>
 					<span class="admin-nav__text">Logout</span>
@@ -139,7 +132,7 @@ function admin_nav_icon($key) {
 		echo json_encode($admin_js, JSON_UNESCAPED_SLASHES);
 		?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=4"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=6"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;

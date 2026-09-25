@@ -5,8 +5,7 @@ $a = $announcement;
 $trend_arrow = ($m['trend'] === 'falling') ? '↓' : (($m['trend'] === 'steady') ? '→' : '↑');
 $warning_key = $m['warning_level'];
 $gauge_pct = isset($m['gauge_pct']) ? (int) $m['gauge_pct'] : 8;
-$sensor_class = ($m['sensor_status'] === 'online') ? 'metric--online' : 'metric--offline';
-$sensor_label = isset($m['sensor_label']) ? $m['sensor_label'] : ucfirst($m['sensor_status']);
+$ett_label = isset($m['ett_label']) ? $m['ett_label'] : '—';
 $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 $wx_theme = isset($w['theme']) ? (string) $w['theme'] : 'cloudy';
 if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
@@ -28,11 +27,11 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260923q">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
 </head>
-<body>
+<body class="landing-page">
 	<a class="skip-link" href="#main">Skip to content</a>
 
 	<div class="gov-bar">
@@ -68,7 +67,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 
 	<header class="topbar" id="topbar">
 		<div class="topbar__inner">
-			<a class="brand" href="#home" aria-label="Daguitan Flood Monitor home">
+			<a class="brand" href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" aria-label="Daguitan Flood Monitor home">
 				<span class="brand__mark" aria-hidden="true">
 					<img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40">
 				</span>
@@ -79,11 +78,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 			</a>
 
 			<nav class="nav-desktop" aria-label="Primary">
-				<a href="#home">Home</a>
-				<a href="#monitor">Monitor</a>
-				<a href="#alerts">Alerts</a>
-				<a href="#safety">Safety</a>
-				<a href="#about">About</a>
+				<?php $this->load->view('partials/public_nav'); ?>
 			</nav>
 
 			<div class="topbar__actions">
@@ -118,11 +113,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 				</button>
 			</div>
 			<nav class="drawer__nav" aria-label="Mobile">
-				<a href="#home">Home</a>
-				<a href="#monitor">Monitor</a>
-				<a href="#alerts">Alerts</a>
-				<a href="#safety">Safety</a>
-				<a href="#about">About</a>
+				<?php $this->load->view('partials/public_nav'); ?>
 				<?php if ( ! empty($auth_role)): ?>
 					<a href="<?php echo html_escape($auth_role === 'admin' ? site_url('admin') : site_url('portal')); ?>">Dashboard</a>
 					<a href="<?php echo html_escape($logout_url); ?>">Sign out</a>
@@ -143,7 +134,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 				<p class="lede">Real-time flood monitoring and early warning information for Daguitan Bridge, Dulag, Leyte.</p>
 				<div class="hero__actions">
 					<a class="btn btn--primary" href="#monitor">View Live Status</a>
-					<a class="btn btn--ghost" href="#how">How the system works</a>
+					<a class="btn btn--ghost" href="#safety">Safety reminders</a>
 				</div>
 			</div>
 
@@ -173,21 +164,8 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 					<div class="gauge__fill" id="heroGaugeFill" style="--level: <?php echo (int) $gauge_pct; ?>%"></div>
 				</div>
 			</article>
-		</section>
 
-		<div class="trust-strip reveal">
-			<article><strong>IoT station</strong><span>Ultrasonic sensor at Daguitan Bridge</span></article>
-			<article><strong>5-second refresh</strong><span>Public dashboard polls live packets</span></article>
-			<article><strong>3-level advisory</strong><span>Green, yellow, and red thresholds</span></article>
-			<article><strong>MDRRMO-led</strong><span>Community early warning for Dulag</span></article>
-		</div>
-
-		<section class="section" id="monitor">
-			<header class="section__head reveal">
-				<h2>Live Flood Monitoring</h2>
-				<p>Real-time information from the Daguitan Bridge monitoring station.</p>
-			</header>
-			<div class="metric-grid">
+			<div class="metric-grid metric-grid--inline hero__metrics" id="monitor">
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z"/></svg>
@@ -211,42 +189,93 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 				</article>
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="4"/></svg>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>
 					</div>
-					<h3>Sensor Status</h3>
-					<p class="metric <?php echo $sensor_class; ?>" id="cardSensor"><span class="live-dot" aria-hidden="true"></span> <span id="cardSensorLabel"><?php echo html_escape($sensor_label); ?></span></p>
+					<h3>Est. time-to-threshold</h3>
+					<p class="metric" id="cardEtt"><?php echo html_escape($ett_label); ?></p>
 				</article>
 			</div>
 		</section>
 
-		<section class="section" id="alerts">
-			<header class="section__head reveal">
-				<h2>Flood Warning Status</h2>
-				<p>Flood warning classification is based on predefined water-level thresholds established for the monitoring station.</p>
-			</header>
-				<div class="warning-track reveal" role="list" aria-label="Flood warning levels">
-				<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
-					<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
-					<strong>Safe</strong>
-					<p>Water remains below the advisory threshold.</p>
+		<section class="section section--tight" id="alerts">
+			<article class="glass-card warn-board reveal">
+				<div class="warn-board__head">
+					<p class="card-kicker">Specifications</p>
+					<p class="card-kicker">Status</p>
 				</div>
-				<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
-					<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
-					<strong>Monitor</strong>
-					<p>Water is approaching caution levels. Stay alert.</p>
+				<div class="warn-board__list" role="list" aria-label="Flood warning levels">
+					<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
+							<strong>Safe</strong>
+						</div>
+						<p class="warn-board__status">Below advisory threshold.</p>
+					</div>
+					<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
+							<strong>Monitor</strong>
+						</div>
+						<p class="warn-board__status">Approaching caution. Stay alert.</p>
+					</div>
+					<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
+						<div class="warn-board__spec">
+							<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
+							<strong>Critical</strong>
+						</div>
+						<p class="warn-board__status">Critical threshold reached.</p>
+					</div>
 				</div>
-				<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
-					<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
-					<strong>Critical</strong>
-					<p>Water has reached the critical threshold.</p>
+			</article>
+
+			<?php
+			$forecast = (isset($w['forecast']) && is_array($w['forecast'])) ? $w['forecast'] : array();
+			$wx_wind = (int) $w['wind_kmh'] . ' km/h';
+			if ( ! empty($w['wind_dir']))
+			{
+				$wx_wind .= ' ' . $w['wind_dir'];
+			}
+			?>
+			<article class="wx-now glass-card reveal split-gap" aria-labelledby="weatherTitle">
+				<div class="wx-now__now">
+					<div class="weather-card__icon" id="wxCardIcon" aria-hidden="true" data-theme="<?php echo html_escape($wx_theme); ?>"></div>
+					<div class="wx-now__tempwrap">
+						<p class="wx-now__temp" id="wxCardTemp"><?php echo (int) $w['temp_c']; ?>°</p>
+						<p class="wx-now__feels">Feels like <span id="wxCardFeels"><?php echo (int) (isset($w['feels_like_c']) ? $w['feels_like_c'] : $w['temp_c']); ?>°</span></p>
+					</div>
+					<div class="wx-now__meta">
+						<h2 id="weatherTitle">Dulag weather</h2>
+						<p class="wx-now__cond" id="wxCardCond"><?php echo html_escape($w['condition']); ?></p>
+						<p class="wx-now__source" id="wxCardSource"><?php echo html_escape($w['source']); ?></p>
+					</div>
 				</div>
-			</div>
+				<ul class="wx-now__stats">
+					<li><span>Humidity</span><strong id="wxCardHumidity"><?php echo (int) $w['humidity']; ?>%</strong></li>
+					<li><span>Rain</span><strong id="wxCardRain"><?php echo number_format($w['rainfall_mm'], 1); ?> mm</strong></li>
+					<li><span>Wind</span><strong id="wxCardWind"><?php echo html_escape($wx_wind); ?></strong></li>
+					<li><span>Rain chance</span><strong id="wxCardChance"><?php echo (int) (isset($w['rain_chance']) ? $w['rain_chance'] : 0); ?>%</strong></li>
+					<li><span>Clouds</span><strong id="wxCardCloud"><?php echo (int) (isset($w['cloud_pct']) ? $w['cloud_pct'] : 0); ?>%</strong></li>
+					<li><span>Pressure</span><strong id="wxCardPressure"><?php echo (int) (isset($w['pressure_hpa']) ? $w['pressure_hpa'] : 1013); ?> hPa</strong></li>
+				</ul>
+				<div class="wx-now__week" id="wxWeek"<?php echo empty($forecast) ? ' hidden' : ''; ?>>
+					<div class="wx-now__days">
+						<?php foreach ($forecast as $i => $day): ?>
+							<article class="wx-now__day<?php echo $i === 0 ? ' is-today' : ''; ?>" title="<?php echo html_escape($day['condition']); ?>">
+								<p class="wx-now__dlabel"><?php echo html_escape($day['label']); ?></p>
+								<p class="wx-now__dcond"><?php echo html_escape($day['condition']); ?></p>
+								<p class="wx-now__dhi"><?php echo (int) $day['temp_max']; ?>°</p>
+								<p class="wx-now__dlo"><?php echo (int) $day['temp_min']; ?>°</p>
+								<p class="wx-now__drain"><?php echo (int) $day['rain_chance']; ?>%</p>
+							</article>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			</article>
 		</section>
 
-		<section class="section" id="safety">
+		<section class="section section--tight" id="safety">
 			<header class="section__head reveal">
-				<h2>Community Safety Reminders</h2>
-				<p>Use live readings together with these standing MDRRMO precautions for households near Daguitan Bridge.</p>
+				<h2>Safety reminders</h2>
 			</header>
 			<div class="metric-grid safety-grid">
 				<article class="glass-card reveal">
@@ -254,104 +283,38 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4v6c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V7l8-4z"/></svg>
 					</div>
 					<h3>Before flooding</h3>
-					<p class="card-copy">Keep a go-bag, store drinking water, and agree on a meeting point with your household.</p>
+					<p class="card-copy">Keep a go-bag, store drinking water, and agree on a household meeting point.</p>
 				</article>
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 4.3L2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg>
 					</div>
 					<h3>Yellow advisory</h3>
-					<p class="card-copy">Stay alert, avoid the riverbank, and prepare to move if water continues to rise.</p>
+					<p class="card-copy">Stay alert, avoid the riverbank, and prepare to move if water keeps rising.</p>
 				</article>
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
 					</div>
 					<h3>Red / critical</h3>
-					<p class="card-copy">Follow MDRRMO instructions immediately. Do not cross flowing water or wait on the bridge.</p>
+					<p class="card-copy">Follow MDRRMO instructions. Do not cross flowing water or wait on the bridge.</p>
 				</article>
 				<article class="glass-card reveal">
 					<div class="glass-card__icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.2a2 2 0 0 1 2.1-.4c.8.2 1.7.4 2.6.6A2 2 0 0 1 22 16.9z"/></svg>
 					</div>
 					<h3>Hotlines</h3>
-					<p class="card-copy">Call MDRRMO Dulag or barangay responders if someone is trapped or if the sensor page cannot load.</p>
+					<p class="card-copy">Call MDRRMO Dulag or barangay responders if someone is trapped.</p>
 				</article>
 			</div>
 		</section>
 
-		<section class="section section--split">
-			<article class="weather-card glass-card reveal" aria-labelledby="weatherTitle">
-				<p class="card-kicker">Supplementary Weather Information</p>
-				<div class="weather-card__row">
-					<div class="weather-card__icon" id="wxCardIcon" aria-hidden="true" data-theme="<?php echo html_escape($wx_theme); ?>"></div>
-					<div>
-						<h2 id="weatherTitle">Current Weather</h2>
-						<p class="metric weather-card__temp" id="wxCardTemp"><?php echo (int) $w['temp_c']; ?>°C</p>
-						<p class="weather-card__cond" id="wxCardCond"><?php echo html_escape($w['condition']); ?></p>
-						<p class="weather-card__source" id="wxCardSource"><?php echo html_escape($w['source']); ?></p>
-					</div>
-				</div>
-				<dl class="weather-stats">
-					<div><dt>Humidity</dt><dd id="wxCardHumidity"><?php echo (int) $w['humidity']; ?>%</dd></div>
-					<div><dt>Rainfall</dt><dd id="wxCardRain"><?php echo number_format($w['rainfall_mm'], 1); ?> mm</dd></div>
-					<div><dt>Wind</dt><dd id="wxCardWind"><?php echo (int) $w['wind_kmh']; ?> km/h</dd></div>
-				</dl>
-			</article>
-
-			<article class="announce-card glass-card reveal" aria-labelledby="announceTitle">
-				<div class="announce-card__head">
-					<h2 id="announceTitle">Emergency Announcements</h2>
-					<span class="pill" id="announcePill"><?php echo $a['active'] ? 'Active' : 'Quiet'; ?></span>
-				</div>
-				<div id="announceBody">
-				<?php if ($a['active']): ?>
-					<p class="status-badge status-badge--<?php echo html_escape($a['level']); ?>"><?php echo html_escape($a['title']); ?></p>
-					<p><?php echo html_escape($a['body']); ?></p>
-				<?php else: ?>
-					<p class="announce-card__empty"><?php echo html_escape($a['title']); ?></p>
-					<p><?php echo html_escape($a['body']); ?></p>
-				<?php endif; ?>
-				</div>
-				<p class="issuer">Issued by <?php echo html_escape($a['issuer']); ?></p>
-				<a class="btn btn--ghost" href="#alerts">View All Announcements</a>
-			</article>
-		</section>
-
-		<section class="section" id="how">
-			<header class="section__head reveal">
-				<h2>How It Works</h2>
-				<p>From river sensor to community warning — a four-step monitoring path.</p>
-			</header>
-			<ol class="process">
-				<li class="process__step reveal">
-					<span class="process__num">01</span>
-					<h3>Sense</h3>
-					<p>Water-level sensor measures the river.</p>
-				</li>
-				<li class="process__step reveal">
-					<span class="process__num">02</span>
-					<h3>Process</h3>
-					<p>ESP32 processes and transmits monitoring data.</p>
-				</li>
-				<li class="process__step reveal">
-					<span class="process__num">03</span>
-					<h3>Analyze</h3>
-					<p>The system determines water-level trend, rate of rise, and warning status.</p>
-				</li>
-				<li class="process__step reveal">
-					<span class="process__num">04</span>
-					<h3>Warn</h3>
-					<p>Residents receive flood information and emergency notifications.</p>
-				</li>
-			</ol>
-		</section>
-
-		<section class="pwa-cta reveal" id="install">
-			<div class="pwa-cta__copy">
-				<h2>Take Flood Monitoring With You</h2>
-				<p>Install Daguitan Flood Monitor on your mobile device for quick access to real-time flood information and emergency notifications.</p>
-				<button class="btn btn--primary" type="button" id="installBtn">Install App</button>
+		<section class="cta-band reveal" id="about">
+			<div>
+				<p class="eyebrow">Install · Stay ready</p>
+				<h2>Take flood monitoring with you</h2>
+				<p>Install the app for live levels and emergency notices. When the warning rises, be ready to act.</p>
+				<button class="btn btn--light" type="button" id="installBtn">Install App</button>
 				<p class="hint" id="installHint" hidden>Use your browser menu and choose Add to Home Screen.</p>
 			</div>
 			<div class="phone" aria-hidden="true">
@@ -365,49 +328,42 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 						</div>
 						<div class="phone__tiles">
 							<span id="phoneWater"><?php echo number_format($m['water_level_m'], 2); ?> m</span><span id="phoneTrend"><?php echo $trend_arrow; ?> <?php echo html_escape($m['trend_label']); ?></span>
-							<span id="phoneRate"><?php echo $rate_prefix . number_format($m['rate_cm_min'], 2); ?></span><span id="phoneSensor"><?php echo html_escape($sensor_label); ?></span>
+							<span id="phoneRate"><?php echo $rate_prefix . number_format($m['rate_cm_min'], 2); ?></span><span id="phoneEtt"><?php echo html_escape($ett_label); ?></span>
 						</div>
 					</div>
 				</div>
 			</div>
 		</section>
-
-		<section class="emergency-cta" id="about">
-			<div class="emergency-cta__waves" aria-hidden="true"></div>
-			<div class="emergency-cta__inner reveal">
-				<h2>When the warning rises, be ready to act.</h2>
-				<p>Stay updated with real-time flood information from Daguitan Bridge.</p>
-				<a class="btn btn--light" href="#monitor">View Current Status</a>
-			</div>
-		</section>
 	</main>
 
 	<footer class="footer">
-		<div class="footer__grid">
-			<div>
-				<p class="footer__brand">
-					<img class="footer__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="36" height="36">
-					<span>DAGUITAN FLOOD MONITOR</span>
-				</p>
-				<p>IoT-Based Flood Real-Time Monitoring and Early Warning System</p>
-				<p>Daguitan Bridge, Dulag, Leyte</p>
-			</div>
-			<nav aria-label="Footer">
-				<a href="#home">Home</a>
-				<a href="#monitor">Live Monitoring</a>
-				<a href="#alerts">Alerts</a>
-				<a href="#safety">Safety</a>
-				<a href="#about">About</a>
+		<div class="footer__inner">
+			<a class="brand" href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" aria-label="Daguitan Flood Monitor home">
+				<span class="brand__mark" aria-hidden="true">
+					<img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40">
+				</span>
+				<span class="brand__text">
+					<span class="brand__name">DAGUITAN FLOOD MONITOR</span>
+					<span class="footer__place">Municipality of Dulag, Leyte · MDRRMO</span>
+				</span>
+			</a>
+			<nav class="footer__nav" aria-label="Footer">
+				<?php $this->load->view('partials/public_nav'); ?>
 			</nav>
 		</div>
-		<p class="footer__note">Developed for community flood awareness and early warning.</p>
+		<div class="footer__bar">
+			<div class="footer__bar-inner">
+				<p>© <?php echo date('Y'); ?> Municipality of Dulag, Leyte. Developed for community flood awareness.</p>
+				<p class="footer__credit">Designed and developed by J. Abina, E. Amor, and J. Lagunzad</p>
+			</div>
+		</div>
 	</footer>
 
 	<nav class="bottom-nav" aria-label="App">
-		<a href="#home" class="is-active"><span aria-hidden="true">⌂</span> Home</a>
-		<a href="#monitor"><span aria-hidden="true">🌊</span> Monitor</a>
-		<a href="#alerts"><span aria-hidden="true">🔔</span> Alerts</a>
-		<a href="#about"><span aria-hidden="true">ℹ</span> About</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" class="is-active"><span aria-hidden="true">⌂</span> Home</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#monitor"><span aria-hidden="true">🌊</span> Monitor</a>
+		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>"><span aria-hidden="true">📢</span> News</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#about"><span aria-hidden="true">ℹ</span> About</a>
 	</nav>
 
 	<script>
@@ -416,10 +372,11 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 			'weather' => $w,
 			'announcement' => $a,
 			'statusUrl' => $status_url,
+			'homeUrl' => isset($home_url) ? $home_url : site_url(),
 			'pollMs' => 5000,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=1"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260320wx"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=3"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
 </body>
 </html>

@@ -73,3 +73,6 @@ $route['admin/alert_acknowledge_all'] = 'admin/alert_acknowledge_all';
 $route['admin/(:any)'] = 'admin/$1';
 $route['admin/(:any)/(:num)'] = 'admin/$1/$2';
 $route['portal'] = 'portal';
+$route['portal/announcements'] = 'portal/announcements';
+$route['portal/evacuation-centers'] = 'portal/evacuation_centers';
+$route['announcements'] = 'welcome/announcements';

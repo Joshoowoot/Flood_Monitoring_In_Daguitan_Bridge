@@ -12,6 +12,7 @@ class Admin extends CI_Controller {
 		'analytics'     => array('label' => 'Analytics', 'href' => 'admin/analytics'),
 		'sensors'       => array('label' => 'Sensor Status', 'href' => 'admin/sensors'),
 		'announcements' => array('label' => 'Announcements', 'href' => 'admin/announcements'),
+		'sms'          => array('label' => 'SMS Broadcast', 'href' => 'admin/sms'),
 		'residents'     => array('label' => 'Residents', 'href' => 'admin/residents'),
 		'reports'       => array('label' => 'Reports', 'href' => 'admin/reports'),
 		'settings'      => array('label' => 'Settings', 'href' => 'admin/settings'),
@@ -262,6 +263,53 @@ class Admin extends CI_Controller {
 			'edit_row'      => $this->Admin_portal_model->get_announcement($edit_id),
 			'sync_notice'   => $this->session->flashdata('sync_notice'),
 		) + $ctx);
+	}
+
+	public function sms()
+	{
+		$this->require_admin();
+		$this->load->model('Admin_portal_model');
+		$this->load->library('Sms_service');
+		$residents = $this->Admin_portal_model->list_residents();
+		$recipients = array_values(array_filter($residents, function ($resident) {
+			return ! empty($resident['phone']);
+		}));
+		$error = '';
+		$success = '';
+
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			$message = trim((string) $this->input->post('message'));
+			if ($message === '')
+			{
+				$error = 'Write a message before sending.';
+			}
+			elseif (count($recipients) === 0)
+			{
+				$error = 'No resident phone numbers are available.';
+			}
+			else
+			{
+				$result = $this->sms_service->send_broadcast($recipients, $message);
+				if ($result['ok'])
+				{
+					$success = 'SMS sent to ' . (int) $result['sent'] . ' resident(s).';
+				}
+				else
+				{
+					$error = $result['error'];
+				}
+			}
+		}
+
+		$this->render('sms', array(
+			'page_title' => 'SMS Broadcast',
+			'page_heading' => 'SMS broadcast',
+			'page_lede' => 'Send an emergency text message to residents with a registered mobile number.',
+			'recipients' => $recipients,
+			'sms_error' => $error,
+			'sms_success' => $success,
+		));
 	}
 
 	public function residents()
