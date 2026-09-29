@@ -1,0 +1,35 @@
+[
+    {
+        "id": 1,
+        "name": "Dulag Municipal Evacuation Center",
+        "barangay": "Poblacion 1",
+        "address": "Municipal Complex, Dulag, Leyte",
+        "latitude": 10.9525,
+        "longitude": 125.0322,
+        "capacity": "Confirm current capacity with MDRRMO",
+        "phone": "053 325 0000",
+        "active": true
+    },
+    {
+        "id": 2,
+        "name": "Dulag Central School Evacuation Site",
+        "barangay": "Poblacion 2",
+        "address": "Dulag Central School, Dulag, Leyte",
+        "latitude": 10.9541,
+        "longitude": 125.034,
+        "capacity": "Confirm current capacity with MDRRMO",
+        "phone": "053 325 0000",
+        "active": true
+    },
+    {
+        "id": 3,
+        "name": "Cabacungan Evacuation Center",
+        "barangay": "Cabacungan",
+        "address": "ugiugugu",
+        "latitude": 10.933202,
+        "longitude": 124.983512,
+        "capacity": "Confirm current capacity with MDRRMO",
+        "phone": "09154184430",
+        "active": true
+    }
+]

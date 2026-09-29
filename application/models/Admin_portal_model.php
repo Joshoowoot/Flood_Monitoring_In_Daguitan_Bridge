@@ -123,7 +123,7 @@ class Admin_portal_model extends CI_Model {
 	public function infrastructure($monitor, $sync)
 	{
 		$online = isset($monitor['sensor_status']) && $monitor['sensor_status'] === 'online';
-		$internet = ! empty($sync['online']);
+		$internet = ! empty($sync['internet']);
 
 		return array(
 			'esp32' => array(

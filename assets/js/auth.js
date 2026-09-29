@@ -28,7 +28,8 @@
 			input.type = revealing ? 'text' : 'password';
 			btn.setAttribute('aria-pressed', revealing ? 'true' : 'false');
 			btn.setAttribute('aria-label', revealing ? 'Hide password' : 'Show password');
-			syncEyeIcons(btn, !revealing);
+			btn.classList.toggle('is-visible', revealing);
+			syncEyeIcons(btn, revealing);
 		});
 	}
 
@@ -145,6 +146,41 @@
 
 	if (pass) pass.addEventListener('input', checkMatch);
 	if (confirm) confirm.addEventListener('input', checkMatch);
+
+	var signupWizard = document.getElementById('signupForm');
+	if (signupWizard) {
+		var signupSteps = signupWizard.querySelectorAll('[data-signup-step]');
+		var signupProgress = signupWizard.querySelectorAll('[data-signup-progress]');
+		var nextSignupStep = signupWizard.querySelector('[data-signup-next]');
+		var backSignupStep = signupWizard.querySelector('[data-signup-back]');
+		var submitSignup = signupWizard.querySelector('.signup-navigation__submit');
+
+		function setSignupStep(step) {
+			signupSteps.forEach(function (panel) {
+				var active = Number(panel.getAttribute('data-signup-step')) === step;
+				panel.hidden = !active;
+				panel.classList.toggle('is-active', active);
+			});
+			signupProgress.forEach(function (indicator) {
+				indicator.classList.toggle('is-active', Number(indicator.getAttribute('data-signup-progress')) === step);
+			});
+			nextSignupStep.hidden = step !== 1;
+			backSignupStep.hidden = step !== 2;
+			submitSignup.hidden = step !== 2;
+		}
+
+		nextSignupStep.addEventListener('click', function () {
+			var personalFields = signupSteps[0].querySelectorAll('input');
+			for (var i = 0; i < personalFields.length; i += 1) {
+				if (!personalFields[i].reportValidity()) return;
+			}
+			setSignupStep(2);
+		});
+		backSignupStep.addEventListener('click', function () {
+			setSignupStep(1);
+		});
+		setSignupStep(1);
+	}
 
 	if (signupForm) {
 		signupForm.addEventListener('submit', function (event) {

@@ -5,7 +5,7 @@ $phone = isset($phone) ? $phone : '';
 $error = isset($error) ? $error : '';
 $auth_mode = (isset($auth_mode) && $auth_mode === 'signup') ? 'signup' : 'signin';
 $is_signup = ($auth_mode === 'signup');
-$asset_v = '20260924g';
+$asset_v = '20260925s';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,7 +33,7 @@ $asset_v = '20260924g';
 			</div>
 		</a>
 		<p class="auth-top__office">MDRRMO Dulag</p>
-		<p class="auth-top__motto">Sa Ligtas na Pamayanan, Handa ang Dulag.</p>
+		<p class="auth-top__motto">Sa Ligtas na Pamayanan,<br>Handa ang Dulag.</p>
 	</header>
 
 	<main class="auth-shell" id="main">
@@ -83,6 +83,12 @@ $asset_v = '20260924g';
 						</div>
 					</li>
 				</ul>
+				<p class="auth-intro__back">
+					<a href="<?php echo site_url('/'); ?>">
+						<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						Back to public monitor
+					</a>
+				</p>
 			</aside>
 
 			<section class="auth-card">
@@ -128,8 +134,8 @@ $asset_v = '20260924g';
 										</svg>
 										<input id="login-password" type="password" name="password" required placeholder="Your password" autocomplete="current-password">
 										<button class="auth-eye" type="button" data-auth-toggle="login-password" aria-label="Show password" aria-pressed="false">
-											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
+											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
 										</button>
 									</span>
 								</label>
@@ -144,6 +150,12 @@ $asset_v = '20260924g';
 								<p class="auth-lead">Free resident registration. You can sign in with mobile later.</p>
 							</header>
 							<form method="post" action="<?php echo site_url('signup'); ?>" class="auth-form" id="signupForm" novalidate>
+								<div class="signup-progress" aria-label="Registration progress">
+									<span class="signup-progress__step is-active" data-signup-progress="1">1. Personal details</span>
+									<span class="signup-progress__line" aria-hidden="true"></span>
+									<span class="signup-progress__step" data-signup-progress="2">2. Account security</span>
+								</div>
+								<fieldset class="auth-form-section signup-step is-active" data-signup-step="1">
 								<label class="auth-field">
 									<span class="auth-field__label">Full name</span>
 									<span class="auth-field__control">
@@ -156,13 +168,12 @@ $asset_v = '20260924g';
 								<label class="auth-field">
 									<span class="auth-field__label">Mobile number</span>
 									<span class="auth-field__control">
-										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-											<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>
-										</svg>
+										<span class="auth-country-code" aria-hidden="true">+63</span>
 										<input id="signup-phone" type="tel" name="phone" required value="<?php echo html_escape($phone); ?>" placeholder="09171234567" autocomplete="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09">
 									</span>
-									<span class="auth-hint">11 digits starting with 09</span>
 								</label>
+								</fieldset>
+								<fieldset class="auth-form-section signup-step" data-signup-step="2" hidden>
 								<label class="auth-field">
 									<span class="auth-field__label">Username</span>
 									<span class="auth-field__control">
@@ -180,8 +191,8 @@ $asset_v = '20260924g';
 										</svg>
 										<input id="signup-password" type="password" name="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password">
 										<button class="auth-eye" type="button" data-auth-toggle="signup-password" aria-label="Show password" aria-pressed="false">
-											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
+											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
 										</button>
 									</span>
 								</label>
@@ -193,25 +204,24 @@ $asset_v = '20260924g';
 										</svg>
 										<input id="signup-password-confirm" type="password" name="password_confirm" required minlength="8" placeholder="Repeat password" autocomplete="new-password">
 										<button class="auth-eye" type="button" data-auth-toggle="signup-password-confirm" aria-label="Show password" aria-pressed="false">
-											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
-											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
+											<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+											<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/></svg>
 										</button>
 									</span>
 								</label>
 								<p class="auth-hint auth-hint--error" id="signupMatchHint" hidden>Passwords must match.</p>
-								<button class="btn btn--primary btn--block auth-submit" type="submit">Create account</button>
+								</fieldset>
+								<div class="signup-navigation">
+									<button class="btn signup-navigation__back" type="button" data-signup-back hidden>Back</button>
+									<button class="btn btn--primary btn--block signup-navigation__next" type="button" data-signup-next>Continue</button>
+									<button class="btn btn--primary btn--block auth-submit signup-navigation__submit" type="submit" hidden>Create account</button>
+								</div>
 							</form>
 							<p class="auth-switch">Already registered? <button type="button" class="auth-switch__btn" data-auth-mode="signin">Sign in instead</button></p>
 						</div>
 					</div>
 
 					<footer class="auth-card__actions">
-						<p class="auth-foot">
-							<a href="<?php echo site_url('/'); ?>">
-								<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-								Back to public monitor
-							</a>
-						</p>
 						<p class="auth-trust">
 							<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 8.7C8 18.5 5 15.5 5 11V6l7-3z"/></svg>
 							<span>Accounts are stored by MDRRMO Dulag for flood advisories and recovery.</span>

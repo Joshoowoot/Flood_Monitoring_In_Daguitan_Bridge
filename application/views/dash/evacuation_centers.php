@@ -7,11 +7,12 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<meta name="theme-color" content="#9b1224">
-	<meta name="description" content="Resident evacuation centers and emergency contacts for Dulag, Leyte.">
+	<meta name="description" content="Resident evacuation centers for Dulag, Leyte.">
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260924m">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="portal-page resident-portal announce-page evacuation-page">
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -55,12 +56,17 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 			</div>
 			<nav class="resident-sidebar__nav" aria-label="Resident portal">
 				<a href="<?php echo html_escape($portal_url); ?>">Dashboard</a>
+				<a href="<?php echo html_escape(site_url('portal/go-bag')); ?>">Go Bag</a>
 				<a class="is-active" href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>" aria-current="page">Evacuation Centers</a>
 				<a href="<?php echo html_escape(site_url('portal/announcements')); ?>">Announcements</a>
-				<a href="<?php echo html_escape($portal_url); ?>#alerts">Flood Alerts</a>
-				<a href="<?php echo html_escape($portal_url); ?>#safety">Emergency Contacts</a>
+				<a href="<?php echo html_escape(site_url('portal/profile')); ?>">My Profile</a>
+				<a href="<?php echo html_escape(site_url('portal/help')); ?>">Help / How to Use</a>
 			</nav>
 			<a class="resident-sidebar__signout" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+			<div class="resident-sidebar__government">
+				<span>Republic of the Philippines</span>
+				<strong>Municipality of Dulag, Leyte</strong>
+			</div>
 		</aside>
 		<div class="resident-layout__content">
 		<section class="hero announce-hero evacuation-page__hero">
@@ -78,6 +84,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 					<div>
 						<p class="card-kicker">Nearest listed center</p>
 						<h2 id="nearestCenterTitle"><?php echo html_escape($nearest['name']); ?></h2>
+						<p class="issuer">Barangay <?php echo html_escape($nearest['barangay']); ?></p>
 					</div>
 					<span class="pill">Ready</span>
 				</div>
@@ -86,6 +93,16 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				<p class="issuer">Confirm capacity with MDRRMO before traveling.</p>
 			</article>
 			<?php endif; ?>
+		</section>
+
+		<section class="section section--tight" aria-labelledby="evacuationMapTitle">
+			<div class="glass-card evacuation-map">
+				<div class="evacuation-map__head">
+					<h2 id="evacuationMapTitle">Evacuation map</h2>
+					<p>Official pins maintained by MDRRMO Dulag.</p>
+				</div>
+				<div id="evacuationMap" class="evacuation-map__canvas" aria-label="Map of evacuation centers"></div>
+			</div>
 		</section>
 
 		<section class="section section--tight evacuation-page__centers" aria-labelledby="centerListTitle">
@@ -98,6 +115,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				<article class="glass-card evacuation-card<?php echo $index === 0 ? ' evacuation-card--nearest' : ''; ?>">
 					<?php if ($index === 0): ?><p class="card-kicker">Nearest listed center</p><?php endif; ?>
 					<h3><?php echo html_escape($center['name']); ?></h3>
+					<p class="card-kicker">Barangay <?php echo html_escape($center['barangay']); ?></p>
 					<dl class="evacuation-card__details">
 						<div><dt>Address</dt><dd><?php echo html_escape($center['address']); ?></dd></div>
 						<div><dt>Distance</dt><dd><?php echo html_escape($center['distance']); ?></dd></div>
@@ -130,5 +148,25 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 		</div>
 	</footer>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script>
+		(function () {
+			var centers = <?php echo json_encode($centers, JSON_UNESCAPED_SLASHES); ?>;
+			var mapElement = document.getElementById('evacuationMap');
+			if (!mapElement || !window.L || !centers.length) return;
+			var map = L.map(mapElement).setView([10.9525, 125.0322], 13);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+				attribution: '&copy; OpenStreetMap contributors',
+				maxZoom: 19
+			}).addTo(map);
+			var bounds = [];
+			centers.forEach(function (center) {
+				var point = [Number(center.latitude), Number(center.longitude)];
+				bounds.push(point);
+				L.marker(point).addTo(map).bindPopup('<strong>' + center.name + '</strong><br>Barangay ' + center.barangay + '<br>' + center.address);
+			});
+			if (bounds.length > 1) map.fitBounds(bounds, { padding: [28, 28] });
+		})();
+	</script>
 </body>
 </html>

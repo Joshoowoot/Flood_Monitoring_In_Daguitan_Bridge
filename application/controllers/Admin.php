@@ -12,6 +12,7 @@ class Admin extends CI_Controller {
 		'analytics'     => array('label' => 'Analytics', 'href' => 'admin/analytics'),
 		'sensors'       => array('label' => 'Sensor Status', 'href' => 'admin/sensors'),
 		'announcements' => array('label' => 'Announcements', 'href' => 'admin/announcements'),
+		'evacuation'    => array('label' => 'Evacuation Centers', 'href' => 'admin/evacuation'),
 		'sms'          => array('label' => 'SMS Broadcast', 'href' => 'admin/sms'),
 		'residents'     => array('label' => 'Residents', 'href' => 'admin/residents'),
 		'reports'       => array('label' => 'Reports', 'href' => 'admin/reports'),
@@ -102,10 +103,13 @@ class Admin extends CI_Controller {
 		$this->require_admin();
 		$this->load->model('Admin_portal_model');
 		$ctx = $this->Admin_portal_model->portal_context();
+		$chart = $this->Admin_portal_model->chart_series(800, time() - 3600);
+		$chart['max_points'] = 800;
 		$this->render('live', array(
 			'page_title'   => 'Live Monitoring',
 			'page_heading' => 'Live monitoring',
 			'page_lede'    => 'Current river level, trend, and field hardware status at Daguitan Bridge.',
+			'chart'        => $chart,
 		) + $ctx);
 	}
 
@@ -293,7 +297,7 @@ class Admin extends CI_Controller {
 				$result = $this->sms_service->send_broadcast($recipients, $message);
 				if ($result['ok'])
 				{
-					$success = 'SMS sent to ' . (int) $result['sent'] . ' resident(s).';
+					$success = 'SMS gateway accepted the message for ' . (int) $result['sent'] . ' resident(s).';
 				}
 				else
 				{
@@ -347,6 +351,37 @@ class Admin extends CI_Controller {
 			'history_rows' => $this->Admin_portal_model->history_table(30, array('since_ts' => $since_30)),
 			'alerts'       => $this->Admin_portal_model->list_alerts(20),
 		) + $ctx);
+	}
+
+	public function evacuation()
+	{
+		$this->require_admin();
+		$this->load->model('Evacuation_center_model');
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			if ((string) $this->input->post('action') === 'delete')
+			{
+				$this->Evacuation_center_model->delete((int) $this->input->post('id'));
+				$this->session->set_flashdata('sync_notice', 'Evacuation pin deleted.');
+			}
+			else
+			{
+				$id = (int) $this->input->post('id');
+				$this->Evacuation_center_model->save($this->input->post(), $id);
+				$this->session->set_flashdata('sync_notice', $id > 0 ? 'Evacuation pin updated.' : 'Evacuation pin saved.');
+			}
+			redirect('admin/evacuation');
+			return;
+		}
+		$edit = $this->input->get('edit') ? $this->Evacuation_center_model->find((int) $this->input->get('edit')) : NULL;
+		$this->render('evacuation', array(
+			'page_title'   => 'Evacuation Centers',
+			'page_heading' => 'Evacuation centers',
+			'page_lede'    => 'Pin official evacuation locations by barangay for resident directions and emergency planning.',
+			'centers'      => $this->Evacuation_center_model->all(),
+			'edit_row'     => $edit,
+			'sync_notice'  => $this->session->flashdata('sync_notice'),
+		));
 	}
 
 	public function settings()

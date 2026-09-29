@@ -1848,7 +1848,43 @@ main {
 }
 
 .announce-page .announce-hero {
+  grid-template-columns: 1fr;
+  grid-template-areas: "copy";
   align-items: stretch;
+  min-height: auto;
+  padding-top: 0.7rem;
+  padding-bottom: 0.75rem;
+}
+
+.announce-page .hero__copy {
+  max-width: 760px;
+  padding: 1.35rem 1.55rem 1.25rem;
+  margin-right: auto;
+}
+
+.announce-page .announce-hero .eyebrow {
+  margin-bottom: 0.8rem;
+}
+
+.announce-page .announce-hero h1 {
+  font-size: clamp(2.2rem, 4.1vw, 4rem);
+  line-height: 1.05;
+  margin: 0 0 0.75rem;
+}
+
+.announce-page .announce-hero .lede {
+  max-width: 38rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.announce-page .announce-hero .hero__actions {
+  margin-top: 0.25rem;
+}
+
+.announce-page .announce-hero .btn {
+  min-width: 170px;
+  justify-content: center;
 }
 
 .announce-page .announce-card {

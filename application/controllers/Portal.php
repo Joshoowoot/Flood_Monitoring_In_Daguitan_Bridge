@@ -18,6 +18,10 @@ class Portal extends CI_Controller {
 	public function index()
 	{
 		$live = $this->Monitor_model->get_status();
+		$this->load->model('Evacuation_center_model');
+		$evacuation_centers = array_values(array_filter($this->Evacuation_center_model->all(), function ($center) {
+			return ! empty($center['active']);
+		}));
 		$base = rtrim(base_url(), '/');
 		$level = $live['monitor']['warning_level'];
 
@@ -64,6 +68,7 @@ class Portal extends CI_Controller {
 			),
 			'actions_map'  => $actions,
 			'actions'      => isset($actions[$level]) ? $actions[$level] : $actions['green'],
+			'evacuation_centers' => $evacuation_centers,
 		));
 	}
 
@@ -92,29 +97,59 @@ class Portal extends CI_Controller {
 		));
 	}
 
+	public function go_bag()
+	{
+		$base = rtrim(base_url(), '/');
+		$this->load->view('dash/go_bag', array(
+			'base_url'   => $base . '/',
+			'asset_url'  => $base . '/assets/',
+			'page_title' => 'Go Bag Checklist',
+			'auth_name'  => $this->session->userdata('auth_name'),
+			'logout_url' => site_url('auth/logout'),
+			'portal_url' => site_url('portal'),
+		));
+	}
+
+	public function profile()
+	{
+		$base = rtrim(base_url(), '/');
+		$this->load->view('dash/profile', array(
+			'asset_url'  => $base . '/assets/',
+			'page_title' => 'My Profile',
+			'auth_name'  => $this->session->userdata('auth_name'),
+			'auth_user'  => $this->session->userdata('auth_user'),
+			'auth_phone' => $this->session->userdata('auth_phone'),
+			'logout_url' => site_url('auth/logout'),
+			'portal_url' => site_url('portal'),
+		));
+	}
+
+	public function help()
+	{
+		$base = rtrim(base_url(), '/');
+		$this->load->view('dash/help', array(
+			'asset_url'  => $base . '/assets/',
+			'page_title' => 'Help and How to Use',
+			'auth_name'  => $this->session->userdata('auth_name'),
+			'logout_url' => site_url('auth/logout'),
+			'portal_url' => site_url('portal'),
+		));
+	}
+
 	public function evacuation_centers()
 	{
 		$base = rtrim(base_url(), '/');
-		$centers = array(
-			array(
-				'name' => 'Dulag Municipal Evacuation Center',
-				'address' => 'Municipal Complex, Dulag, Leyte',
-				'distance' => 'Approx. 2.4 km from Daguitan Bridge',
-				'capacity' => 'Confirm current capacity with MDRRMO',
-				'phone' => '053 325 0000',
-				'phone_link' => 'tel:0533250000',
-				'maps' => 'https://www.google.com/maps/search/?api=1&query=Dulag+Municipal+Evacuation+Center+Leyte',
-			),
-			array(
-				'name' => 'Dulag Central School Evacuation Site',
-				'address' => 'Dulag Central School, Dulag, Leyte',
-				'distance' => 'Approx. 3.1 km from Daguitan Bridge',
-				'capacity' => 'Confirm current capacity with MDRRMO',
-				'phone' => '053 325 0000',
-				'phone_link' => 'tel:0533250000',
-				'maps' => 'https://www.google.com/maps/search/?api=1&query=Dulag+Central+School+Leyte',
-			),
-		);
+		$this->load->model('Evacuation_center_model');
+		$centers = array();
+		foreach ($this->Evacuation_center_model->all() as $center)
+		{
+			if (empty($center['active'])) continue;
+			$center['phone_link'] = 'tel:' . preg_replace('/[^0-9+]/', '', $center['phone']);
+			$center['maps'] = 'https://www.google.com/maps/dir/?api=1&destination='
+				. rawurlencode($center['latitude'] . ',' . $center['longitude']);
+			$center['distance'] = 'Pinned by MDRRMO · Barangay ' . $center['barangay'];
+			$centers[] = $center;
+		}
 
 		$this->load->view('dash/evacuation_centers', array(
 			'base_url' => $base . '/',

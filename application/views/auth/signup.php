@@ -3,7 +3,7 @@ $phone = isset($phone) ? $phone : '';
 $name = isset($name) ? $name : '';
 $username = isset($username) ? $username : '';
 $error = isset($error) ? $error : '';
-$asset_v = '20260320c';
+$asset_v = '20260925f';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -80,6 +80,12 @@ $asset_v = '20260320c';
 					<p>Your account is stored in the MDRRMO Dulag database.</p>
 				</article>
 			</div>
+			<p class="auth-intro__back">
+				<a href="<?php echo site_url('/'); ?>">
+					<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+					Back to public monitor
+				</a>
+			</p>
 		</section>
 
 		<section class="auth-card" aria-labelledby="signup-heading">
@@ -160,10 +166,10 @@ $asset_v = '20260320c';
 								</svg>
 								<input id="signup-password" type="password" name="password" required minlength="8" placeholder="At least 8 characters" autocomplete="new-password">
 								<button class="auth-eye" type="button" data-auth-toggle="signup-password" aria-label="Show password" aria-pressed="false">
-									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
 										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
 									</svg>
-									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
+									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/>
 									</svg>
 								</button>
@@ -179,10 +185,10 @@ $asset_v = '20260320c';
 								</svg>
 								<input id="signup-password-confirm" type="password" name="password_confirm" required minlength="8" placeholder="Re-enter your password" autocomplete="new-password">
 								<button class="auth-eye" type="button" data-auth-toggle="signup-password-confirm" aria-label="Show password" aria-pressed="false">
-									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
 										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
 									</svg>
-									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
+									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/>
 									</svg>
 								</button>
@@ -195,14 +201,6 @@ $asset_v = '20260320c';
 
 				<div class="auth-card__actions">
 					<p class="auth-switch">Already registered? <a href="<?php echo site_url('login'); ?>">Sign in instead</a></p>
-					<p class="auth-foot">
-						<a href="<?php echo site_url('/'); ?>">
-							<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M15 18l-6-6 6-6"/>
-							</svg>
-							Return to public monitor
-						</a>
-					</p>
 				</div>
 
 				<p class="auth-trust">

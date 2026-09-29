@@ -44,7 +44,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260923o">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260924m">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
 </head>
 <body class="landing-page announce-page<?php echo ! empty($resident_portal) ? ' portal-page resident-portal' : ''; ?>">
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -137,7 +137,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 					<a href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 				<?php endif; ?>
 			</nav>
-			<a class="btn btn--primary btn--block" href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor">View Live Status</a>
+			<a class="btn btn--primary btn--block" href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor">View live status</a>
 		</div>
 	</div>
 
@@ -156,12 +156,17 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 			</div>
 			<nav class="resident-sidebar__nav" aria-label="Resident portal">
 				<a href="<?php echo html_escape($home_url); ?>">Dashboard</a>
+				<a href="<?php echo html_escape(site_url('portal/go-bag')); ?>">Go Bag</a>
 				<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation Centers</a>
 				<a class="is-active" href="<?php echo html_escape($announcements_url); ?>" aria-current="page">Announcements</a>
-				<a href="<?php echo html_escape($home_url); ?>#alerts">Flood Alerts</a>
-				<a href="<?php echo html_escape($home_url); ?>#safety">Emergency Contacts</a>
+				<a href="<?php echo html_escape(site_url('portal/profile')); ?>">My Profile</a>
+				<a href="<?php echo html_escape(site_url('portal/help')); ?>">Help / How to Use</a>
 			</nav>
 			<a class="resident-sidebar__signout" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+			<div class="resident-sidebar__government">
+				<span>Republic of the Philippines</span>
+				<strong>Municipality of Dulag, Leyte</strong>
+			</div>
 		</aside>
 		<div class="resident-layout__content">
 		<?php endif; ?>
@@ -176,25 +181,6 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				</div>
 			</div>
 
-			<article class="status-panel reveal" aria-labelledby="statusTitle">
-				<div class="status-panel__wave" aria-hidden="true"></div>
-				<p class="status-panel__kicker" id="statusTitle">Current Flood Status</p>
-				<p class="status-badge status-badge--<?php echo html_escape($warning_key); ?>" id="heroStatusBadge">
-					<span class="status-dot" aria-hidden="true"></span>
-					<span id="heroStatusLabel"><?php echo strtoupper(html_escape($m['warning_label'])); ?></span>
-					<span class="sr-only" id="heroStatusSr">Warning level: <?php echo html_escape($m['warning_label']); ?></span>
-				</p>
-				<div class="status-panel__grid">
-					<div>
-						<span class="meta">Water Level</span>
-						<strong class="metric" id="heroWaterLevel"><?php echo number_format($m['water_level_m'], 2); ?> m</strong>
-					</div>
-					<div>
-						<span class="meta">Last Updated</span>
-						<time id="heroUpdated" datetime="<?php echo html_escape($m['last_updated_iso']); ?>"><?php echo html_escape($m['last_updated']); ?></time>
-					</div>
-				</div>
-			</article>
 		</section>
 
 		<section class="section section--tight" id="live-advisory">

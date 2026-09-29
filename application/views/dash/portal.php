@@ -25,7 +25,8 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260924m">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body class="portal-page resident-portal">
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -77,8 +78,7 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			<nav class="drawer__nav" aria-label="Mobile">
 				<a href="#home">Status</a>
 				<a href="#monitor">Live data</a>
-				<a href="#alerts">Alerts</a>
-				<a href="#safety">Safety</a>
+				<a href="<?php echo site_url('portal/go-bag'); ?>">Go Bag</a>
 				<a href="<?php echo site_url('/'); ?>">Public site</a>
 				<a href="<?php echo html_escape($logout_url); ?>">Sign out</a>
 			</nav>
@@ -99,12 +99,17 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			</div>
 			<nav class="resident-sidebar__nav" aria-label="Resident portal">
 				<a class="is-active" href="#home" aria-current="page">Dashboard</a>
+				<a href="<?php echo site_url('portal/go-bag'); ?>">Go Bag</a>
 				<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation Centers</a>
 				<a href="<?php echo html_escape(site_url('portal/announcements')); ?>">Announcements</a>
-				<a href="#alerts">Flood Alerts</a>
-				<a href="#safety">Emergency Contacts</a>
+				<a href="<?php echo site_url('portal/profile'); ?>">My Profile</a>
+				<a href="<?php echo site_url('portal/help'); ?>">Help / How to Use</a>
 			</nav>
 			<a class="resident-sidebar__signout" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+			<div class="resident-sidebar__government">
+				<span>Republic of the Philippines</span>
+				<strong>Municipality of Dulag, Leyte</strong>
+			</div>
 		</aside>
 		<div class="resident-layout__content">
 		<section class="hero" id="home">
@@ -142,36 +147,14 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			</article>
 		</section>
 
-		<section class="section section--tight" id="alerts">
-			<article class="glass-card warn-board reveal" aria-labelledby="warningBoardTitle">
-				<div class="warn-board__head">
-					<p class="card-kicker" id="warningBoardTitle">Flood warning level</p>
-					<p class="card-kicker">Status</p>
+		<section class="section section--tight" aria-labelledby="portalEvacuationMapTitle">
+			<div class="glass-card evacuation-map">
+				<div class="evacuation-map__head">
+					<h2 id="portalEvacuationMapTitle">Evacuation centers</h2>
+					<p>See MDRRMO-pinned locations by barangay.</p>
 				</div>
-				<div class="warn-board__list" role="list" aria-label="Flood warning levels">
-					<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
-							<strong>Safe</strong>
-						</div>
-						<p class="warn-board__status">Below advisory threshold.</p>
-					</div>
-					<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
-							<strong>Monitor</strong>
-						</div>
-						<p class="warn-board__status">Approaching caution. Stay alert.</p>
-					</div>
-					<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
-							<strong>Critical</strong>
-						</div>
-						<p class="warn-board__status">Critical threshold reached.</p>
-					</div>
-				</div>
-			</article>
+				<div id="portalEvacuationMap" class="evacuation-map__canvas" aria-label="Map of evacuation centers"></div>
+			</div>
 		</section>
 
 		<section class="section" id="monitor">
@@ -253,35 +236,6 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 
 		</section>
 
-		<section class="section" id="safety">
-			<header class="section__head reveal">
-				<h2>Emergency desk</h2>
-				<p>Tap a number to call. Keep these contacts saved on your phone before heavy rain.</p>
-			</header>
-			<div class="hotline-grid">
-				<a class="glass-card portal-hotline reveal" href="tel:09171234567">
-					<h3>MDRRMO Dulag</h3>
-					<p class="metric portal-hotline__num">0917 123 4567</p>
-					<p class="card-copy">Disaster risk reduction and response</p>
-				</a>
-				<a class="glass-card portal-hotline reveal" href="tel:09985991111">
-					<h3>PNP Dulag</h3>
-					<p class="metric portal-hotline__num">0998 599 1111</p>
-					<p class="card-copy">Police assistance</p>
-				</a>
-				<a class="glass-card portal-hotline reveal" href="tel:0533250000">
-					<h3>BFP Dulag</h3>
-					<p class="metric portal-hotline__num">(053) 325-0000</p>
-					<p class="card-copy">Fire and rescue</p>
-				</a>
-				<a class="glass-card portal-hotline reveal" href="tel:911">
-					<h3>Nationwide</h3>
-					<p class="metric portal-hotline__num">911</p>
-					<p class="card-copy">Emergency hotline</p>
-				</a>
-			</div>
-		</section>
-
 		</div>
 	</main>
 
@@ -298,7 +252,6 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			<nav aria-label="Footer">
 				<a href="#home">Status</a>
 				<a href="#monitor">Live data</a>
-				<a href="#alerts">Alerts</a>
 				<a href="<?php echo site_url('/'); ?>">Public site</a>
 			</nav>
 		</div>
@@ -309,7 +262,6 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<nav class="bottom-nav" aria-label="Portal">
 		<a href="#home" class="is-active"><span aria-hidden="true">⌂</span> Status</a>
 		<a href="#monitor"><span aria-hidden="true">🌊</span> Live</a>
-		<a href="#alerts"><span aria-hidden="true">🔔</span> Alerts</a>
 	</nav>
 
 	<script>
@@ -321,6 +273,23 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script>
+		(function () {
+			var centers = <?php echo json_encode(isset($evacuation_centers) ? $evacuation_centers : array(), JSON_UNESCAPED_SLASHES); ?>;
+			var mapElement = document.getElementById('portalEvacuationMap');
+			if (!mapElement || !window.L || !centers.length) return;
+			var map = L.map(mapElement).setView([10.9525, 125.0322], 13);
+			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
+			var bounds = [];
+			centers.forEach(function (center) {
+				var point = [Number(center.latitude), Number(center.longitude)];
+				bounds.push(point);
+				L.marker(point).addTo(map).bindPopup('<strong>' + center.name + '</strong><br>Barangay ' + center.barangay + '<br>' + center.address);
+			});
+			if (bounds.length > 1) map.fitBounds(bounds, { padding: [28, 28] });
+		})();
+	</script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;

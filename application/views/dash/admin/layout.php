@@ -2,7 +2,7 @@
 $section = isset($admin_section) ? $admin_section : 'dashboard';
 $nav_groups = array(
 	'Overview' => array('dashboard', 'live', 'history', 'analytics'),
-	'Operations' => array('alerts', 'announcements', 'sms', 'sensors'),
+	'Operations' => array('alerts', 'announcements', 'evacuation', 'sms', 'sensors'),
 	'Administration' => array('residents', 'reports', 'settings'),
 );
 function admin_nav_icon($key) {
@@ -14,6 +14,7 @@ function admin_nav_icon($key) {
 		'analytics' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5"/><path d="M8 19v-6"/><path d="M12 19V9"/><path d="M16 19v-9"/><path d="M20 19V7"/></svg>',
 		'sensors' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3"/><path d="M6 8a6 6 0 1 0 12 0"/><path d="M4 20h16"/></svg>',
 		'announcements' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10v4"/><path d="M7 8v8"/><path d="M10 6v12"/><path d="M13 9v6"/><path d="M16 7v10"/><path d="M19 10v4"/></svg>',
+		'evacuation' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.2"/></svg>',
 		'residents' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8s5.6 1.6 7 4.8"/></svg>',
 		'reports' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h9l3 3v13H6z"/><path d="M9 13h6M9 17h4"/></svg>',
 		'settings' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -32,7 +33,7 @@ function admin_nav_icon($key) {
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=6">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=7">
 </head>
 <body class="admin-portal">
 	<div class="admin-layout">
@@ -132,7 +133,7 @@ function admin_nav_icon($key) {
 		echo json_encode($admin_js, JSON_UNESCAPED_SLASHES);
 		?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=6"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=7"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;

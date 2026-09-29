@@ -10,7 +10,7 @@
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=20260924e">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=20260925e">
 </head>
 <body class="auth-body auth-body--admin">
 	<div class="auth-bg" aria-hidden="true"></div>
@@ -26,7 +26,7 @@
 			</div>
 		</a>
 		<p class="auth-top__office">MDRRMO Dulag</p>
-		<p class="auth-top__motto">Operations access only</p>
+		<p class="auth-top__motto">Authorized Operations Access</p>
 	</header>
 
 	<main class="auth-shell" id="main">
@@ -40,17 +40,18 @@
 					<h1>MDRRMO <span>Console</span></h1>
 					<p class="auth-intro__copy">This page is not linked from the public website. Only authorized MDRRMO staff may sign in here.</p>
 				</div>
+				<p class="auth-intro__back">
+					<a href="<?php echo site_url('/'); ?>">
+						<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						Back to public monitor
+					</a>
+				</p>
 			</aside>
 
 			<section class="auth-card">
 				<div class="auth-card__inner">
 					<header class="auth-welcome">
-						<span class="auth-welcome__icon" aria-hidden="true">
-							<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-								<rect x="4" y="11" width="16" height="10" rx="2"/>
-								<path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-							</svg>
-						</span>
+						<p class="auth-admin-badge">Authorized Staff Only</p>
 						<h2>Administrator sign in</h2>
 						<p class="auth-lead">Enter staff credentials to open the operations console.</p>
 					</header>
@@ -73,17 +74,13 @@
 						<label class="auth-field">
 							<span class="auth-field__label">Password</span>
 							<span class="auth-field__control auth-field__control--eye">
-								<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-									<rect x="4" y="11" width="16" height="10" rx="2"/>
-									<path d="M8 11V8a4 4 0 0 1 8 0v3"/>
-								</svg>
 								<input id="password" type="password" name="password" required placeholder="Staff password" autocomplete="current-password">
 								<button class="auth-eye" type="button" id="togglePassword" aria-label="Show password" aria-pressed="false">
-									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+									<svg class="auth-eye__show" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
 										<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
 										<circle cx="12" cy="12" r="3"/>
 									</svg>
-									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden>
+									<svg class="auth-eye__hide" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 										<path d="M3 3l18 18"/><path d="M10.6 10.6A3 3 0 0 0 12 15a3 3 0 0 0 2.4-4.4"/><path d="M9.9 5.1A11 11 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.2 3.8"/><path d="M6.1 6.1A18 18 0 0 0 2 12s3.5 7 10 7c1.3 0 2.5-.2 3.6-.6"/>
 									</svg>
 								</button>
@@ -92,14 +89,6 @@
 						<button class="btn btn--primary btn--block auth-submit" type="submit">Sign in</button>
 					</form>
 
-					<footer class="auth-card__actions">
-						<p class="auth-foot">
-							<a href="<?php echo site_url('/'); ?>">
-								<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-								Back to public monitor
-							</a>
-						</p>
-					</footer>
 				</div>
 			</section>
 		</section>
@@ -115,8 +104,9 @@
 				input.type = show ? 'text' : 'password';
 				btn.setAttribute('aria-pressed', show ? 'true' : 'false');
 				btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-				btn.querySelector('.auth-eye__show').hidden = show;
-				btn.querySelector('.auth-eye__hide').hidden = !show;
+				btn.classList.toggle('is-visible', show);
+				btn.querySelector('.auth-eye__show').hidden = !show;
+				btn.querySelector('.auth-eye__hide').hidden = show;
 			});
 		})();
 	</script>
