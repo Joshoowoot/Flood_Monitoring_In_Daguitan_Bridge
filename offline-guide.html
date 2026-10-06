@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#9b1224">
+	<meta name="description" content="Offline flood emergency and evacuation safety guide for residents of Dulag, Leyte.">
+	<title>Offline Emergency Guide · Daguitan Flood Monitor</title>
+	<style>
+		:root { color-scheme: light; font-family: Inter, Arial, sans-serif; color: #252525; background: #f7f5f4; }
+		* { box-sizing: border-box; }
+		body { margin: 0; line-height: 1.55; }
+		header { padding: 1.25rem max(1rem, calc((100% - 880px) / 2)); background: #821020; color: #fff; }
+		header p { margin: 0; font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+		main { width: min(880px, calc(100% - 2rem)); margin: 1.5rem auto; }
+		.notice { margin-bottom: 1rem; padding: .85rem 1rem; border: 1px solid #e4c9a0; border-radius: 10px; background: #fff8e9; color: #554222; font-size: .9rem; }
+		h1 { margin: .2rem 0 .35rem; font-size: clamp(1.8rem, 5vw, 2.5rem); line-height: 1.15; letter-spacing: -.04em; }
+		.intro { margin: 0 0 1.2rem; color: #585858; }
+		.guide { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+		article { padding: 1rem; border: 1px solid #e8e3e1; border-radius: 12px; background: #fff; }
+		h2 { margin: 0 0 .45rem; font-size: 1rem; }
+		ul, ol { margin: 0; padding-left: 1.2rem; color: #454545; font-size: .9rem; }
+		li + li { margin-top: .35rem; }
+		footer { margin-top: 1rem; padding: .9rem 1rem; border-left: 4px solid #9b1224; border-radius: 8px; background: #fff; color: #454545; font-size: .88rem; }
+		.actions { margin: 1rem 0; }
+		button { min-height: 42px; padding: .6rem .9rem; border: 0; border-radius: 8px; background: #9b1224; color: #fff; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+		button:focus-visible { outline: 3px solid #d68790; outline-offset: 3px; }
+		@media (max-width: 600px) { .guide { grid-template-columns: minmax(0, 1fr); } main { margin-top: 1rem; } }
+		@media print { :root { background: #fff; } header { padding-left: 0; padding-right: 0; background: #fff; color: #252525; } main { width: 100%; margin: .5rem auto; } .actions { display: none; } .guide { grid-template-columns: repeat(2, minmax(0, 1fr)); } article, footer { break-inside: avoid; box-shadow: none; } }
+	</style>
+</head>
+<body>
+	<header><p>Municipal Disaster Risk Reduction and Management Office · Dulag, Leyte</p></header>
+	<main>
+		<div class="notice"><strong>Offline guide · Not live information.</strong> This page does not show current water levels, active warnings, or evacuation orders. Follow the latest instructions you received from MDRRMO and barangay officials.</div>
+		<h1>Flood emergency guide</h1>
+		<p class="intro">Keep this guide available on your phone. If conditions are dangerous, prioritize people and follow official directions.</p>
+		<div class="guide">
+			<article>
+				<h2>Before flooding</h2>
+				<ul><li>Monitor official MDRRMO and barangay announcements whenever you have a connection.</li><li>Charge phones and power banks; keep essential medicines, IDs, cash, water, and your Go Bag ready.</li><li>Know your assigned evacuation location and agree on a family meeting point.</li><li>Move valuables and important documents above areas likely to flood, if it is safe.</li></ul>
+			</article>
+			<article>
+				<h2>If evacuation is announced</h2>
+				<ul><li>Leave promptly and use the route and destination given by local officials.</li><li>Bring your Go Bag and help household members who need assistance, if safe to do so.</li><li>Tell your out-of-area contact where you are going when communications allow.</li><li>Do not return until authorities say it is safe.</li></ul>
+			</article>
+			<article>
+				<h2>Avoid floodwater</h2>
+				<ul><li>Never walk, drive, or ride through floodwater; it may be deeper or faster than it looks.</li><li>Stay away from rivers, drainage channels, submerged roads, and damaged bridges.</li><li>Keep children away from floodwater and downed power lines.</li><li>If trapped by rising water, move to higher ground if safe and signal for help.</li></ul>
+			</article>
+			<article>
+				<h2>When communications are limited</h2>
+				<ul><li>Use your agreed meeting point and family contact plan; do not rely on one phone or route.</li><li>Conserve phone battery and use text messages when calls do not connect.</li><li>Check on neighbors who may need help only when doing so does not put you in danger.</li><li>Use a battery-powered radio if available and follow verified official information.</li></ul>
+			</article>
+		</div>
+		<footer><strong>Safety first:</strong> Monitor readings and this saved guide do not replace instructions from emergency officials. Do not enter floodwater to retrieve belongings or assist someone; call for help using the local emergency contact information you have verified.</footer>
+		<div class="actions"><button type="button" onclick="window.print()">Print this guide</button></div>
+	</main>
+</body>
+</html>

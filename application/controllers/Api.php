@@ -21,7 +21,10 @@ class Api extends CI_Controller {
 			return $this->json(array('ok' => TRUE), 204);
 		}
 
-		$payload = $this->Monitor_model->get_status();
+		$barangay = ($this->session->userdata('auth_role') === 'user')
+			? (string) $this->session->userdata('auth_barangay')
+			: NULL;
+		$payload = $this->Monitor_model->get_status($barangay);
 		$this->load->model('Admin_portal_model');
 		$payload['monitor'] = $this->Admin_portal_model->enrich_monitor($payload['monitor']);
 		$this->load->model('Sync_model');

@@ -53,6 +53,9 @@ class Auth extends CI_Controller {
 		$data['username'] = $username;
 		$data['name'] = '';
 		$data['phone'] = '';
+		$data['barangay'] = '';
+		$this->load->model('Hazard_model');
+		$data['barangays'] = $this->Hazard_model->barangays();
 		$data['auth_mode'] = 'signin';
 		$this->load->view('auth/login', $data);
 	}
@@ -64,21 +67,29 @@ class Auth extends CI_Controller {
 			return $this->redirect_for_role($this->session->userdata('auth_role'));
 		}
 
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
 		$error = '';
 		$username = '';
 		$name = '';
 		$phone = '';
+		$barangay = '';
 		if ($this->input->method(TRUE) === 'POST')
 		{
 			$name = trim((string) $this->input->post('name'));
 			$username = strtolower(trim((string) $this->input->post('username')));
 			$phone = trim((string) $this->input->post('phone'));
+			$barangay = trim((string) $this->input->post('barangay'));
 			$password = (string) $this->input->post('password');
 			$confirm = (string) $this->input->post('password_confirm');
 
 			if (strlen($name) < 2)
 			{
 				$error = 'Please enter your full name.';
+			}
+			elseif ( ! isset($barangays[$barangay]))
+			{
+				$error = 'Select your barangay from the list.';
 			}
 			elseif ( ! preg_match('/^[a-z0-9_]{3,32}$/', $username))
 			{
@@ -94,7 +105,7 @@ class Auth extends CI_Controller {
 			}
 			else
 			{
-				$result = $this->Auth_model->register_resident($username, $name, $phone, $password);
+				$result = $this->Auth_model->register_resident($username, $name, $phone, $barangay, $password);
 				if (empty($result['ok']))
 				{
 					$error = isset($result['error']) ? $result['error'] : 'Could not create your account.';
@@ -116,13 +127,15 @@ class Auth extends CI_Controller {
 		$data['username'] = $username;
 		$data['name'] = $name;
 		$data['phone'] = $phone;
+		$data['barangay'] = $barangay;
+		$data['barangays'] = $barangays;
 		$data['auth_mode'] = 'signup';
 		$this->load->view('auth/login', $data);
 	}
 
 	public function logout()
 	{
-		$this->session->unset_userdata(array('auth_user', 'auth_name', 'auth_role', 'auth_phone', 'auth_uid', 'auth_id'));
+		$this->session->unset_userdata(array('auth_user', 'auth_name', 'auth_role', 'auth_phone', 'auth_barangay', 'auth_uid', 'auth_id'));
 		$this->session->sess_destroy();
 		redirect('/');
 	}
@@ -134,6 +147,7 @@ class Auth extends CI_Controller {
 			'auth_name'  => $user['name'],
 			'auth_role'  => $user['role'],
 			'auth_phone' => isset($user['phone']) ? $user['phone'] : '',
+			'auth_barangay' => isset($user['barangay']) ? $user['barangay'] : '',
 			'auth_uid'   => isset($user['record_uid']) ? $user['record_uid'] : '',
 			'auth_id'    => isset($user['id']) ? (int) $user['id'] : 0,
 		));

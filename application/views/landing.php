@@ -27,9 +27,10 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260923q">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006b">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page">
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -309,7 +310,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 			</div>
 		</section>
 
-		<section class="cta-band reveal" id="about">
+		<section class="cta-band reveal">
 			<div>
 				<p class="eyebrow">Install · Stay ready</p>
 				<h2>Take flood monitoring with you</h2>
@@ -360,10 +361,22 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	</footer>
 
 	<nav class="bottom-nav" aria-label="App">
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" class="is-active"><span aria-hidden="true">⌂</span> Home</a>
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#monitor"><span aria-hidden="true">🌊</span> Monitor</a>
-		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>"><span aria-hidden="true">📢</span> News</a>
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#about"><span aria-hidden="true">ℹ</span> About</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" class="is-active">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="m3 10 9-7 9 7"/><path d="M5.5 9v11h13V9M9.5 20v-6h5v6"/></svg>
+			Home
+		</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#monitor">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h4l2.5-4 4.5 8 2.5-4H21"/></svg>
+			Monitor
+		</a>
+		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M5 3.5h14a2 2 0 0 1 2 2v15H7a2 2 0 0 1-2-2z"/><path d="M5 18.5a2 2 0 0 0 2 2M9 8h8M9 12h8M9 16h5"/></svg>
+			News
+		</a>
+		<a href="<?php echo html_escape(isset($about_url) ? $about_url : site_url('about')); ?>">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+			About
+		</a>
 	</nav>
 
 	<script>
@@ -376,7 +389,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 			'pollMs' => 5000,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=3"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=4"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
 </body>
 </html>

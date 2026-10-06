@@ -2,6 +2,8 @@
 $m = $monitor;
 $a = $announcement;
 $w = $weather;
+$resident_announcements = (isset($announcements) && is_array($announcements)) ? $announcements : array();
+$resident_barangay = isset($resident_barangay) ? trim((string) $resident_barangay) : '';
 $trend_arrow = ($m['trend'] === 'falling') ? '↓' : (($m['trend'] === 'steady') ? '→' : '↑');
 $warning_key = $m['warning_level'];
 $gauge_pct = isset($m['gauge_pct']) ? (int) $m['gauge_pct'] : 8;
@@ -25,10 +27,11 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006h">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
-<body class="portal-page resident-portal">
+<body class="portal-page resident-portal resident-dashboard">
 	<a class="skip-link" href="#main">Skip to content</a>
 
 	<div class="gov-bar">
@@ -60,6 +63,9 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			<div class="topbar__actions">
 				<?php $this->load->view('partials/notifications_bell'); ?>
 				<a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
+				<button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false">
+					<span></span><span></span><span></span>
+				</button>
 				<button class="icon-btn hamburger" type="button" id="menuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
 					<span></span><span></span><span></span>
 				</button>
@@ -86,7 +92,7 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	</div>
 
 	<main id="main" class="resident-layout">
-		<aside class="resident-sidebar" aria-label="Resident portal navigation">
+		<aside class="resident-sidebar" id="residentSidebar" aria-label="Resident portal navigation">
 			<div class="resident-sidebar__profile">
 				<button class="resident-sidebar__avatar-button" type="button" id="profileImageButton" aria-label="Choose profile image" title="Choose profile image">
 					<img class="resident-sidebar__avatar resident-sidebar__avatar--logo" id="profileImage" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="">
@@ -102,6 +108,7 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				<a href="<?php echo site_url('portal/go-bag'); ?>">Go Bag</a>
 				<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation Centers</a>
 				<a href="<?php echo html_escape(site_url('portal/announcements')); ?>">Announcements</a>
+				<a href="<?php echo html_escape(site_url('portal/reports')); ?>">Flood / Hazard Reports</a>
 				<a href="<?php echo site_url('portal/profile'); ?>">My Profile</a>
 				<a href="<?php echo site_url('portal/help'); ?>">Help / How to Use</a>
 			</nav>
@@ -147,15 +154,33 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			</article>
 		</section>
 
-		<section class="section section--tight" aria-labelledby="portalEvacuationMapTitle">
-			<div class="glass-card evacuation-map">
-				<div class="evacuation-map__head">
-					<h2 id="portalEvacuationMapTitle">Evacuation centers</h2>
-					<p>See MDRRMO-pinned locations by barangay.</p>
+		<?php if ( ! empty($resident_announcements)): ?>
+		<section class="section section--tight resident-barangay-alerts" aria-labelledby="barangayAlertsTitle">
+			<header class="section__head">
+				<div>
+					<h2 id="barangayAlertsTitle">Alerts for you</h2>
+					<p><?php echo $resident_barangay !== '' ? 'Your barangay notices appear first, followed by municipality-wide announcements.' : 'Municipality-wide announcements are shown here. Add your barangay in My Profile to also see notices for your area.'; ?></p>
 				</div>
-				<div id="portalEvacuationMap" class="evacuation-map__canvas" aria-label="Map of evacuation centers"></div>
+				<a class="resident-barangay-alerts__all" href="<?php echo html_escape(site_url('portal/announcements')); ?>">All announcements <span aria-hidden="true">→</span></a>
+			</header>
+			<div class="resident-barangay-alerts__list">
+				<?php foreach (array_slice($resident_announcements, 0, 4) as $resident_announcement):
+					$notice_level = isset($resident_announcement['level']) ? $resident_announcement['level'] : 'info';
+					$notice_target = isset($resident_announcement['barangay']) ? trim((string) $resident_announcement['barangay']) : '';
+					$notice_label = ($notice_level === 'red') ? 'Emergency' : (($notice_level === 'yellow') ? 'Advisory' : 'Information');
+				?>
+				<article class="resident-barangay-alert resident-barangay-alert--<?php echo html_escape($notice_level); ?>">
+					<div class="resident-barangay-alert__meta">
+						<span><?php echo html_escape($notice_label); ?></span>
+						<span><?php echo $notice_target !== '' ? 'Barangay ' . html_escape($notice_target) : 'Municipality-wide'; ?></span>
+					</div>
+					<h3><?php echo html_escape($resident_announcement['title']); ?></h3>
+					<p><?php echo html_escape($resident_announcement['body']); ?></p>
+				</article>
+				<?php endforeach; ?>
 			</div>
 		</section>
+		<?php endif; ?>
 
 		<section class="section" id="monitor">
 			<header class="section__head reveal">
@@ -194,8 +219,28 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			</div>
 		</section>
 
-		<section class="section">
-					<article class="wx-now glass-card reveal" aria-labelledby="weatherTitle">
+		<section class="section section--tight" aria-labelledby="portalEvacuationMapTitle">
+			<div class="glass-card evacuation-map">
+				<div class="evacuation-map__head">
+					<h2 id="portalEvacuationMapTitle">Hazards &amp; evacuation centers</h2>
+					<p>Colored hazard pins show known risk locations; evacuation pins show official centers.</p>
+				</div>
+				<div class="hazard-legend" aria-label="Hazard map color legend">
+					<?php foreach ((isset($hazard_types) && is_array($hazard_types)) ? $hazard_types : array() as $type): ?>
+					<span><i style="--hazard-color: <?php echo html_escape($type['color']); ?>"></i><?php echo html_escape($type['label']); ?></span>
+					<?php endforeach; ?>
+					<span class="hazard-legend__evacuation"><i></i>Evacuation center</span>
+				</div>
+				<div id="portalEvacuationMap" class="evacuation-map__canvas" aria-label="Map of hazards and evacuation centers"></div>
+			</div>
+		</section>
+
+		<section class="section resident-dashboard__weather" aria-labelledby="weatherSectionTitle">
+			<header class="section__head">
+				<h2 id="weatherSectionTitle">Weather in Dulag</h2>
+				<p>Current local conditions and the coming days.</p>
+			</header>
+			<article class="wx-now glass-card reveal" aria-labelledby="weatherTitle">
 				<div class="wx-now__now">
 					<div class="weather-card__icon" aria-hidden="true" data-theme="<?php echo html_escape(isset($w['theme']) ? $w['theme'] : 'cloudy'); ?>"></div>
 					<div class="wx-now__tempwrap">
@@ -233,11 +278,11 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				</div>
 				<?php endif; ?>
 			</article>
-
 		</section>
 
 		</div>
 	</main>
+	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 
 	<footer class="footer portal-footer">
 		<div class="portal-footer__inner">
@@ -271,14 +316,16 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 			'actions' => $actions_map,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261006c"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script>
 		(function () {
 			var centers = <?php echo json_encode(isset($evacuation_centers) ? $evacuation_centers : array(), JSON_UNESCAPED_SLASHES); ?>;
+			var hazards = <?php echo json_encode(isset($hazards) ? $hazards : array(), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 			var mapElement = document.getElementById('portalEvacuationMap');
-			if (!mapElement || !window.L || !centers.length) return;
+			if (!mapElement || !window.L) return;
 			var map = L.map(mapElement).setView([10.9525, 125.0322], 13);
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 }).addTo(map);
 			var bounds = [];
@@ -286,6 +333,18 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				var point = [Number(center.latitude), Number(center.longitude)];
 				bounds.push(point);
 				L.marker(point).addTo(map).bindPopup('<strong>' + center.name + '</strong><br>Barangay ' + center.barangay + '<br>' + center.address);
+			});
+			hazards.forEach(function (hazard) {
+				var point = [Number(hazard.latitude), Number(hazard.longitude)];
+				bounds.push(point);
+				var popup = document.createElement('div');
+				var name = document.createElement('strong');
+				name.textContent = hazard.name;
+				var detail = document.createElement('div');
+				detail.textContent = hazard.type_label + ' · Barangay ' + hazard.barangay + (hazard.description ? ' · ' + hazard.description : '');
+				popup.appendChild(name);
+				popup.appendChild(detail);
+				L.circleMarker(point, { radius: 9, color: '#fff', weight: 2, fillColor: hazard.color, fillOpacity: 0.95 }).addTo(map).bindPopup(popup);
 			});
 			if (bounds.length > 1) map.fitBounds(bounds, { padding: [28, 28] });
 		})();

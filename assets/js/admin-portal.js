@@ -248,16 +248,25 @@
           var status = card.querySelector('.admin-sensor-status');
           var detail = card.querySelector('p:not(.admin-sensor-status)');
           if (!status || !detail) return;
-          if (key === 'power') {
-            status.textContent = m.sensor_status === 'online' ? 'Online' : 'Offline';
-            status.className = 'admin-sensor-status admin-sensor-status--' + (m.sensor_status === 'online' ? 'online' : 'offline');
-            detail.textContent = m.sensor_status === 'online' ? 'Telemetry connected; source not reported' : 'No telemetry available';
+          if (key === 'esp32' || key === 'ultrasonic' || key === 'power') {
+            var sensorState = m.sensor_status === 'online' ? 'online' : 'offline';
+            status.textContent = sensorState === 'online' ? 'Online' : 'Offline';
+            status.className = 'admin-sensor-status admin-sensor-status--' + sensorState;
+            card.classList.remove('admin-sensor-card--online', 'admin-sensor-card--offline', 'admin-sensor-card--warning');
+            card.classList.add('admin-sensor-card--' + sensorState);
+            detail.textContent = sensorState === 'online' ? 'Telemetry connected; source not reported' : 'No recent telemetry available';
           } else if (key === 'solar' || key === 'battery') {
             status.textContent = 'Telemetry unavailable';
             status.className = 'admin-sensor-status admin-sensor-status--warning';
+            card.classList.remove('admin-sensor-card--online', 'admin-sensor-card--offline', 'admin-sensor-card--warning');
+            card.classList.add('admin-sensor-card--warning');
             detail.textContent = 'Waiting for ESP power telemetry';
           }
         });
+        var sensorCards = document.querySelectorAll('[data-infra-key]');
+        var onlineSensors = document.querySelectorAll('[data-infra-key] .admin-sensor-status--online').length;
+        setText('admSensorOnlineCount', onlineSensors);
+        setText('admSensorAttentionCount', Math.max(0, sensorCards.length - onlineSensors));
         var recentBody = document.getElementById('admRecentBody');
         if (recentBody && m.water_level_m != null && m.last_updated) {
           var first = recentBody.querySelector('tr');
@@ -345,6 +354,74 @@
       });
     });
   }
+
+  document.querySelectorAll('.admin-residents-page .admin-residents-sort, .admin-reports-page .admin-reports-sort').forEach(function (control) {
+    var table = control.closest('.dash-table-wrap').querySelector('.dash-table');
+    var body = table && table.tBodies[0];
+    if (!body) return;
+    var originalRows = Array.prototype.slice.call(body.rows);
+    var visibleLimit = Number(table.getAttribute('data-sort-visible-limit')) || 0;
+    var showMore = control.closest('.dash-table-wrap').querySelector('[data-sort-toggle]');
+    var expanded = false;
+
+    function updateVisibleRows(rows) {
+      rows.forEach(function (row, index) {
+        row.hidden = visibleLimit > 0 && !expanded && index >= visibleLimit;
+      });
+      if (showMore) {
+        showMore.hidden = visibleLimit <= 0 || rows.length <= visibleLimit;
+        showMore.textContent = expanded ? 'Show fewer' : 'Show all ' + rows.length + ' alerts';
+        showMore.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      }
+    }
+
+    updateVisibleRows(originalRows);
+
+    if (showMore) {
+      showMore.addEventListener('click', function () {
+        expanded = !expanded;
+        updateVisibleRows(Array.prototype.slice.call(body.rows));
+      });
+    }
+
+    control.addEventListener('change', function () {
+      if (!control.value) {
+        originalRows.forEach(function (row) { body.appendChild(row); });
+        updateVisibleRows(originalRows);
+        return;
+      }
+      var settings = control.value.split(':');
+      var column = Number(settings[0]);
+      var direction = settings[1] === 'asc' ? 1 : -1;
+      var type = settings[2];
+      var rows = Array.prototype.slice.call(body.rows);
+
+      rows.sort(function (rowA, rowB) {
+        var cellA = rowA.cells[column];
+        var cellB = rowB.cells[column];
+        var valueA = cellA ? (cellA.getAttribute('data-sort-value') || cellA.textContent.trim()) : '';
+        var valueB = cellB ? (cellB.getAttribute('data-sort-value') || cellB.textContent.trim()) : '';
+        var emptyA = valueA === '' || valueA === '—';
+        var emptyB = valueB === '' || valueB === '—';
+
+        if (emptyA || emptyB) return emptyA === emptyB ? 0 : (emptyA ? 1 : -1);
+
+        if (type === 'number') {
+          valueA = Number(valueA);
+          valueB = Number(valueB);
+        } else {
+          valueA = /^\d+$/.test(valueA) ? Number(valueA) : Date.parse(valueA.replace(' ', 'T'));
+          valueB = /^\d+$/.test(valueB) ? Number(valueB) : Date.parse(valueB.replace(' ', 'T'));
+        }
+
+        if (valueA === valueB) return 0;
+        return (valueA < valueB ? -1 : 1) * direction;
+      });
+
+      rows.forEach(function (row) { body.appendChild(row); });
+      updateVisibleRows(rows);
+    });
+  });
 
   window.addEventListener('resize', function () {
     if (window.matchMedia('(min-width: 961px)').matches) {

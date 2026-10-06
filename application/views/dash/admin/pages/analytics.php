@@ -1,6 +1,7 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 $days = isset($analytics_days) ? (int) $analytics_days : 30;
 ?>
+<div class="admin-analytics-page">
 <div class="admin-filter-bar glass-card">
 	<div class="admin-quick-links__grid">
 		<a class="btn btn--ghost<?php echo $days === 7 ? ' is-active-tab' : ''; ?>" href="<?php echo site_url('admin/analytics?days=7'); ?>">Last 7 days</a>
@@ -48,4 +49,5 @@ $days = isset($analytics_days) ? (int) $analytics_days : 30;
 			</tbody>
 		</table>
 	</section>
+</div>
 </div>

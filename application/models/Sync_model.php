@@ -78,6 +78,12 @@ class Sync_model extends CI_Model {
 		{
 			$pending_users = (int) $this->db->where_in('sync_status', array('pending', 'failed'))->count_all_results('users');
 		}
+		if ($this->db->table_exists('resident_deletions'))
+		{
+			$pending_users += (int) $this->db
+				->where_in('sync_status', array('pending', 'failed'))
+				->count_all_results('resident_deletions');
+		}
 
 		$last = NULL;
 		if ($this->db->table_exists('water_readings') && $this->has_column('water_readings', 'synced_at'))
@@ -141,6 +147,18 @@ class Sync_model extends CI_Model {
 
 		try
 		{
+			foreach ($this->pending_rows('resident_deletions', $limit) as $deletion)
+			{
+				if ($this->push_user_deletion($cloud, $deletion))
+				{
+					$result['pushed']++;
+				}
+				else
+				{
+					$result['failed']++;
+				}
+			}
+
 			foreach ($this->pending_rows('users', $limit) as $user)
 			{
 				if ($this->push_user($cloud, $user))
@@ -236,11 +254,12 @@ class Sync_model extends CI_Model {
 	{
 		$uid = ! empty($row['record_uid']) ? $row['record_uid'] : $this->new_uid();
 		$sql = 'INSERT INTO `users`
-			(`record_uid`, `username`, `name`, `phone`, `role`, `password_hash`)
-			VALUES (?, ?, ?, ?, ?, ?)
+			(`record_uid`, `username`, `name`, `phone`, `barangay`, `role`, `password_hash`)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
 			ON DUPLICATE KEY UPDATE
 				`name` = VALUES(`name`),
 				`phone` = VALUES(`phone`),
+				`barangay` = VALUES(`barangay`),
 				`role` = VALUES(`role`),
 				`password_hash` = VALUES(`password_hash`),
 				`record_uid` = VALUES(`record_uid`)';
@@ -250,11 +269,35 @@ class Sync_model extends CI_Model {
 			$row['username'],
 			$row['name'],
 			isset($row['phone']) ? $row['phone'] : NULL,
+			isset($row['barangay']) ? $row['barangay'] : NULL,
 			$row['role'],
 			$row['password_hash'],
 		));
 
 		return $this->mark_local('users', (int) $row['id'], $uid, $ok, $cloud);
+	}
+
+	protected function push_user_deletion($cloud, $row)
+	{
+		$ok = $cloud->query('DELETE FROM `users` WHERE `record_uid` = ?', array($row['record_uid']));
+		$error = '';
+		if ( ! $ok)
+		{
+			$err = $cloud->error();
+			$error = isset($err['message']) ? substr($err['message'], 0, 250) : 'cloud_delete_failed';
+		}
+
+		$local_ok = $this->db->where('id', (int) $row['id'])->update('resident_deletions', array(
+			'sync_status' => $ok ? 'synced' : 'failed',
+			'sync_error' => $ok ? NULL : $error,
+			'synced_at' => $ok ? date('Y-m-d H:i:s') : NULL,
+		));
+		if ( ! $local_ok)
+		{
+			log_message('error', 'Could not update sync status for resident deletion queue ID ' . (int) $row['id'] . '.');
+		}
+
+		return (bool) $ok && (bool) $local_ok;
 	}
 
 	protected function mark_local($table, $id, $uid, $ok, $cloud)
@@ -301,6 +344,7 @@ class Sync_model extends CI_Model {
 			`username` VARCHAR(64) NOT NULL,
 			`name` VARCHAR(120) NOT NULL,
 			`phone` VARCHAR(20) NULL,
+			`barangay` VARCHAR(80) NULL,
 			`role` ENUM('admin','user') NOT NULL,
 			`password_hash` VARCHAR(255) NOT NULL,
 			`last_login_at` DATETIME NULL,
@@ -325,6 +369,15 @@ class Sync_model extends CI_Model {
 			KEY `idx_water_readings_received_at` (`received_at`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+		if ( ! $cloud->field_exists('phone', 'users'))
+		{
+			$cloud->query("ALTER TABLE `users` ADD COLUMN `phone` VARCHAR(20) NULL AFTER `name`");
+		}
+		if ( ! $cloud->field_exists('barangay', 'users'))
+		{
+			$cloud->query("ALTER TABLE `users` ADD COLUMN `barangay` VARCHAR(80) NULL AFTER `phone`");
+		}
+
 		$this->cloud = $cloud;
 		return $cloud;
 	}
@@ -344,6 +397,18 @@ class Sync_model extends CI_Model {
 
 	protected function ensure_local_schema()
 	{
+		$this->db->query("CREATE TABLE IF NOT EXISTS `resident_deletions` (
+			`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			`record_uid` CHAR(36) NOT NULL,
+			`sync_status` ENUM('pending','synced','failed') NOT NULL DEFAULT 'pending',
+			`sync_error` VARCHAR(255) NULL,
+			`created_at` DATETIME NOT NULL,
+			`synced_at` DATETIME NULL,
+			PRIMARY KEY (`id`),
+			UNIQUE KEY `uk_resident_deletions_uid` (`record_uid`),
+			KEY `idx_resident_deletions_status` (`sync_status`, `id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
 		if ($this->db->table_exists('water_readings'))
 		{
 			$this->add_column('water_readings', 'record_uid', "CHAR(36) NULL AFTER `id`");
@@ -358,6 +423,7 @@ class Sync_model extends CI_Model {
 		{
 			$this->add_column('users', 'record_uid', "CHAR(36) NULL AFTER `id`");
 			$this->add_column('users', 'phone', "VARCHAR(20) NULL AFTER `name`");
+			$this->add_column('users', 'barangay', "VARCHAR(80) NULL AFTER `phone`");
 			$this->add_column('users', 'last_login_at', "DATETIME NULL AFTER `password_hash`");
 			$this->add_column('users', 'sync_status', "ENUM('pending','synced','failed') NOT NULL DEFAULT 'pending' AFTER `password_hash`");
 			$this->add_column('users', 'synced_at', "DATETIME NULL AFTER `sync_status`");

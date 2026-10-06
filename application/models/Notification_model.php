@@ -104,10 +104,11 @@ class Notification_model extends CI_Model {
 		}
 		$name = isset($user['name']) ? $user['name'] : $user['username'];
 		$phone = ! empty($user['phone']) ? $user['phone'] : 'no mobile on file';
+		$barangay = ! empty($user['barangay']) ? $user['barangay'] : 'barangay not specified';
 		$this->notify_admins(
 			'user_login',
 			'Resident signed in',
-			$name . ' (' . $user['username'] . ') · ' . $phone,
+			$name . ' (' . $user['username'] . ') · ' . $barangay . ' · ' . $phone,
 			site_url('admin/residents'),
 			(int) $user['id']
 		);
@@ -121,10 +122,11 @@ class Notification_model extends CI_Model {
 		}
 		$name = isset($user['name']) ? $user['name'] : $user['username'];
 		$phone = ! empty($user['phone']) ? $user['phone'] : '—';
+		$barangay = ! empty($user['barangay']) ? $user['barangay'] : 'barangay not specified';
 		$this->notify_admins(
 			'user_signup',
 			'New resident registered',
-			$name . ' · ' . $phone . ' · @' . $user['username'],
+			$name . ' · ' . $barangay . ' · ' . $phone . ' · @' . $user['username'],
 			site_url('admin/residents'),
 			(int) $user['id']
 		);
@@ -142,6 +144,20 @@ class Notification_model extends CI_Model {
 		{
 			$body = substr($body, 0, 177) . '…';
 		}
+		$barangay = isset($row['barangay']) ? trim((string) $row['barangay']) : '';
+		if ($barangay !== '')
+		{
+			$this->notify_barangay_users(
+				$barangay,
+				'announcement',
+				'New advisory for your barangay: ' . $title,
+				$body !== '' ? $body : 'MDRRMO Dulag posted a new announcement.',
+				site_url('portal/announcements'),
+				(int) $row['id']
+			);
+			return;
+		}
+
 		$this->notify_all_users(
 			'announcement',
 			'New advisory: ' . $title,
@@ -149,6 +165,37 @@ class Notification_model extends CI_Model {
 			site_url('portal#alerts'),
 			(int) $row['id']
 		);
+	}
+
+	protected function notify_barangay_users($barangay, $type, $title, $body, $link, $ref_id)
+	{
+		if ( ! $this->db->table_exists('users') || ! $this->db->field_exists('barangay', 'users'))
+		{
+			return FALSE;
+		}
+
+		$users = $this->db
+			->select('id')
+			->where('role', 'user')
+			->where('barangay', $barangay)
+			->get('users')
+			->result_array();
+		$created = FALSE;
+		foreach ($users as $user)
+		{
+			$user_id = (int) $user['id'];
+			$exists = $this->db
+				->where('audience', 'user')
+				->where('type', $type)
+				->where('ref_id', (int) $ref_id)
+				->where('recipient_user_id', $user_id)
+				->count_all_results('notifications');
+			if ($exists === 0 && $this->create('user', $type, $title, $body, $link, $ref_id, $user_id))
+			{
+				$created = TRUE;
+			}
+		}
+		return $created;
 	}
 
 	public function on_flood_alert($level, $title, $alert_id)

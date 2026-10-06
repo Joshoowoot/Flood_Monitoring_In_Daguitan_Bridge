@@ -11,6 +11,7 @@
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=20260925e">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="auth-body auth-body--admin">
 	<div class="auth-bg" aria-hidden="true"></div>
@@ -36,9 +37,9 @@
 					<span class="auth-mark" aria-hidden="true">
 						<img src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="64" height="64">
 					</span>
-					<p class="auth-kicker">Administrator access</p>
+					<p class="auth-kicker">Administrator Access</p>
 					<h1>MDRRMO <span>Console</span></h1>
-					<p class="auth-intro__copy">This page is not linked from the public website. Only authorized MDRRMO staff may sign in here.</p>
+					<p class="auth-intro__copy">This page is strictly for authorized MDRRMO personnel only. It is not publicly available on the website and is intended solely for official administrative use. Unauthorized access is prohibited.</p>
 				</div>
 				<p class="auth-intro__back">
 					<a href="<?php echo site_url('/'); ?>">
@@ -51,16 +52,22 @@
 			<section class="auth-card">
 				<div class="auth-card__inner">
 					<header class="auth-welcome">
-						<p class="auth-admin-badge">Authorized Staff Only</p>
+						<p class="auth-admin-badge">Restricted Access</p>
 						<h2>Administrator sign in</h2>
 						<p class="auth-lead">Enter staff credentials to open the operations console.</p>
 					</header>
+					<div class="auth-secure-note auth-secure-note--<?php echo html_escape($station_health['status']); ?>" role="status">
+						<span class="auth-secure-note__icon" aria-hidden="true">
+							<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg>
+						</span>
+						<span><strong>Secure operations channel</strong><small><?php echo html_escape($station_health['label']); ?> · <?php echo html_escape($station_health['detail']); ?></small></span>
+					</div>
 
 					<?php if ($error): ?>
 						<p class="auth-error" role="alert"><?php echo html_escape($error); ?></p>
 					<?php endif; ?>
 
-					<form method="post" action="<?php echo site_url('admin'); ?>" class="auth-form" autocomplete="username">
+					<form method="post" action="<?php echo site_url('admin'); ?>" class="auth-form" id="adminLoginForm" autocomplete="on">
 						<label class="auth-field">
 							<span class="auth-field__label">Username</span>
 							<span class="auth-field__control">
@@ -86,8 +93,9 @@
 								</button>
 							</span>
 						</label>
-						<button class="btn btn--primary btn--block auth-submit" type="submit">Sign in</button>
+						<button class="btn btn--primary btn--block auth-submit" type="submit" data-default-label="Sign in">Sign in</button>
 					</form>
+					<p class="auth-access-help">Need account assistance? <a href="<?php echo site_url('about'); ?>">Contact MDRRMO support</a></p>
 
 				</div>
 			</section>
@@ -107,6 +115,16 @@
 				btn.classList.toggle('is-visible', show);
 				btn.querySelector('.auth-eye__show').hidden = !show;
 				btn.querySelector('.auth-eye__hide').hidden = show;
+			});
+		})();
+		(function () {
+			var form = document.getElementById('adminLoginForm');
+			if (!form) return;
+			form.addEventListener('submit', function () {
+				var submit = form.querySelector('button[type="submit"]');
+				if (!submit || submit.disabled) return;
+				submit.disabled = true;
+				submit.textContent = 'Signing in...';
 			});
 		})();
 	</script>

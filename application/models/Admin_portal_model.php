@@ -399,10 +399,18 @@ class Admin_portal_model extends CI_Model {
 
 	public function save_announcement($id, $data)
 	{
+		$barangay = isset($data['barangay']) ? trim((string) $data['barangay']) : '';
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
+		if ($barangay !== '' && ! isset($barangays[$barangay]))
+		{
+			return array('ok' => FALSE, 'error' => 'Choose a valid barangay or Municipality-wide.');
+		}
 		$row = array(
 			'title'        => trim((string) $data['title']),
 			'body'         => trim((string) $data['body']),
-			'level'        => in_array($data['level'], array('info', 'yellow', 'red'), TRUE) ? $data['level'] : 'info',
+			'level'         => in_array($data['level'], array('info', 'yellow', 'red'), TRUE) ? $data['level'] : 'info',
+			'barangay'      => $barangay !== '' ? $barangay : NULL,
 			'is_published' => ! empty($data['is_published']) ? 1 : 0,
 		);
 		if ($row['title'] === '' || $row['body'] === '')
@@ -470,13 +478,24 @@ class Admin_portal_model extends CI_Model {
 		return $ok;
 	}
 
-	public function list_residents($search = '', $status = '')
+	public function list_residents($search = '', $status = '', $barangay = '')
 	{
 		if ( ! $this->db->table_exists('users'))
 		{
 			return array();
 		}
 		$this->db->where('role', 'user');
+		if ($barangay === '__none__')
+		{
+			$this->db->group_start()
+				->where('barangay', NULL)
+				->or_where('barangay', '')
+				->group_end();
+		}
+		elseif ($barangay !== '')
+		{
+			$this->db->where('barangay', $barangay);
+		}
 		if ($search !== '')
 		{
 			$q = $this->db->escape_like_str($search);
@@ -484,6 +503,7 @@ class Admin_portal_model extends CI_Model {
 				->like('name', $q)
 				->or_like('username', $q)
 				->or_like('phone', $q)
+				->or_like('barangay', $q)
 				->group_end();
 		}
 		$rows = $this->db->order_by('created_at', 'DESC')->get('users')->result_array();
@@ -532,6 +552,37 @@ class Admin_portal_model extends CI_Model {
 		return $out;
 	}
 
+	public function resident_barangay_counts()
+	{
+		if ( ! $this->db->table_exists('users') || ! $this->db->field_exists('barangay', 'users'))
+		{
+			return array();
+		}
+
+		$rows = $this->db
+			->select('barangay, COUNT(*) AS resident_count')
+			->where('role', 'user')
+			->group_by('barangay')
+			->order_by('resident_count', 'DESC')
+			->order_by('barangay', 'ASC')
+			->get('users')
+			->result_array();
+
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
+		foreach ($rows as &$row)
+		{
+			$row['barangay'] = isset($row['barangay']) ? trim((string) $row['barangay']) : '';
+			$row['barangay_label'] = $row['barangay'] === ''
+				? 'Not specified'
+				: (isset($barangays[$row['barangay']]) ? $barangays[$row['barangay']] : $row['barangay']);
+			$row['resident_count'] = (int) $row['resident_count'];
+		}
+		unset($row);
+
+		return $rows;
+	}
+
 	public function list_recent_logins($limit = 12)
 	{
 		if ( ! $this->db->table_exists('user_logins'))
@@ -543,6 +594,74 @@ class Admin_portal_model extends CI_Model {
 			->limit(max(1, (int) $limit))
 			->get('user_logins')
 			->result_array();
+	}
+
+	public function delete_resident($id)
+	{
+		$id = (int) $id;
+		if ($id <= 0 || ! $this->db->table_exists('users'))
+		{
+			return FALSE;
+		}
+
+		$resident = $this->db
+			->select('id, record_uid')
+			->where('id', $id)
+			->where('role', 'user')
+			->get('users')
+			->row_array();
+		if ( ! $resident)
+		{
+			return FALSE;
+		}
+
+		if ( ! $this->db->trans_begin())
+		{
+			log_message('error', 'Could not start transaction when deleting resident account ID ' . $id . '.');
+			return FALSE;
+		}
+		$record_uid = ! empty($resident['record_uid']) ? (string) $resident['record_uid'] : $this->Sync_model->new_uid();
+		if (empty($resident['record_uid']))
+		{
+			$this->db->where('id', $id)->where('role', 'user')->update('users', array('record_uid' => $record_uid));
+		}
+		$this->db->insert('resident_deletions', array(
+			'record_uid' => $record_uid,
+			'sync_status' => 'pending',
+			'created_at' => date('Y-m-d H:i:s'),
+		));
+		if ($this->db->table_exists('user_logins'))
+		{
+			$this->db->where('user_id', $id)->delete('user_logins');
+		}
+		if ($this->db->table_exists('notification_reads'))
+		{
+			$this->db->where('user_id', $id)->delete('notification_reads');
+		}
+		if ($this->db->table_exists('notifications'))
+		{
+			$this->db->where('recipient_user_id', $id)->delete('notifications');
+		}
+		$this->db->where('id', $id)->where('role', 'user')->delete('users');
+		$deleted = $this->db->affected_rows() > 0;
+		$transaction_ok = $this->db->trans_status();
+
+		if ( ! $deleted || ! $transaction_ok)
+		{
+			$this->db->trans_rollback();
+			if ( ! $transaction_ok)
+			{
+				log_message('error', 'Could not delete all associated data for resident account ID ' . $id . '.');
+			}
+			return FALSE;
+		}
+
+		$committed = $this->db->trans_commit();
+		if ( ! $committed)
+		{
+			log_message('error', 'Could not commit deletion of resident account ID ' . $id . '.');
+		}
+		return $committed;
 	}
 
 	public function dashboard_snapshot()
@@ -691,6 +810,7 @@ class Admin_portal_model extends CI_Model {
 				`title` VARCHAR(160) NOT NULL,
 				`body` TEXT NOT NULL,
 				`level` ENUM('info','yellow','red') NOT NULL DEFAULT 'info',
+				`barangay` VARCHAR(80) NULL DEFAULT NULL,
 				`is_published` TINYINT(1) NOT NULL DEFAULT 0,
 				`push_sent` TINYINT(1) NOT NULL DEFAULT 0,
 				`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

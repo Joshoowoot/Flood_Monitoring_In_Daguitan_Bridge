@@ -325,6 +325,38 @@
   background: #6b7585;
 }
 
+.wx-scene[data-time="night"] .wx-sky {
+  background: linear-gradient(180deg, #09182b 0%, #142c45 55%, #24394d 100%);
+}
+
+.wx-scene[data-time="night"][data-theme="drizzle"] .wx-sky,
+.wx-scene[data-time="night"][data-theme="rainy"] .wx-sky {
+  background: linear-gradient(180deg, #101b2a 0%, #1b2c40 55%, #2b3b4c 100%);
+}
+
+.wx-scene[data-time="night"][data-theme="storm"] .wx-sky {
+  background: linear-gradient(180deg, #070d19 0%, #111c2c 55%, #202c3b 100%);
+}
+
+.wx-scene[data-time="night"][data-theme="fog"] .wx-sky {
+  background: linear-gradient(180deg, #172632 0%, #263743 55%, #36434c 100%);
+}
+
+.wx-scene[data-time="night"] .wx-sun {
+  opacity: 0;
+}
+
+.wx-scene[data-time="night"] .wx-cloud {
+  background: #52677f;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.3));
+}
+
+.wx-scene[data-time="night"] .wx-fog {
+  background:
+    linear-gradient(180deg, rgba(160, 178, 194, 0.28) 0%, transparent 40%),
+    radial-gradient(ellipse 80% 40% at 50% 60%, rgba(190, 205, 216, 0.3), transparent 70%);
+}
+
 /* Weather card icon mini-scenes */
 .weather-card__icon {
   width: 72px;

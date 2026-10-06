@@ -11,6 +11,7 @@ $a = $announcement;
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="dash-body">
 	<header class="dash-top">

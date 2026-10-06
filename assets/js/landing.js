@@ -53,12 +53,13 @@
 
   const navLinks = document.querySelectorAll(".bottom-nav a");
   const isAnnouncePage = document.body.classList.contains("announce-page");
+  const isAboutPage = document.body.classList.contains("about-page");
   const sections = ["home", "monitor", "guidance", "alerts", "safety", "about"]
     .map((id) => document.getElementById(id))
     .filter(Boolean);
 
   const syncNav = () => {
-    if (isAnnouncePage) return;
+    if (isAnnouncePage || isAboutPage) return;
     const y = window.scrollY + 120;
     let current = "home";
     sections.forEach((section) => {
@@ -95,7 +96,7 @@
   });
 
   if ("serviceWorker" in navigator) {
-    const swUrl = new URL("sw.js", document.baseURI || window.location.href);
+    const swUrl = new URL(data.serviceWorkerUrl || "sw.js", document.baseURI || window.location.href);
     navigator.serviceWorker.register(swUrl.href).catch(() => {
       /* Landing remains usable if the worker cannot register. */
     });
@@ -112,6 +113,25 @@
   const arrows = { rising: "↑", falling: "↓", steady: "→" };
   const fmtLevel = (n) => `${Number(n).toFixed(2)} m`;
   const fmtRate = (n) => `${n > 0 ? "+" : ""}${Number(n).toFixed(2)} cm/min`;
+
+  document.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-toggle-announcement]");
+    if (!toggle) return;
+    const container = toggle.closest("#announceBody, .announce-item");
+    if (!container) return;
+    const expanded = container.classList.toggle("is-expanded");
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.textContent = expanded
+      ? "Show less"
+      : toggle.classList.contains("announce-item__toggle")
+        ? "Read full announcement"
+        : "Read full advisory";
+  });
+
+  document.querySelectorAll("[data-toggle-announcement]").forEach((toggle) => {
+    const copy = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (copy) toggle.hidden = copy.textContent.trim().length <= 220;
+  });
 
   const setText = (id, value) => {
     const el = document.getElementById(id);
@@ -168,14 +188,26 @@
 
     if (a) {
       setText("announcePill", a.active ? "Active" : "Quiet");
+      setText("announceScope", a.barangay ? `For Barangay ${a.barangay}` : "Municipality-wide notice");
       const body = document.getElementById("announceBody");
       if (body) {
+        const expanded = body.classList.contains("is-expanded");
         const title = document.createElement(a.active ? "p" : "p");
         title.className = a.active ? `status-badge status-badge--${a.level || "yellow"}` : "announce-card__empty";
         title.textContent = a.title;
         const copy = document.createElement("p");
+        copy.id = "announceCopy";
+        copy.className = "live-advisory__copy";
         copy.textContent = a.body;
-        body.replaceChildren(title, copy);
+        const toggle = document.createElement("button");
+        toggle.className = "live-advisory__toggle";
+        toggle.type = "button";
+        toggle.dataset.toggleAnnouncement = "";
+        toggle.setAttribute("aria-controls", "announceCopy");
+        toggle.setAttribute("aria-expanded", String(expanded));
+        toggle.textContent = expanded ? "Show less" : "Read full advisory";
+        toggle.hidden = copy.textContent.trim().length <= 220;
+        body.replaceChildren(title, copy, toggle);
       }
     }
 

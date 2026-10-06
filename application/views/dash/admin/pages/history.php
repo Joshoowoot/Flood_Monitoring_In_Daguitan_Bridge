@@ -5,6 +5,7 @@ $q = http_build_query(array_filter(array(
 	'date_to'   => isset($filter_date_to) ? $filter_date_to : '',
 )));
 ?>
+<div class="admin-history-page">
 <section class="glass-card admin-filter-bar">
 	<div class="admin-quick-links__grid admin-quick-links__grid--tight">
 		<a class="btn btn--ghost btn--compact" href="<?php echo site_url('admin/history?date_from=' . date('Y-m-d') . '&date_to=' . date('Y-m-d')); ?>">Today</a>
@@ -22,14 +23,16 @@ $q = http_build_query(array_filter(array(
 				<option value="red"<?php echo (isset($filters['warning']) && $filters['warning'] === 'red') ? ' selected' : ''; ?>>Critical</option>
 			</select>
 		</label>
-		<button class="btn btn--primary" type="submit">Apply filters</button>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/history'); ?>">Clear</a>
-		<a class="btn btn--ghost" href="<?php echo site_url('admin/history_export' . ($q ? '?' . $q : '')); ?>">Download CSV</a>
+		<div class="admin-history-actions">
+			<button class="btn btn--primary" type="submit">Apply filters</button>
+			<a class="btn btn--ghost" href="<?php echo site_url('admin/history'); ?>">Clear</a>
+			<a class="btn btn--ghost" href="<?php echo site_url('admin/history_export' . ($q ? '?' . $q : '')); ?>">Download CSV</a>
+		</div>
 	</form>
-	<p class="admin-muted"><?php echo (int) $history_count; ?> reading(s) shown (max 500 per load).</p>
+	<p class="admin-muted admin-history-count"><?php echo (int) $history_count; ?> reading(s) shown (max 500 per load).</p>
 </section>
 
-<section class="glass-card dash-table-wrap">
+<section class="glass-card dash-table-wrap admin-history-table">
 	<h2>Reading history</h2>
 	<?php if (empty($history_rows)): ?>
 		<p>No readings match your filters. Adjust dates or <a href="<?php echo site_url('admin/history'); ?>">clear filters</a>.</p>
@@ -66,3 +69,4 @@ $q = http_build_query(array_filter(array(
 	</div>
 	<?php endif; ?>
 </section>
+</div>

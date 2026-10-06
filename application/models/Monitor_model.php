@@ -11,9 +11,18 @@ class Monitor_model extends CI_Model {
 		$this->config->load('monitor', TRUE);
 		$this->load->model('Sync_model');
 		$this->migrate_json_if_needed();
+		$this->ensure_announcement_barangay_column();
 	}
 
-	public function get_status()
+	protected function ensure_announcement_barangay_column()
+	{
+		if ($this->db->table_exists('announcements') && ! $this->db->field_exists('barangay', 'announcements'))
+		{
+			$this->db->query("ALTER TABLE `announcements` ADD COLUMN `barangay` VARCHAR(80) NULL DEFAULT NULL AFTER `level`");
+		}
+	}
+
+	public function get_status($barangay = NULL)
 	{
 		$current = $this->latest_reading();
 		$history = $this->recent_history(40);
@@ -80,7 +89,7 @@ class Monitor_model extends CI_Model {
 		);
 
 		$announcement = $this->announcement_from($monitor, $online, $has_reading);
-		$custom = $this->published_announcement();
+		$custom = $this->published_announcement($barangay);
 		if ($custom)
 		{
 			$announcement = $custom;
@@ -91,6 +100,26 @@ class Monitor_model extends CI_Model {
 			'weather'      => $this->get_weather(),
 			'announcement' => $announcement,
 		);
+	}
+
+	public function station_health()
+	{
+		$current = $this->latest_reading();
+		$received = isset($current['received_at']) ? (int) $current['received_at'] : 0;
+		$age = $received > 0 ? time() - $received : PHP_INT_MAX;
+		$online = $received > 0 && $age <= (int) $this->cfg('monitor_offline_after', 90);
+
+		if ($online)
+		{
+			return array('status' => 'online', 'label' => 'Monitoring station online', 'detail' => 'Latest sensor data is available.');
+		}
+
+		if ($received > 0)
+		{
+			return array('status' => 'offline', 'label' => 'Monitoring station offline', 'detail' => 'Sign-in is available while the station reconnects.');
+		}
+
+		return array('status' => 'waiting', 'label' => 'Monitoring station waiting', 'detail' => 'No sensor reading has been received yet.');
 	}
 
 	public function get_weather()
@@ -374,19 +403,15 @@ class Monitor_model extends CI_Model {
 		return isset($labels[$code]) ? $labels[$code] : 'Cloudy';
 	}
 
-	protected function published_announcement()
+	protected function published_announcement($barangay = NULL)
 	{
 		if ( ! $this->db->table_exists('announcements'))
 		{
 			return NULL;
 		}
 
-		$row = $this->db
-			->where('is_published', 1)
-			->order_by('updated_at', 'DESC')
-			->limit(1)
-			->get('announcements')
-			->row_array();
+		$rows = $this->list_published_announcements($barangay);
+		$row = ! empty($rows) ? $rows[0] : NULL;
 
 		if ( ! $row)
 		{
@@ -400,22 +425,54 @@ class Monitor_model extends CI_Model {
 			'level'  => $level,
 			'title'  => $row['title'],
 			'body'   => $row['body'],
+			'barangay' => isset($row['barangay']) ? $row['barangay'] : NULL,
 			'issuer' => 'MDRRMO Dulag',
 		);
 	}
 
-	public function list_published_announcements()
+	public function list_published_announcements($barangay = NULL)
 	{
 		if ( ! $this->db->table_exists('announcements'))
 		{
 			return array();
 		}
 
-		return $this->db
+		$rows = $this->db
 			->where('is_published', 1)
 			->order_by('updated_at', 'DESC')
 			->get('announcements')
 			->result_array();
+
+		$barangay = is_string($barangay) ? trim($barangay) : '';
+		$rows = array_values(array_filter($rows, function ($row) use ($barangay) {
+			$target = isset($row['barangay']) ? trim((string) $row['barangay']) : '';
+			return $target === '' || ($barangay !== '' && $target === $barangay);
+		}));
+
+		usort($rows, function ($left, $right) use ($barangay) {
+			$left_target = isset($left['barangay']) ? trim((string) $left['barangay']) : '';
+			$right_target = isset($right['barangay']) ? trim((string) $right['barangay']) : '';
+			$left_relevance = ($barangay !== '' && $left_target === $barangay) ? 0 : 1;
+			$right_relevance = ($barangay !== '' && $right_target === $barangay) ? 0 : 1;
+			if ($left_relevance !== $right_relevance)
+			{
+				return $left_relevance - $right_relevance;
+			}
+
+			$severity = array('red' => 0, 'yellow' => 1, 'info' => 2);
+			$left_level = isset($severity[$left['level']]) ? $severity[$left['level']] : 2;
+			$right_level = isset($severity[$right['level']]) ? $severity[$right['level']] : 2;
+			if ($left_level !== $right_level)
+			{
+				return $left_level - $right_level;
+			}
+			return strcmp(
+				isset($right['updated_at']) ? $right['updated_at'] : '',
+				isset($left['updated_at']) ? $left['updated_at'] : ''
+			);
+		});
+
+		return $rows;
 	}
 
 	public function ingest($input)

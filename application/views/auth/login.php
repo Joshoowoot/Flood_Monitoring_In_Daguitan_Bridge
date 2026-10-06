@@ -2,10 +2,12 @@
 $username = isset($username) ? $username : '';
 $name = isset($name) ? $name : '';
 $phone = isset($phone) ? $phone : '';
+$barangay = isset($barangay) ? $barangay : '';
+$barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 $error = isset($error) ? $error : '';
 $auth_mode = (isset($auth_mode) && $auth_mode === 'signup') ? 'signup' : 'signin';
 $is_signup = ($auth_mode === 'signup');
-$asset_v = '20260925s';
+$asset_v = '20261006a';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,6 +20,7 @@ $asset_v = '20260925s';
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=<?php echo $asset_v; ?>">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="auth-body auth-body--resident auth-body--<?php echo $is_signup ? 'signup' : 'signin'; ?>" data-auth-mode="<?php echo $auth_mode; ?>">
 	<div class="auth-bg" aria-hidden="true"></div>
@@ -171,6 +174,21 @@ $asset_v = '20260925s';
 										<span class="auth-country-code" aria-hidden="true">+63</span>
 										<input id="signup-phone" type="tel" name="phone" required value="<?php echo html_escape($phone); ?>" placeholder="09171234567" autocomplete="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09">
 									</span>
+								</label>
+								<label class="auth-field">
+									<span class="auth-field__label">Barangay</span>
+									<span class="auth-field__control">
+										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5M9 20v-6h6v6"/>
+										</svg>
+										<select name="barangay" required autocomplete="address-level3" aria-label="Select your barangay">
+											<option value="">Select your barangay</option>
+											<?php foreach ($barangays as $value => $label): ?>
+												<option value="<?php echo html_escape($value); ?>"<?php echo $barangay === $value ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
+											<?php endforeach; ?>
+										</select>
+									</span>
+									<span class="auth-hint">Used to organize resident counts and local emergency coordination.</span>
 								</label>
 								</fieldset>
 								<fieldset class="auth-form-section signup-step" data-signup-step="2" hidden>

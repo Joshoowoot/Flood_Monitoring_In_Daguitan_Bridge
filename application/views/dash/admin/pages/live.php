@@ -16,6 +16,7 @@ $level_percent = min(100, max(0, ($level / $threshold_max) * 100));
 $yellow_percent = min(100, max(0, ($yellow / $threshold_max) * 100));
 $has_chart_points = isset($chart['points']) && ! empty($chart['points']);
 ?>
+<div class="admin-live-page">
 <div class="admin-live-toolbar">
 	<div class="admin-live-toolbar__copy">
 		<p class="admin-live-intro">Current river level, trend, and field hardware status at Daguitan Bridge.</p>
@@ -88,3 +89,4 @@ $has_chart_points = isset($chart['points']) && ! empty($chart['points']);
 	<canvas id="adminWaterChart" data-window-seconds="3600" height="210" aria-label="Water level history for the past 60 minutes"<?php echo $has_chart_points ? '' : ' hidden'; ?>></canvas>
 	<p class="admin-live-chart__empty admin-muted" id="admChartEmpty"<?php echo $has_chart_points ? ' hidden' : ''; ?>>No station readings are available for the past hour.</p>
 </section>
+</div>

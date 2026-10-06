@@ -144,12 +144,19 @@ class Auth_model extends CI_Model {
 		}
 	}
 
-	public function register_resident($username, $name, $phone, $password)
+	public function register_resident($username, $name, $phone, $barangay, $password)
 	{
 		$username = strtolower(trim((string) $username));
 		$name = trim((string) $name);
 		$phone = $this->normalize_phone($phone);
+		$barangay = trim((string) $barangay);
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
 
+		if ( ! isset($barangays[$barangay]))
+		{
+			return array('ok' => FALSE, 'error' => 'Select your barangay from the list.');
+		}
 		if ($this->find_by_username($username))
 		{
 			return array('ok' => FALSE, 'error' => 'That username is already taken.');
@@ -168,6 +175,7 @@ class Auth_model extends CI_Model {
 			'username'      => $username,
 			'name'          => $name,
 			'phone'         => $phone,
+			'barangay'      => $barangay,
 			'role'          => 'user',
 			'password_hash' => password_hash($password, PASSWORD_DEFAULT),
 			'sync_status'   => 'pending',
@@ -198,13 +206,113 @@ class Auth_model extends CI_Model {
 			'username' => $user['username'],
 			'name'     => isset($user['name']) ? $user['name'] : $user['username'],
 			'phone'    => isset($user['phone']) ? $user['phone'] : NULL,
+			'barangay' => isset($user['barangay']) ? $user['barangay'] : NULL,
 			'role'     => $user['role'],
 		);
+	}
+
+	public function update_resident_profile($user_id, $name, $phone, $barangay)
+	{
+		$user_id = (int) $user_id;
+		$name = trim((string) $name);
+		$phone = $this->normalize_phone($phone);
+		$barangay = trim((string) $barangay);
+
+		if ($user_id < 1 || strlen($name) < 2 || strlen($name) > 120)
+		{
+			return array('ok' => FALSE, 'error' => 'Enter a name between 2 and 120 characters.');
+		}
+		if ( ! $this->is_valid_barangay($barangay))
+		{
+			return array('ok' => FALSE, 'error' => 'Select a valid barangay from the list.');
+		}
+
+		if ($phone !== '' && ! $this->is_valid_phone($phone))
+		{
+			return array('ok' => FALSE, 'error' => 'Enter a valid Philippine mobile number (09XXXXXXXXX), or leave it blank.');
+		}
+		if ($phone !== '')
+		{
+			$existing = $this->db
+				->where('phone', $phone)
+				->where('id !=', $user_id)
+				->limit(1)
+				->get('users')
+				->row_array();
+			if ($existing)
+			{
+				return array('ok' => FALSE, 'error' => 'That mobile number is already registered to another account.');
+			}
+		}
+
+		$update = array('name' => $name, 'phone' => $phone !== '' ? $phone : NULL, 'barangay' => $barangay);
+		$this->mark_user_pending($update);
+		$ok = $this->db->where('id', $user_id)->where('role', 'user')->update('users', $update);
+		if ( ! $ok)
+		{
+			return array('ok' => FALSE, 'error' => 'Could not save your profile. Please try again.');
+		}
+
+		return array('ok' => TRUE);
+	}
+
+	public function is_valid_barangay($barangay)
+	{
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
+		return isset($barangays[trim((string) $barangay)]);
+	}
+
+	public function change_resident_password($user_id, $current_password, $new_password)
+	{
+		$user_id = (int) $user_id;
+		$user = $this->db
+			->select('id, password_hash')
+			->where('id', $user_id)
+			->where('role', 'user')
+			->limit(1)
+			->get('users')
+			->row_array();
+
+		if ( ! $user || empty($user['password_hash']) || ! password_verify($current_password, $user['password_hash']))
+		{
+			return array('ok' => FALSE, 'error' => 'Your current password is incorrect.');
+		}
+		if (strlen($new_password) < 8 || strlen($new_password) > 4096)
+		{
+			return array('ok' => FALSE, 'error' => 'Your new password must be at least 8 characters.');
+		}
+
+		$update = array('password_hash' => password_hash($new_password, PASSWORD_DEFAULT));
+		$this->mark_user_pending($update);
+		$ok = $this->db->where('id', $user_id)->where('role', 'user')->update('users', $update);
+		if ( ! $ok)
+		{
+			return array('ok' => FALSE, 'error' => 'Could not update your password. Please try again.');
+		}
+
+		return array('ok' => TRUE);
+	}
+
+	protected function mark_user_pending(&$update)
+	{
+		if ($this->db->field_exists('sync_status', 'users'))
+		{
+			$update['sync_status'] = 'pending';
+		}
+		if ($this->db->field_exists('sync_error', 'users'))
+		{
+			$update['sync_error'] = NULL;
+		}
 	}
 
 	protected function ensure_seed()
 	{
 		if ( ! $this->db->table_exists('users'))
+		{
+			return;
+		}
+		if ((int) $this->db->count_all('users') > 0)
 		{
 			return;
 		}

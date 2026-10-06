@@ -355,12 +355,18 @@ flowchart LR
 Full schema: `database/mdrrmo_dulag.sql`.  
 Incremental scripts:
 
+For a new local installation, import the full schema. For an existing installation, apply only the migrations for features not already installed; do not rerun `ALTER TABLE` migrations against a schema that already has those columns.
+
 | File | Adds |
 |------|------|
 | `migrate_user_phone_and_logins.sql` | `users.phone`, `last_login_at`, `user_logins` |
+| `migrate_acd_features.sql` | SMS opt-in, sensor telemetry, `audit_log`, `sms_log` |
 | `migrate_admin_portal.sql` | `flood_alerts`, `announcements` |
+| `migrate_announcement_barangay.sql` | `announcements.barangay` for existing installations |
+| `migrate_community_reports.sql` | `community_reports` for resident hazard reports |
+| `migrate_resident_deletions.sql` | `resident_deletions` cloud-sync queue |
 | `migrate_notifications.sql` | `notifications`, `notification_reads` |
-| `hybrid_sync.sql` | Cloud schema notes |
+| `hybrid_sync.sql` | Cloud-side `users` and `water_readings` schema |
 
 Tables are also **auto-created** on first use (`Admin_portal_model`, `Notification_model`, `Sync_model`).
 

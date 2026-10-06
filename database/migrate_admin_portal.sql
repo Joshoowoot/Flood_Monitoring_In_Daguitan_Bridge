@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `announcements` (
 	`title` VARCHAR(160) NOT NULL,
 	`body` TEXT NOT NULL,
 	`level` ENUM('info','yellow','red') NOT NULL DEFAULT 'info',
+	`barangay` VARCHAR(80) NULL DEFAULT NULL,
 	`is_published` TINYINT(1) NOT NULL DEFAULT 0,
 	`push_sent` TINYINT(1) NOT NULL DEFAULT 0,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

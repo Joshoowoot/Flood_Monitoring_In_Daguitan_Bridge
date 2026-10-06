@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 	`record_uid` CHAR(36) NOT NULL,
 	`username` VARCHAR(64) NOT NULL,
 	`name` VARCHAR(120) NOT NULL,
+	`phone` VARCHAR(20) NULL,
+	`barangay` VARCHAR(80) NULL,
 	`role` ENUM('admin','user') NOT NULL,
 	`password_hash` VARCHAR(255) NOT NULL,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -42,9 +42,9 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006f">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006g">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006k">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006n">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page announce-page<?php echo ! empty($resident_portal) ? ' portal-page resident-portal' : ''; ?>">
@@ -190,6 +190,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 			</div>
 		</section>
 
+		<?php if ( ! empty($resident_portal)): ?>
 		<section class="section section--tight" id="live-advisory">
 			<article class="glass-card announce-card reveal announce-card--<?php echo html_escape($featured_level); ?><?php echo ! empty($a['active']) ? ' is-active' : ''; ?>" aria-labelledby="announceTitle">
 				<div class="announce-card__head">
@@ -212,6 +213,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				<p class="issuer"><?php echo html_escape(isset($a['issuer']) ? $a['issuer'] : 'MDRRMO Dulag'); ?></p>
 			</article>
 		</section>
+		<?php endif; ?>
 
 		<section class="section section--tight" id="safety">
 			<header class="section__head reveal">
@@ -331,10 +333,22 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 	</footer>
 
 	<nav class="bottom-nav" aria-label="App">
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>"><span aria-hidden="true">⌂</span> Home</a>
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor"><span aria-hidden="true">🌊</span> Monitor</a>
-		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>" class="is-active"><span aria-hidden="true">📢</span> News</a>
-		<a href="<?php echo html_escape(isset($about_url) ? $about_url : site_url('about')); ?>"><span aria-hidden="true">ℹ</span> About</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="m3 10 9-7 9 7"/><path d="M5.5 9v11h13V9M9.5 20v-6h5v6"/></svg>
+			Home
+		</a>
+		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h4l2.5-4 4.5 8 2.5-4H21"/></svg>
+			Monitor
+		</a>
+		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>" class="is-active" aria-current="page">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M5 3.5h14a2 2 0 0 1 2 2v15H7a2 2 0 0 1-2-2z"/><path d="M5 18.5a2 2 0 0 0 2 2M9 8h8M9 12h8M9 16h5"/></svg>
+			News
+		</a>
+		<a href="<?php echo html_escape(isset($about_url) ? $about_url : site_url('about')); ?>">
+			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+			About
+		</a>
 	</nav>
 
 	<script>

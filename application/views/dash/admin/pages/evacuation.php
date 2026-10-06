@@ -2,6 +2,7 @@
 $edit = isset($edit_row) && is_array($edit_row) ? $edit_row : NULL;
 $centers = isset($centers) && is_array($centers) ? $centers : array();
 ?>
+<div class="admin-evacuation-page">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <div class="admin-split admin-split--wide">
 	<section class="glass-card">
@@ -51,6 +52,7 @@ $centers = isset($centers) && is_array($centers) ? $centers : array();
 			</ul>
 		<?php endif; ?>
 	</section>
+</div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>

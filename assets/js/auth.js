@@ -31,6 +31,12 @@
 			btn.classList.toggle('is-visible', revealing);
 			syncEyeIcons(btn, revealing);
 		});
+		document.querySelectorAll('.auth-form select').forEach(function (select) {
+			syncFieldState(select);
+			select.addEventListener('change', function () {
+				syncFieldState(select);
+			});
+		});
 	}
 
 	document.querySelectorAll('[data-auth-toggle]').forEach(bindToggle);
@@ -67,7 +73,7 @@
 
 	function setDisabled(form, disabled) {
 		if (!form) return;
-		form.querySelectorAll('input, button[type="submit"]').forEach(function (el) {
+		form.querySelectorAll('input, select, button[type="submit"]').forEach(function (el) {
 			if (el.classList.contains('auth-eye')) return;
 			el.disabled = disabled;
 		});
@@ -170,7 +176,7 @@
 		}
 
 		nextSignupStep.addEventListener('click', function () {
-			var personalFields = signupSteps[0].querySelectorAll('input');
+			var personalFields = signupSteps[0].querySelectorAll('input, select');
 			for (var i = 0; i < personalFields.length; i += 1) {
 				if (!personalFields[i].reportValidity()) return;
 			}

@@ -12,7 +12,9 @@ class Admin extends CI_Controller {
 		'analytics'     => array('label' => 'Analytics', 'href' => 'admin/analytics'),
 		'sensors'       => array('label' => 'Sensor Status', 'href' => 'admin/sensors'),
 		'announcements' => array('label' => 'Announcements', 'href' => 'admin/announcements'),
+		'community_reports' => array('label' => 'Community Reports', 'href' => 'admin/community-reports'),
 		'evacuation'    => array('label' => 'Evacuation Centers', 'href' => 'admin/evacuation'),
+		'hazards'       => array('label' => 'Hazard Map Pins', 'href' => 'admin/hazards'),
 		'sms'          => array('label' => 'SMS Broadcast', 'href' => 'admin/sms'),
 		'residents'     => array('label' => 'Residents', 'href' => 'admin/residents'),
 		'reports'       => array('label' => 'Reports', 'href' => 'admin/reports'),
@@ -39,33 +41,63 @@ class Admin extends CI_Controller {
 	{
 		$error = '';
 		$username = '';
+		$this->load->model('Monitor_model');
+		$station_health = $this->Monitor_model->station_health();
+		$attempt_window = 15 * 60;
+		$attempts = $this->session->userdata('admin_login_attempts');
+		$attempts = is_array($attempts) ? $attempts : array();
+		$now = time();
+		$recent_attempts = array();
+		foreach ($attempts as $attempt) {
+			if ((int) $attempt > ($now - $attempt_window)) {
+				$recent_attempts[] = (int) $attempt;
+			}
+		}
+		$this->session->set_userdata('admin_login_attempts', $recent_attempts);
 		if ($this->input->method(TRUE) === 'POST')
 		{
 			$username = trim((string) $this->input->post('username'));
 			$password = (string) $this->input->post('password');
-			$user = $this->Auth_model->verify($username, $password);
-
-			if ( ! $user)
+			if (count($recent_attempts) >= 5)
 			{
-				$error = 'Incorrect username or password.';
-			}
-			elseif ($user['role'] !== 'admin')
-			{
-				$error = 'This page is for MDRRMO administrators only.';
+				$wait_minutes = max(1, (int) ceil(($recent_attempts[0] + $attempt_window - $now) / 60));
+				$error = 'Too many sign-in attempts. Please wait ' . $wait_minutes . ' minute' . ($wait_minutes === 1 ? '' : 's') . ' and try again.';
 			}
 			else
 			{
-				$this->Auth_model->record_login($user);
-				$this->session->set_userdata(array(
-					'auth_user'  => $user['username'],
-					'auth_name'  => $user['name'],
-					'auth_role'  => $user['role'],
-					'auth_phone' => isset($user['phone']) ? $user['phone'] : '',
-					'auth_uid'   => isset($user['record_uid']) ? $user['record_uid'] : '',
-					'auth_id'    => isset($user['id']) ? (int) $user['id'] : 0,
-				));
-				redirect('admin');
-				return;
+				$user = $this->Auth_model->verify($username, $password);
+
+				if ( ! $user)
+				{
+					$recent_attempts[] = $now;
+					$this->session->set_userdata('admin_login_attempts', $recent_attempts);
+					$error = 'Incorrect username or password.';
+				}
+				elseif ($user['role'] !== 'admin')
+				{
+					$recent_attempts[] = $now;
+					$this->session->set_userdata('admin_login_attempts', $recent_attempts);
+					$error = 'This page is for MDRRMO administrators only.';
+				}
+				else
+				{
+					$this->Auth_model->record_login($user);
+					$this->session->unset_userdata('admin_login_attempts');
+					if ( ! empty($user['last_login_at']))
+					{
+						$this->session->set_flashdata('admin_login_notice', 'Last successful sign-in: ' . date('M j, Y g:i A', strtotime($user['last_login_at'])));
+					}
+					$this->session->set_userdata(array(
+						'auth_user'  => $user['username'],
+						'auth_name'  => $user['name'],
+						'auth_role'  => $user['role'],
+						'auth_phone' => isset($user['phone']) ? $user['phone'] : '',
+						'auth_uid'   => isset($user['record_uid']) ? $user['record_uid'] : '',
+						'auth_id'    => isset($user['id']) ? (int) $user['id'] : 0,
+					));
+					redirect('admin');
+					return;
+				}
 			}
 		}
 
@@ -76,6 +108,7 @@ class Admin extends CI_Controller {
 			'page_title' => 'Administrator Sign in',
 			'error'      => $error,
 			'username'   => $username,
+			'station_health' => $station_health,
 		));
 	}
 
@@ -217,6 +250,7 @@ class Admin extends CI_Controller {
 	{
 		$this->require_admin();
 		$this->load->model('Admin_portal_model');
+		$this->load->model('Hazard_model');
 		$ctx = $this->Admin_portal_model->portal_context();
 
 		if ($this->input->method(TRUE) === 'POST')
@@ -248,6 +282,7 @@ class Admin extends CI_Controller {
 					'title'         => $this->input->post('title'),
 					'body'          => $this->input->post('body'),
 					'level'         => $this->input->post('level'),
+					'barangay'      => $this->input->post('barangay'),
 					'is_published'  => $this->input->post('is_published'),
 				));
 				$this->session->set_flashdata('sync_notice', empty($result['ok'])
@@ -265,8 +300,96 @@ class Admin extends CI_Controller {
 			'page_lede'     => 'Create and publish MDRRMO advisories for the resident portal and public site.',
 			'announcements' => $this->Admin_portal_model->list_announcements(),
 			'edit_row'      => $this->Admin_portal_model->get_announcement($edit_id),
+			'barangays'     => $this->Hazard_model->barangays(),
 			'sync_notice'   => $this->session->flashdata('sync_notice'),
 		) + $ctx);
+	}
+
+	public function community_reports()
+	{
+		$this->require_admin();
+		$this->load->model('Community_report_model');
+		$this->load->model('Hazard_model');
+		$error = '';
+		if ( ! $this->session->userdata('community_report_admin_token'))
+		{
+			$this->session->set_userdata('community_report_admin_token', bin2hex(random_bytes(32)));
+		}
+
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			$posted_token = (string) $this->input->post('report_admin_token');
+			$session_token = (string) $this->session->userdata('community_report_admin_token');
+			if ($session_token === '' || ! hash_equals($session_token, $posted_token))
+			{
+				$error = 'This form has expired. Refresh the page and try again.';
+			}
+			else
+			{
+				$result = $this->Community_report_model->update_review(
+					(int) $this->input->post('report_id'),
+					(string) $this->input->post('status'),
+					(string) $this->input->post('admin_note', TRUE),
+					(string) $this->session->userdata('auth_name')
+				);
+				if ( ! empty($result['ok']))
+				{
+					$this->session->set_flashdata('sync_notice', 'Community report updated.');
+					redirect('admin/community-reports');
+					return;
+				}
+				$error = isset($result['error']) ? $result['error'] : 'Could not update report.';
+			}
+		}
+
+		$status_filter = (string) $this->input->get('status');
+		$barangay_filter = (string) $this->input->get('barangay');
+		$statuses = $this->Community_report_model->statuses();
+		$barangays = $this->Hazard_model->barangays();
+		if ( ! isset($statuses[$status_filter]))
+		{
+			$status_filter = '';
+		}
+		if ( ! isset($barangays[$barangay_filter]))
+		{
+			$barangay_filter = '';
+		}
+
+		$this->render('community_reports', array(
+			'page_title' => 'Community Reports',
+			'page_heading' => 'Community reports',
+			'page_lede' => 'Review resident-submitted flood and hazard reports, update their status, and share follow-up information.',
+			'reports' => $this->Community_report_model->list_all(array(
+				'status' => $status_filter,
+				'barangay' => $barangay_filter,
+			)),
+			'report_statuses' => $statuses,
+			'report_token' => $this->session->userdata('community_report_admin_token'),
+			'report_error' => $error,
+			'report_photo_base' => site_url('admin/community-report-photo'),
+			'barangays' => $barangays,
+			'status_filter' => $status_filter,
+			'barangay_filter' => $barangay_filter,
+			'sync_notice' => $this->session->flashdata('sync_notice'),
+		));
+	}
+
+	public function community_report_photo($id = 0)
+	{
+		$this->require_admin();
+		$this->load->model('Community_report_model');
+		$path = $this->Community_report_model->photo_path((int) $id, NULL, TRUE);
+		$mime = $path !== NULL ? $this->Community_report_model->photo_mime($path) : NULL;
+		if ($path === NULL || $mime === NULL)
+		{
+			show_404();
+			return;
+		}
+		$this->output
+			->set_header('X-Content-Type-Options: nosniff')
+			->set_header('Cache-Control: private, no-store')
+			->set_content_type($mime)
+			->set_output(file_get_contents($path));
 	}
 
 	public function sms()
@@ -320,19 +443,60 @@ class Admin extends CI_Controller {
 	{
 		$this->require_admin();
 		$this->load->model('Admin_portal_model');
+		if ( ! $this->session->userdata('resident_delete_token'))
+		{
+			$this->session->set_userdata('resident_delete_token', bin2hex(random_bytes(32)));
+		}
+		if ($this->input->method(TRUE) === 'POST' && (string) $this->input->post('action') === 'delete')
+		{
+			$posted_token = (string) $this->input->post('resident_delete_token');
+			$session_token = (string) $this->session->userdata('resident_delete_token');
+			if ($session_token === '' || ! hash_equals($session_token, $posted_token))
+			{
+				$this->session->set_flashdata('sync_notice', 'The delete form expired. Refresh the page and try again.');
+			}
+			elseif ($this->Admin_portal_model->delete_resident((int) $this->input->post('id')))
+			{
+				$this->session->set_flashdata('sync_notice', 'Resident account deleted from the local database. Cloud deletion is queued for the next sync.');
+			}
+			else
+			{
+				$this->session->set_flashdata('sync_notice', 'Resident account could not be deleted. Check the database log and try again.');
+			}
+			$query = array_filter(array(
+				'q'      => trim((string) $this->input->get('q')),
+				'status' => trim((string) $this->input->get('status')),
+				'barangay' => trim((string) $this->input->get('barangay')),
+			));
+			redirect('admin/residents' . ($query ? '?' . http_build_query($query) : ''));
+			return;
+		}
+
 		$ctx = $this->Admin_portal_model->portal_context();
 		$search = trim((string) $this->input->get('q'));
 		$status = trim((string) $this->input->get('status'));
-		$residents = $this->Admin_portal_model->list_residents($search, $status);
+		$barangay = trim((string) $this->input->get('barangay'));
+		$this->load->model('Hazard_model');
+		$barangays = $this->Hazard_model->barangays();
+		if ($barangay !== '' && $barangay !== '__none__' && ! isset($barangays[$barangay]))
+		{
+			$barangay = '';
+		}
+		$residents = $this->Admin_portal_model->list_residents($search, $status, $barangay);
 		$this->render('residents', array(
 			'page_title'   => 'Residents',
 			'page_heading' => 'Resident accounts',
 			'page_lede'    => 'Registered community members with contact details and account status.',
 			'residents'    => $residents,
 			'resident_count' => count($residents),
+			'barangay_counts' => $this->Admin_portal_model->resident_barangay_counts(),
+			'barangays' => $barangays,
 			'recent_logins'=> $this->Admin_portal_model->list_recent_logins(15),
+			'resident_delete_token' => $this->session->userdata('resident_delete_token'),
 			'search'       => $search,
 			'status_filter'=> $status,
+			'barangay_filter' => $barangay,
+			'sync_notice'  => $this->session->flashdata('sync_notice'),
 		) + $ctx);
 	}
 
@@ -384,6 +548,49 @@ class Admin extends CI_Controller {
 		));
 	}
 
+	public function hazards()
+	{
+		$this->require_admin();
+		$this->load->model('Hazard_model');
+		$notice = '';
+
+		if ($this->input->method(TRUE) === 'POST')
+		{
+			if ((string) $this->input->post('action') === 'delete')
+			{
+				$result = $this->Hazard_model->delete((int) $this->input->post('id'));
+				$notice = $result
+					? 'Hazard pin deleted.'
+					: 'Could not delete this hazard pin. Please refresh and try again.';
+			}
+			else
+			{
+				$id = (int) $this->input->post('id');
+				$result = $this->Hazard_model->save($this->input->post(), $id);
+				$notice = $result['ok']
+					? ($id > 0 ? 'Hazard pin updated.' : 'Hazard pin saved.')
+					: $result['error'];
+			}
+			$this->session->set_flashdata('sync_notice', $notice);
+			redirect('admin/hazards');
+			return;
+		}
+
+		$edit = $this->input->get('edit')
+			? $this->Hazard_model->find((int) $this->input->get('edit'))
+			: NULL;
+		$this->render('hazards', array(
+			'page_title'   => 'Hazard Map Pins',
+			'page_heading' => 'Hazard map pins',
+			'page_lede'    => 'Mark hazard locations on the resident map. Marker colors identify the hazard type.',
+			'hazards'      => $this->Hazard_model->all(),
+			'hazard_types' => $this->Hazard_model->types(),
+			'barangays'    => $this->Hazard_model->barangays(),
+			'edit_row'     => $edit,
+			'sync_notice'  => $this->session->flashdata('sync_notice'),
+		));
+	}
+
 	public function settings()
 	{
 		$this->require_admin();
@@ -430,16 +637,18 @@ class Admin extends CI_Controller {
 		$this->load->model('Admin_portal_model');
 		$search = trim((string) $this->input->get('q'));
 		$status = trim((string) $this->input->get('status'));
-		$rows = $this->Admin_portal_model->list_residents($search, $status);
+		$barangay = trim((string) $this->input->get('barangay'));
+		$rows = $this->Admin_portal_model->list_residents($search, $status, $barangay);
 		header('Content-Type: text/csv; charset=utf-8');
 		header('Content-Disposition: attachment; filename=daguitan-residents-' . date('Y-m-d') . '.csv');
 		$out = fopen('php://output', 'w');
-		fputcsv($out, array('name', 'phone', 'username', 'registered', 'last_sign_in', 'sign_in_count', 'notifications'));
+		fputcsv($out, array('name', 'phone', 'barangay', 'username', 'registered', 'last_sign_in', 'sign_in_count', 'notifications'));
 		foreach ($rows as $row)
 		{
 			fputcsv($out, array(
 				$row['name'],
 				isset($row['phone']) ? $row['phone'] : '',
+				isset($row['barangay']) ? $row['barangay'] : '',
 				$row['username'],
 				isset($row['created_at']) ? $row['created_at'] : '',
 				$row['last_login_at_display'],

@@ -1,0 +1,52 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --font: "Inter", "Segoe UI", Arial, sans-serif;
+  --display: "Inter", "Segoe UI", Arial, sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --heading-3: 1.25rem;
+  --heading-2: clamp(1.5rem, 2.4vw, 1.9rem);
+  --heading-1: clamp(1.9rem, 3.2vw, 2.6rem);
+}
+
+body,
+.dash-body {
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+h1 { font-size: var(--heading-1); }
+h2 { font-size: var(--heading-2); }
+h3 { font-size: var(--heading-3); }
+h4 { font-size: var(--text-lg); }
+
+p {
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: var(--font);
+  font-size: inherit;
+}
+
+.auth-body {
+  --auth-ui: var(--font);
+}

@@ -11,11 +11,15 @@ ALTER TABLE `users`
 ALTER TABLE `users`
 	ADD COLUMN `last_login_at` DATETIME NULL AFTER `password_hash`;
 
--- 3) One mobile number per account (NULL allowed for staff with no phone)
+-- 3) Barangay for resident coordination and admin reporting
+ALTER TABLE `users`
+	ADD COLUMN `barangay` VARCHAR(80) NULL AFTER `phone`;
+
+-- 4) One mobile number per account (NULL allowed for staff with no phone)
 ALTER TABLE `users`
 	ADD UNIQUE KEY `uk_users_phone` (`phone`);
 
--- 4) History of every successful login (name, phone, role, IP, etc.)
+-- 5) History of every successful login (name, phone, role, IP, etc.)
 CREATE TABLE IF NOT EXISTS `user_logins` (
 	`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 	`user_id` INT UNSIGNED NOT NULL,

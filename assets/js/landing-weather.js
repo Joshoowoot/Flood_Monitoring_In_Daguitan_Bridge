@@ -6,11 +6,22 @@
   const rainFront = document.getElementById("wxRainFront");
   const lightning = document.getElementById("wxLightning");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const localHour = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    hourCycle: "h23",
+  });
 
   const RAIN_THEMES = new Set(["drizzle", "rainy", "storm"]);
   let currentTheme = scene?.dataset.theme || "cloudy";
   let rainBuilt = false;
   let lightningTimer = null;
+
+  function updateDaylight() {
+    if (!scene) return;
+    const hour = Number(localHour.format(new Date()));
+    scene.dataset.time = hour < 6 || hour >= 18 ? "night" : "day";
+  }
 
   function rainIntensity(theme) {
     if (theme === "drizzle") return { back: 35, front: 45, speed: [0.75, 1.1] };
@@ -169,4 +180,6 @@
   const initial = window.DAGUITAN?.weather;
   if (initial) applyWeather(initial);
   else if (scene) buildRain(currentTheme);
+  updateDaylight();
+  window.setInterval(updateDaylight, 60_000);
 })();

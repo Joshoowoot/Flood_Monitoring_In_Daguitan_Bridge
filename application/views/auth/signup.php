@@ -16,6 +16,7 @@ $asset_v = '20260925f';
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/auth.css?v=<?php echo $asset_v; ?>">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="auth-body auth-body--resident auth-body--signup">
 	<div class="auth-bg" aria-hidden="true"></div>

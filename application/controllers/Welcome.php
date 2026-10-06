@@ -26,6 +26,14 @@ class Welcome extends CI_Controller {
 		$this->load->view('announcements', $data);
 	}
 
+	public function about()
+	{
+		$data = $this->public_data();
+		$data['page_title'] = 'About the System';
+		$data['nav_page'] = 'about';
+		$this->load->view('about', $data);
+	}
+
 	protected function public_data()
 	{
 		$this->load->helper('url');
@@ -50,6 +58,7 @@ class Welcome extends CI_Controller {
 			'ingest_url'        => $base . '/index.php/api/ingest',
 			'home_url'          => site_url(),
 			'announcements_url' => site_url('announcements'),
+			'about_url'         => site_url('about'),
 			'login_user'        => site_url('login'),
 			'signup_url'        => site_url('signup'),
 			'logout_url'        => site_url('logout'),

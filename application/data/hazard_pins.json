@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "name": "Rizal Beach Side",
+        "barangay": "Rizal",
+        "description": "This location is prone in Storm Surge",
+        "type": "storm_surge",
+        "latitude": 10.916094,
+        "longitude": 125.024103,
+        "active": true
+    }
+]
