@@ -42,9 +42,10 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260923o">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006f">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006k">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page announce-page<?php echo ! empty($resident_portal) ? ' portal-page resident-portal' : ''; ?>">
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -112,6 +113,11 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 						<path d="M10 19a2 2 0 0 0 4 0"/>
 					</svg>
 				</button>
+				<?php if ( ! empty($resident_portal)): ?>
+				<button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false">
+					<span></span><span></span><span></span>
+				</button>
+				<?php endif; ?>
 				<button class="icon-btn hamburger" type="button" id="menuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
 					<span></span><span></span><span></span>
 				</button>
@@ -143,7 +149,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 
 	<main id="main"<?php echo ! empty($resident_portal) ? ' class="resident-layout"' : ''; ?>>
 		<?php if ( ! empty($resident_portal)): ?>
-		<aside class="resident-sidebar" aria-label="Resident portal navigation">
+		<aside class="resident-sidebar" id="residentSidebar" aria-label="Resident portal navigation">
 			<div class="resident-sidebar__profile">
 				<button class="resident-sidebar__avatar-button" type="button" id="profileImageButton" aria-label="Choose profile image" title="Choose profile image">
 					<img class="resident-sidebar__avatar resident-sidebar__avatar--logo" id="profileImage" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="">
@@ -159,6 +165,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				<a href="<?php echo html_escape(site_url('portal/go-bag')); ?>">Go Bag</a>
 				<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation Centers</a>
 				<a class="is-active" href="<?php echo html_escape($announcements_url); ?>" aria-current="page">Announcements</a>
+				<a href="<?php echo html_escape(site_url('portal/reports')); ?>">Flood / Hazard Reports</a>
 				<a href="<?php echo html_escape(site_url('portal/profile')); ?>">My Profile</a>
 				<a href="<?php echo html_escape(site_url('portal/help')); ?>">Help / How to Use</a>
 			</nav>
@@ -178,9 +185,9 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				<div class="hero__actions">
 					<a class="btn btn--primary" href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor">View live status</a>
 					<a class="btn btn--ghost" href="#notices">Browse notices</a>
+					<a class="btn btn--ghost" href="https://www.facebook.com/profile.php?id=100063639583165" target="_blank" rel="noopener noreferrer">Follow on Facebook</a>
 				</div>
 			</div>
-
 		</section>
 
 		<section class="section section--tight" id="live-advisory">
@@ -192,56 +199,18 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 					</div>
 					<span class="pill" id="announcePill"><?php echo ! empty($a['active']) ? 'Active' : 'Quiet'; ?></span>
 				</div>
-				<div id="announceBody">
+				<div id="announceBody" class="live-advisory__body">
 					<?php if ( ! empty($a['active'])): ?>
 						<p class="status-badge status-badge--<?php echo html_escape($featured_level === 'info' ? 'yellow' : $featured_level); ?>"><?php echo html_escape($a['title']); ?></p>
 					<?php else: ?>
 						<p class="announce-card__empty"><?php echo html_escape($a['title']); ?></p>
 					<?php endif; ?>
-					<p><?php echo nl2br(html_escape($a['body'])); ?></p>
+					<p class="announce-live-scope" id="announceScope"><?php echo ! empty($a['barangay']) ? 'For Barangay ' . html_escape($a['barangay']) : 'Municipality-wide notice'; ?></p>
+					<p class="live-advisory__copy" id="announceCopy"><?php echo nl2br(html_escape($a['body'])); ?></p>
+					<button class="live-advisory__toggle" type="button" data-toggle-announcement aria-controls="announceCopy" aria-expanded="false" hidden>Read full advisory</button>
 				</div>
 				<p class="issuer"><?php echo html_escape(isset($a['issuer']) ? $a['issuer'] : 'MDRRMO Dulag'); ?></p>
 			</article>
-		</section>
-
-		<section class="section" id="notices">
-			<header class="section__head reveal">
-				<h2>Published announcements</h2>
-				<p>Advisories posted by MDRRMO Dulag for the Daguitan Bridge community.</p>
-			</header>
-
-			<?php if (empty($list)): ?>
-				<article class="glass-card reveal announce-empty">
-					<p class="announce-card__empty">No published announcements yet</p>
-					<p>When MDRRMO posts an official notice, it will appear here. Continue to watch live water levels during heavy rainfall.</p>
-				</article>
-			<?php else: ?>
-				<ul class="announce-list">
-					<?php foreach ($list as $ann):
-						$ann_level = isset($ann['level']) ? $ann['level'] : 'info';
-						if ($ann_level !== 'red' && $ann_level !== 'yellow')
-						{
-							$ann_level = 'info';
-						}
-						$updated = isset($ann['updated_at']) ? $ann['updated_at'] : '';
-						$updated_label = $updated !== '' ? date('M j, Y · g:i A', strtotime($updated)) : '';
-					?>
-						<li class="glass-card reveal announce-item announce-item--<?php echo html_escape($ann_level); ?>">
-							<div class="announce-item__meta">
-								<span class="warning-chip warning-chip--<?php echo $ann_level === 'info' ? 'green' : html_escape($ann_level); ?>">
-									<span aria-hidden="true">●</span> <?php echo html_escape(strtoupper($level_label($ann_level))); ?>
-								</span>
-								<?php if ($updated_label !== ''): ?>
-									<time datetime="<?php echo html_escape($updated); ?>"><?php echo html_escape($updated_label); ?></time>
-								<?php endif; ?>
-							</div>
-							<h3><?php echo html_escape($ann['title']); ?></h3>
-							<p><?php echo nl2br(html_escape($ann['body'])); ?></p>
-							<p class="issuer">MDRRMO Dulag</p>
-						</li>
-					<?php endforeach; ?>
-				</ul>
-			<?php endif; ?>
 		</section>
 
 		<section class="section section--tight" id="safety">
@@ -267,8 +236,76 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				</article>
 			</div>
 		</section>
+
+		<section class="section" id="notices">
+			<header class="section__head reveal">
+				<h2>Published announcements</h2>
+				<p><?php echo ! empty($resident_portal) ? 'Barangay-specific notices for your area appear first, along with every municipality-wide advisory.' : 'Municipality-wide advisories posted by MDRRMO Dulag for residents.'; ?></p>
+			</header>
+
+			<?php if (empty($list)): ?>
+				<article class="glass-card reveal announce-empty">
+					<p class="announce-card__empty">No published announcements yet</p>
+					<p><?php echo ! empty($resident_portal) && empty($resident_barangay) ? 'No municipality-wide notices are published yet. Add your barangay in My Profile to receive notices targeted to your area.' : 'When MDRRMO posts an official notice for your area, it will appear here. Continue to watch live water levels during heavy rainfall.'; ?></p>
+				</article>
+			<?php else: ?>
+				<?php $announcement_index = 0; ?>
+				<ul class="announce-list">
+					<?php foreach ($list as $ann):
+						$announcement_index++;
+						$ann_level = isset($ann['level']) ? $ann['level'] : 'info';
+						if ($ann_level !== 'red' && $ann_level !== 'yellow')
+						{
+							$ann_level = 'info';
+						}
+						$updated = isset($ann['updated_at']) ? $ann['updated_at'] : '';
+						$updated_label = $updated !== '' ? date('M j, Y · g:i A', strtotime($updated)) : '';
+						$ann_barangay = isset($ann['barangay']) ? trim((string) $ann['barangay']) : '';
+					?>
+						<li class="glass-card reveal announce-item announce-item--<?php echo html_escape($ann_level); ?>">
+							<div class="announce-item__meta">
+								<span class="warning-chip warning-chip--<?php echo $ann_level === 'info' ? 'green' : html_escape($ann_level); ?>">
+									<span aria-hidden="true">●</span> <?php echo html_escape(strtoupper($level_label($ann_level))); ?>
+								</span>
+								<span class="announce-item__scope"><?php echo $ann_barangay !== '' ? 'Barangay ' . html_escape($ann_barangay) : 'Municipality-wide'; ?></span>
+								<?php if ($updated_label !== ''): ?>
+									<time datetime="<?php echo html_escape($updated); ?>"><?php echo html_escape($updated_label); ?></time>
+								<?php endif; ?>
+							</div>
+							<h3><?php echo html_escape($ann['title']); ?></h3>
+							<p class="announce-item__copy" id="publishedAnnouncementBody<?php echo $announcement_index; ?>"><?php echo nl2br(html_escape($ann['body'])); ?></p>
+							<button class="announce-item__toggle" type="button" data-toggle-announcement aria-controls="publishedAnnouncementBody<?php echo $announcement_index; ?>" aria-expanded="false" hidden>Read full announcement</button>
+							<p class="issuer">MDRRMO Dulag</p>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
+		</section>
+
+		<section class="section section--tight fb-page-shell reveal" aria-label="MDRRMO Dulag Facebook timeline">
+			<div class="fb-page-shell__heading">
+				<h2>MDRRMO Dulag on Facebook</h2>
+				<a href="https://www.facebook.com/profile.php?id=100063639583165" target="_blank" rel="noopener noreferrer">Open Facebook page</a>
+			</div>
+			<div class="fb-page-shell__embed">
+				<iframe
+					title="MDRRMO Dulag Facebook page and timeline"
+					src="https://www.facebook.com/plugins/page.php?href=<?php echo rawurlencode('https://www.facebook.com/profile.php?id=100063639583165'); ?>&tabs=timeline&width=500&height=680&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
+					width="500"
+					height="680"
+					style="border:none;overflow:hidden"
+					scrolling="yes"
+					frameborder="0"
+					allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+					loading="lazy">
+				</iframe>
+			</div>
+		</section>
 		<?php if ( ! empty($resident_portal)): ?></div><?php endif; ?>
 	</main>
+	<?php if ( ! empty($resident_portal)): ?>
+	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
+	<?php endif; ?>
 
 	<footer class="footer">
 		<div class="footer__inner">
@@ -297,7 +334,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>"><span aria-hidden="true">⌂</span> Home</a>
 		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#monitor"><span aria-hidden="true">🌊</span> Monitor</a>
 		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>" class="is-active"><span aria-hidden="true">📢</span> News</a>
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : site_url()); ?>#about"><span aria-hidden="true">ℹ</span> About</a>
+		<a href="<?php echo html_escape(isset($about_url) ? $about_url : site_url('about')); ?>"><span aria-hidden="true">ℹ</span> About</a>
 	</nav>
 
 	<script>
@@ -311,8 +348,9 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=1"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260923o"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261006c"></script>
 	<?php if ( ! empty($resident_portal)): ?>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<?php endif; ?>
 </body>
