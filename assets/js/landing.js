@@ -8,6 +8,27 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  const facebookFrame = document.querySelector('.fb-page-shell__embed iframe[data-responsive-width="true"]');
+  if (facebookFrame) {
+    let appliedWidth = 0;
+    let resizeFrame = 0;
+    const resizeFacebookFrame = () => {
+      const availableWidth = Math.floor(facebookFrame.parentElement.clientWidth);
+      const width = Math.max(180, Math.min(500, availableWidth));
+      if (!availableWidth || width === appliedWidth) return;
+      appliedWidth = width;
+      facebookFrame.width = String(width);
+      const source = new URL(facebookFrame.src);
+      source.searchParams.set("width", String(width));
+      facebookFrame.src = source.href;
+    };
+    resizeFacebookFrame();
+    window.addEventListener("resize", () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(resizeFacebookFrame);
+    }, { passive: true });
+  }
+
   const menu = document.getElementById("mobileMenu");
   const menuBtn = document.getElementById("menuBtn");
   const menuClose = document.getElementById("menuClose");
@@ -51,31 +72,6 @@
   };
   counters.forEach(animateCount);
 
-  const navLinks = document.querySelectorAll(".bottom-nav a");
-  const isAnnouncePage = document.body.classList.contains("announce-page");
-  const isAboutPage = document.body.classList.contains("about-page");
-  const sections = ["home", "monitor", "guidance", "alerts", "safety", "about"]
-    .map((id) => document.getElementById(id))
-    .filter(Boolean);
-
-  const syncNav = () => {
-    if (isAnnouncePage || isAboutPage) return;
-    const y = window.scrollY + 120;
-    let current = "home";
-    sections.forEach((section) => {
-      if (section.offsetTop <= y) current = section.id;
-    });
-    navLinks.forEach((link) => {
-      const href = link.getAttribute("href") || "";
-      const hash = href.includes("#") ? href.slice(href.indexOf("#")) : "";
-      const isHomeLink = !href.includes("#");
-      const active = current === "home" ? isHomeLink : hash === `#${current}`;
-      link.classList.toggle("is-active", active);
-    });
-  };
-  window.addEventListener("scroll", syncNav, { passive: true });
-  syncNav();
-
   let deferredPrompt = null;
   const installBtn = document.getElementById("installBtn");
   const installHint = document.getElementById("installHint");
@@ -96,14 +92,17 @@
   });
 
   if ("serviceWorker" in navigator) {
-    const swUrl = new URL(data.serviceWorkerUrl || "sw.js", document.baseURI || window.location.href);
-    navigator.serviceWorker.register(swUrl.href).catch(() => {
-      /* Landing remains usable if the worker cannot register. */
-    });
+    const manifest = document.querySelector('link[rel="manifest"]');
+    const swUrl = data.serviceWorkerUrl || (manifest ? new URL("sw.js", manifest.href).href : "");
+    if (swUrl) {
+      navigator.serviceWorker.register(swUrl).catch((error) => {
+        console.error("Daguitan offline support could not start.", error);
+      });
+    }
   }
 
   document.getElementById("notifyBtn")?.addEventListener("click", () => {
-    if (isAnnouncePage) {
+    if (isAnnouncePage || isAboutPage) {
       window.location.href = `${data.homeUrl || ""}#alerts`;
       return;
     }
@@ -138,6 +137,31 @@
     if (el) el.textContent = value;
   };
 
+  const connectionText = document.getElementById("portalConnectionText");
+  let connectionState = navigator.onLine ? "connected" : "offline";
+  let lastMonitor = data.monitor || null;
+  const renderConnection = (monitor, requestFailed = false) => {
+    const connection = document.getElementById("portalConnection");
+    if (!connection || !connectionText) return;
+    const sensorOffline = monitor?.sensor_status === "offline" || monitor?.sensor_status === "waiting";
+    connection.classList.toggle("is-offline", connectionState === "offline" || sensorOffline || requestFailed);
+    if (connectionState === "offline") {
+      connectionText.textContent = monitor?.last_updated
+        ? `You’re offline · last sensor reading ${monitor.last_updated}`
+        : "You’re offline · live flood readings are unavailable";
+    } else if (requestFailed) {
+      connectionText.textContent = monitor?.last_updated
+        ? `Live update delayed · last sensor reading ${monitor.last_updated}`
+        : "Live update delayed · waiting for a sensor reading";
+    } else if (monitor?.sensor_status === "offline") {
+      connectionText.textContent = `Monitoring station offline · last reading ${monitor.last_updated}`;
+    } else if (monitor?.sensor_status === "waiting") {
+      connectionText.textContent = "Monitoring station is waiting for its first reading";
+    } else {
+      connectionText.textContent = "Live station · updates every few seconds";
+    }
+  };
+
   const renderMonitor = (payload) => {
     const m = payload.monitor;
     const a = payload.announcement;
@@ -145,6 +169,8 @@
 
     const arrow = arrows[m.trend] || "→";
     const ratePrefix = m.rate_cm_min > 0 ? "+" : "";
+    lastMonitor = m;
+    renderConnection(m);
 
     const badge = document.getElementById("heroStatusBadge");
     if (badge) {
@@ -154,10 +180,12 @@
     setText("heroStatusSr", `Warning level: ${m.warning_label}`);
     setText("heroWaterLevel", fmtLevel(m.water_level_m));
     setText("heroTrend", `${arrow} ${m.trend_label}`);
+    setText("heroGuidance", (data.actions?.[m.warning_level] || data.actions?.green || [])[0] || "Follow official MDRRMO and barangay guidance.");
     const updated = document.getElementById("heroUpdated");
     if (updated) {
-      updated.dateTime = m.last_updated_iso || "";
-      updated.textContent = m.last_updated;
+      if (m.last_updated_iso) updated.dateTime = m.last_updated_iso;
+      else updated.removeAttribute("datetime");
+      updated.textContent = m.last_updated || "No reading received";
     }
 
     const gauge = document.getElementById("heroGauge");
@@ -248,21 +276,37 @@
     if (!statusUrl) return;
     try {
       const res = await fetch(statusUrl, { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) {
+        renderConnection(lastMonitor, true);
+        return;
+      }
       const payload = await res.json();
       if (payload && payload.ok) {
         renderMonitor(payload);
         window.DaguitanMonitor.sample = payload;
+      } else {
+        renderConnection(lastMonitor, true);
       }
-    } catch (err) {
-      /* Keep last known values if the station is unreachable. */
+    } catch (error) {
+      renderConnection(lastMonitor, true);
+      console.warn("Flood monitor status could not be refreshed.", error);
     }
   };
+
+  window.addEventListener("offline", () => {
+    connectionState = "offline";
+    renderConnection(lastMonitor);
+  });
+  window.addEventListener("online", () => {
+    connectionState = "connected";
+    pollStatus();
+  });
 
   if (statusUrl) {
     setInterval(pollStatus, pollMs);
     pollStatus();
   }
+  renderConnection(lastMonitor);
 
   window.DaguitanMonitor = {
     sample: data,

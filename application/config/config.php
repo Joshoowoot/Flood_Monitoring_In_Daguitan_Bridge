@@ -28,7 +28,16 @@ if (isset($_SERVER['REQUEST_URI']))
 | a PHP script and you can easily do that on your own.
 |
 */
-$protocol = ( ! empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$is_https = ( ! empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off');
+$forwarded_proto = isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+	? strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'])[0]))
+	: '';
+$remote_addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+if ( ! $is_https && in_array($remote_addr, array('127.0.0.1', '::1'), TRUE) && $forwarded_proto === 'https')
+{
+	$is_https = TRUE;
+}
+$protocol = $is_https ? 'https' : 'http';
 $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
 $folder = str_replace('\\', '/', dirname(isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : ''));
 $config['base_url'] = $protocol . '://' . $host . rtrim($folder, '/') . '/';
@@ -419,7 +428,7 @@ $config['sess_regenerate_destroy'] = FALSE;
 $config['cookie_prefix']	= '';
 $config['cookie_domain']	= '';
 $config['cookie_path']		= '/';
-$config['cookie_secure']	= FALSE;
+$config['cookie_secure']	= $is_https;
 $config['cookie_httponly'] 	= FALSE;
 $config['cookie_samesite'] 	= 'Lax';
 

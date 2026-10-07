@@ -3167,19 +3167,19 @@ body.admin-nav-open {
 }
 
 .admin-evacuation-page > .admin-split {
-  grid-template-columns: minmax(19rem, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: start;
-  gap: 1rem;
+  gap: 1.1rem;
   margin: 0;
 }
 
 .admin-evacuation-page > .admin-split > section {
   min-width: 0;
-  padding: 1.1rem;
-  border: 1px solid rgba(31, 26, 26, 0.09);
-  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid rgba(31, 26, 26, 0.1);
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 4px 14px rgba(31, 26, 26, 0.045);
+  box-shadow: 0 6px 20px rgba(31, 26, 26, 0.05);
   outline: 0;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -3187,53 +3187,126 @@ body.admin-nav-open {
 
 .admin-evacuation-page > .admin-split > section:hover {
   transform: none;
-  box-shadow: 0 4px 14px rgba(31, 26, 26, 0.045);
+  box-shadow: 0 6px 20px rgba(31, 26, 26, 0.05);
 }
 
-.admin-evacuation-page > .admin-split > section > h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1.08rem;
+.admin-evacuation-card__head {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(31, 26, 26, 0.09);
+}
+
+.admin-evacuation-card__head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: #2d2526;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.admin-evacuation-card__head p {
+  margin: 0.35rem 0 0;
+  color: #766d6e;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.admin-evacuation-count {
+  display: inline-grid;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: rgba(155, 18, 36, 0.08);
+  color: var(--red-deep);
+  font-size: 0.76rem;
+  font-weight: 750;
 }
 
 .admin-evacuation-page .admin-form {
-  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.8rem 0.9rem;
 }
 
 .admin-evacuation-page .admin-form label:not(.admin-check) {
-  font-size: 0.8rem;
+  min-width: 0;
+  gap: 0.4rem;
+  color: #55494a;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .admin-evacuation-page .admin-form input,
 .admin-evacuation-page .admin-form select {
+  min-width: 0;
   width: 100%;
-  font-size: 0.86rem;
+  min-height: 42px;
+  border-color: rgba(31, 26, 26, 0.16);
+  border-radius: 9px;
+  background: #fff;
+  font-size: 0.82rem;
+}
+
+.admin-evacuation-page .admin-form input:focus {
+  border-color: rgba(155, 18, 36, 0.52);
+  outline: 3px solid rgba(155, 18, 36, 0.1);
+  outline-offset: 1px;
+}
+
+.admin-evacuation-page .admin-evacuation-field--name,
+.admin-evacuation-page .admin-evacuation-field--address,
+.admin-evacuation-page .admin-evacuation-coordinates,
+.admin-evacuation-page .admin-evacuation-map-note,
+.admin-evacuation-page .evacuation-admin-map,
+.admin-evacuation-page .admin-evacuation-field--active,
+.admin-evacuation-page .admin-evacuation-form-actions {
+  grid-column: 1 / -1;
+}
+
+.admin-evacuation-page .admin-evacuation-coordinates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.admin-evacuation-page .admin-evacuation-map-note {
+  margin: 0;
+  font-size: 0.75rem;
 }
 
 .admin-evacuation-page .evacuation-admin-map {
-  height: 250px;
-  margin: 0.2rem 0 0.75rem;
-  border-radius: 8px;
+  height: 205px;
+  margin: -0.35rem 0 0.1rem;
+  border: 1px solid rgba(31, 26, 26, 0.14);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .admin-evacuation-page .admin-announce-list {
-  max-height: min(58vh, 44rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: min(68vh, 52rem);
   overflow-y: auto;
-  gap: 0.6rem;
-  padding-right: 0.25rem;
+  gap: 0.7rem;
+  padding: 0.1rem 0.25rem 0.1rem 0;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
 
 .admin-evacuation-page .admin-announce-list > .admin-announce-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.65rem 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: space-between;
+  gap: 0.7rem;
   margin: 0;
-  padding: 0.8rem !important;
+  padding: 0.85rem !important;
   border: 1px solid rgba(31, 26, 26, 0.08);
-  border-radius: 8px;
-  background: #fafafa;
+  border-radius: 10px;
+  background: #fbfafa;
   box-shadow: none;
   outline: 0;
   backdrop-filter: none;
@@ -3245,18 +3318,102 @@ body.admin-nav-open {
 }
 
 .admin-evacuation-page .admin-announce-item > div:first-child > strong {
-  font-size: 0.86rem;
+  color: #302729;
+  font-size: 0.83rem;
+  line-height: 1.4;
 }
 
 .admin-evacuation-page .admin-announce-item > div:first-child > p {
   margin: 0.25rem 0 0;
-  font-size: 0.8rem;
+  color: #665d5e;
+  font-size: 0.75rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
 .admin-evacuation-page .admin-announce-item > div:first-child > p.admin-muted {
-  font-size: 0.72rem;
+  color: #817879;
+  font-size: 0.7rem;
+}
+
+.admin-evacuation-page .admin-announce-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.admin-evacuation-page .admin-announce-actions form {
+  margin: 0;
+}
+
+.admin-evacuation-page .admin-announce-actions .btn {
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.74rem;
+}
+
+.admin-evacuation-page .admin-evacuation-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.admin-evacuation-page .admin-check {
+  color: #55494a;
+  font-size: 0.78rem;
+}
+
+.admin-evacuation-page .admin-evacuation-field--active input {
+  width: auto;
+}
+
+@media (max-width: 900px) {
+  .admin-evacuation-page > .admin-split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .admin-evacuation-page .admin-announce-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-evacuation-page > .admin-split > section {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .admin-evacuation-page .admin-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-evacuation-page .admin-evacuation-field--name,
+  .admin-evacuation-page .admin-evacuation-field--barangay,
+  .admin-evacuation-page .admin-evacuation-field--address,
+  .admin-evacuation-page .admin-evacuation-coordinates,
+  .admin-evacuation-page .admin-evacuation-map-note,
+  .admin-evacuation-page .evacuation-admin-map,
+  .admin-evacuation-page .admin-evacuation-field--capacity,
+  .admin-evacuation-page .admin-evacuation-field--phone,
+  .admin-evacuation-page .admin-evacuation-field--active,
+  .admin-evacuation-page .admin-evacuation-form-actions {
+    grid-column: 1;
+  }
+
+  .admin-evacuation-page .admin-evacuation-coordinates {
+    gap: 0.65rem;
+  }
+
+  .admin-evacuation-page .admin-announce-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-evacuation-page .evacuation-admin-map {
+    height: 220px;
+  }
 }
 
 .admin-residents-page {
@@ -4870,62 +5027,89 @@ body.admin-nav-open {
   }
 }
 
-@media (max-width: 1200px) {
-  .admin-evacuation-page > .admin-split {
+@media (max-width: 720px) {
+  .admin-portal,
+  .admin-stage,
+  .admin-main,
+  .admin-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-stage {
+    margin-left: 0;
+  }
+
+  .admin-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .admin-header__left {
+    width: 100%;
+  }
+
+  .admin-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-header__actions form {
+    margin: 0;
+  }
+
+  .admin-main {
+    padding: 0.85rem 0.85rem 1.5rem;
+  }
+
+  .admin-kpi-grid,
+  .admin-kpi-grid--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-chart-layout,
+  .admin-split,
+  .admin-dashboard .admin-split,
+  .admin-dashboard .admin-chart-layout,
+  .admin-live-page .admin-live-grid,
+  .admin-sms-page {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.9rem;
   }
 
-  .admin-evacuation-page .admin-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 0.8rem 1rem;
+  .admin-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .admin-evacuation-page .admin-form > label:nth-of-type(1) {
-    grid-column: 1;
-  }
-
-  .admin-evacuation-page .admin-form > label:nth-of-type(2) {
-    grid-column: 2;
-  }
-
-  .admin-evacuation-page .admin-form > label:nth-of-type(3),
-  .admin-evacuation-page .admin-form > .admin-form-row,
-  .admin-evacuation-page .admin-form > p.admin-muted,
-  .admin-evacuation-page .admin-form > .evacuation-admin-map {
-    grid-column: 1 / -1;
-  }
-
-  .admin-evacuation-page .evacuation-admin-map {
-    height: 320px;
-  }
-
-  .admin-evacuation-page .admin-announce-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: min(46rem, 68vh);
+  .admin-content input:not([type="checkbox"]):not([type="radio"]),
+  .admin-content select,
+  .admin-content textarea {
+    max-width: 100%;
   }
 }
 
-@media (max-width: 640px) {
-  .admin-evacuation-page .admin-form {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 420px) {
+  .admin-main {
+    padding-right: 0.65rem;
+    padding-left: 0.65rem;
   }
 
-  .admin-evacuation-page .admin-form > label:nth-of-type(1),
-  .admin-evacuation-page .admin-form > label:nth-of-type(2),
-  .admin-evacuation-page .admin-form > label:nth-of-type(3),
-  .admin-evacuation-page .admin-form > .admin-form-row,
-  .admin-evacuation-page .admin-form > p.admin-muted,
-  .admin-evacuation-page .admin-form > .evacuation-admin-map {
-    grid-column: 1;
+  .admin-header__actions {
+    gap: 0.35rem;
   }
 
-  .admin-evacuation-page .admin-announce-list {
-    grid-template-columns: minmax(0, 1fr);
+  .admin-header__actions .btn {
+    min-height: 40px;
+    padding-inline: 0.65rem;
+    font-size: 0.76rem;
   }
 
-  .admin-evacuation-page .evacuation-admin-map {
-    height: 240px;
+  .admin-kpi-grid,
+  .admin-kpi-grid--4 {
+    gap: 0.55rem;
   }
 }

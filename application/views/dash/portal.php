@@ -10,6 +10,7 @@ $gauge_pct = isset($m['gauge_pct']) ? (int) $m['gauge_pct'] : 8;
 $ett_label = isset($m['ett_label']) ? $m['ett_label'] : '—';
 $rate_prefix = ($m['rate_cm_min'] > 0) ? '+' : '';
 $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
+$initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] : 'Follow official MDRRMO and barangay guidance.';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -25,9 +26,9 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006h">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -93,6 +94,9 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 
 	<main id="main" class="resident-layout">
 		<aside class="resident-sidebar" id="residentSidebar" aria-label="Resident portal navigation">
+			<button class="resident-sidebar__close" type="button" id="residentSidebarClose" aria-label="Close resident navigation">
+				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+			</button>
 			<div class="resident-sidebar__profile">
 				<button class="resident-sidebar__avatar-button" type="button" id="profileImageButton" aria-label="Choose profile image" title="Choose profile image">
 					<img class="resident-sidebar__avatar resident-sidebar__avatar--logo" id="profileImage" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="">
@@ -118,6 +122,7 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 				<strong>Municipality of Dulag, Leyte</strong>
 			</div>
 		</aside>
+		<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 		<div class="resident-layout__content">
 		<section class="hero" id="home">
 			<div class="hero__copy reveal">
@@ -133,6 +138,15 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 					<span class="status-dot" aria-hidden="true"></span>
 					<span id="heroStatusLabel"><?php echo strtoupper(html_escape($m['warning_label'])); ?></span>
 					<span class="sr-only" id="heroStatusSr">Warning level: <?php echo html_escape($m['warning_label']); ?></span>
+				</p>
+				<p class="portal-status-guidance" id="heroGuidance"><?php echo html_escape($initial_action); ?></p>
+				<div class="portal-status-actions">
+					<a class="btn btn--primary btn--compact" href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation centers</a>
+					<a class="portal-status-actions__link" href="<?php echo html_escape(site_url('portal/help')); ?>">Safety guide</a>
+				</div>
+				<p class="portal-connection" id="portalConnection" role="status" aria-live="polite">
+					<span class="portal-connection__dot" aria-hidden="true"></span>
+					<span id="portalConnectionText"><?php echo html_escape($m['sensor_label'] === 'Online' ? 'Live station · updates every few seconds' : ($m['sensor_label'] . ' · ' . $m['last_updated'])); ?></span>
 				</p>
 				<div class="status-panel__grid">
 					<div>
@@ -282,7 +296,6 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 
 		</div>
 	</main>
-	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 
 	<footer class="footer portal-footer">
 		<div class="portal-footer__inner">
@@ -305,20 +318,28 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	</footer>
 
 	<nav class="bottom-nav" aria-label="Portal">
-		<a href="#home" class="is-active"><span aria-hidden="true">⌂</span> Status</a>
-		<a href="#monitor"><span aria-hidden="true">🌊</span> Live</a>
+		<a href="#home" class="is-active" aria-current="page">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+			<span>Status</span>
+		</a>
+		<a href="#monitor">
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2M3 20c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2M3 10c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2"/></svg>
+			<span>Live data</span>
+		</a>
 	</nav>
 
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array(
+			'monitor' => $m,
 			'statusUrl' => $status_url,
 			'pollMs' => 5000,
 			'actions' => $actions_map,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261006c"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-resident-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script>
 		(function () {
@@ -353,7 +374,7 @@ $logout_url = isset($logout_url) ? $logout_url : site_url('auth/logout');
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
 	<?php endif; ?>
 </body>
 </html>

@@ -12,8 +12,8 @@ $base_url = isset($base_url) ? $base_url : base_url();
 	<meta name="description" content="Household Go Bag checklist for flood readiness in Dulag, Leyte.">
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006f">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="portal-page resident-portal go-bag-page">
@@ -25,7 +25,7 @@ $base_url = isset($base_url) ? $base_url : base_url();
 				<span class="brand__mark" aria-hidden="true"><img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40"></span>
 				<span class="brand__text"><span class="brand__name brand__name--desktop">DAGUITAN FLOOD MONITOR</span><span class="brand__name brand__name--mobile">Daguitan Monitor</span></span>
 			</a>
-			<div class="topbar__actions"><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div>
+			<div class="topbar__actions"><?php $this->load->view('partials/notifications_bell'); ?><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div>
 		</div>
 	</header>
 	<main id="main" class="resident-layout">
@@ -202,7 +202,10 @@ $base_url = isset($base_url) ? $base_url : base_url();
 	</main>
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><div class="footer__grid"><div><p class="footer__brand"><img class="footer__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="36" height="36"><span>DAGUITAN FLOOD MONITOR</span></p><p>Resident readiness information for Dulag, Leyte.</p></div><nav aria-label="Footer"><a href="<?php echo html_escape($portal_url); ?>">Resident portal</a><a href="<?php echo html_escape($logout_url); ?>">Sign out</a></nav></div><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions.</p></div></footer>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script>
 		(function () {
 			if (!('serviceWorker' in navigator)) {

@@ -34,8 +34,8 @@ function admin_nav_icon($key) {
 	<title><?php echo html_escape($page_title); ?> · MDRRMO Admin Portal</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=47">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-responsive">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261007-responsive">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="admin-portal">

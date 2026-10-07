@@ -1,8 +1,6 @@
 /* Cache the static emergency guide; never store authenticated portal pages or live readings. */
-const CACHE_NAME = 'daguitan-flood-monitor-v3';
+const CACHE_NAME = 'daguitan-flood-monitor-v5';
 const PRECACHE = [
-  './',
-  './index.php',
   './manifest.webmanifest',
   './assets/css/landing.css',
   './assets/js/landing.js',
@@ -11,11 +9,7 @@ const PRECACHE = [
   './offline-guide.html'
 ];
 const OFFLINE_GUIDE_URL = new URL('./offline-guide.html', self.registration.scope).href;
-const CACHEABLE_PAGES = new Set([
-  new URL('./', self.registration.scope).href,
-  new URL('./index.php', self.registration.scope).href,
-  OFFLINE_GUIDE_URL
-]);
+const CACHEABLE_PAGES = new Set([OFFLINE_GUIDE_URL]);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

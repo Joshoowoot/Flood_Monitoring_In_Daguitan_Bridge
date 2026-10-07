@@ -11,6 +11,7 @@
   var markAll = document.getElementById('notifyMarkAll');
   var closeBtn = document.getElementById('notifyCloseBtn');
   var subtitle = document.getElementById('notifySubtitle');
+  var actionStatus = document.getElementById('notifyActionStatus');
   var open = false;
   var filter = 'all';
   var itemsCache = [];
@@ -86,7 +87,11 @@
 
   function renderItems() {
     if (!list) return;
-    var items = filteredItems();
+    var items = filteredItems().slice().sort(function (left, right) {
+      var leftUrgent = left.type === 'flood_alert' || left.type === 'admin_flood_alert';
+      var rightUrgent = right.type === 'flood_alert' || right.type === 'admin_flood_alert';
+      return Number(rightUrgent) - Number(leftUrgent);
+    });
     if (!items.length) {
       renderEmpty();
       return;
@@ -95,11 +100,12 @@
       var meta = typeMeta[item.type] || { label: 'Update', tone: 'info' };
       var cls = 'notify-item' + (item.is_read ? ' notify-item--read' : ' notify-item--unread');
       var link = item.link ? ' data-link="' + escapeHtml(item.link) + '"' : '';
+      var action = item.link ? '<span class="notify-item__action">' + (item.type === 'flood_alert' ? 'View urgent alert' : 'Open update') + '</span>' : '';
       var chevron = item.link
         ? '<span class="notify-item__chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>'
         : '';
       return (
-        '<li class="' + cls + '"' + link + ' data-id="' + item.id + '" style="--notify-delay:' + Math.min(idx, 8) * 40 + 'ms">' +
+        '<li class="' + cls + '"' + link + ' data-id="' + item.id + '"' + (item.link ? ' role="link" tabindex="0" aria-label="' + escapeHtml(item.title + ', ' + (item.type === 'flood_alert' ? 'view urgent alert' : 'open update')) + '"' : '') + ' style="--notify-delay:' + Math.min(idx, 8) * 40 + 'ms">' +
           '<span class="notify-item__icon notify-item__icon--' + meta.tone + '">' + iconSvg(meta.tone) + '</span>' +
           '<div class="notify-item__content">' +
             '<div class="notify-item__row">' +
@@ -108,6 +114,7 @@
             '</div>' +
             '<p class="notify-item__title">' + escapeHtml(item.title) + '</p>' +
             '<p class="notify-item__body">' + escapeHtml(item.body) + '</p>' +
+            action +
           '</div>' +
           chevron +
         '</li>'
@@ -120,14 +127,17 @@
     loading = true;
     if (showSkeleton) renderSkeleton();
     return fetch(cfg.listUrl, { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Notification service returned HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (data) {
-        if (!data || !data.ok) return;
+        if (!data || !data.ok) throw new Error('Notification response was not successful');
         itemsCache = data.items || [];
         setBadge(data.unread);
         renderItems();
       })
-      .catch(function () {
+      .catch(function (error) {
         if (list) {
           list.innerHTML =
             '<li class="notify-empty notify-empty--error">' +
@@ -138,6 +148,7 @@
           var retry = document.getElementById('notifyRetry');
           if (retry) retry.addEventListener('click', function () { fetchList(true); });
         }
+        console.warn('Notifications could not be loaded.', error);
       })
       .finally(function () { loading = false; });
   }
@@ -148,27 +159,40 @@
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body,
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Notification service returned HTTP ' + r.status);
+      return r.json();
+    });
   }
 
   function markRead(id) {
     if (!cfg.readUrl || !id) return Promise.resolve();
-    return postJson(cfg.readUrl, 'id=' + encodeURIComponent(id));
+    return postJson(cfg.readUrl, 'id=' + encodeURIComponent(id)).then(function (data) {
+      if (!data || !data.ok) throw new Error('Notification could not be marked as read');
+      return data;
+    });
   }
 
   function setOpen(next) {
     open = next;
     if (!panel || !btn) return;
     if (open) {
+      if (actionStatus) {
+        actionStatus.hidden = true;
+        actionStatus.textContent = '';
+      }
+      document.body.classList.add('resident-notifications-open');
       panel.hidden = false;
       if (backdrop) backdrop.hidden = false;
       requestAnimationFrame(function () {
         panel.classList.add('notify-panel--open');
         if (backdrop) backdrop.classList.add('notify-backdrop--open');
         btn.classList.add('notify-bell--active');
+        if (closeBtn && window.matchMedia('(max-width: 640px)').matches) closeBtn.focus();
       });
       fetchList(true);
     } else {
+      document.body.classList.remove('resident-notifications-open');
       panel.classList.remove('notify-panel--open');
       if (backdrop) backdrop.classList.remove('notify-backdrop--open');
       btn.classList.remove('notify-bell--active');
@@ -176,6 +200,7 @@
         if (!open) {
           panel.hidden = true;
           if (backdrop) backdrop.hidden = true;
+          btn.focus();
         }
       }, 220);
     }
@@ -212,8 +237,15 @@
       e.stopPropagation();
       if (!cfg.readAllUrl || markAll.disabled) return;
       markAll.classList.add('is-busy');
-      postJson(cfg.readAllUrl, '').then(function () {
+      postJson(cfg.readAllUrl, '').then(function (data) {
+        if (!data || !data.ok) throw new Error('Notifications could not be marked as read');
         return fetchList(false);
+      }).catch(function (error) {
+        if (actionStatus) {
+          actionStatus.hidden = false;
+          actionStatus.textContent = 'Could not mark notifications as read. Please try again.';
+        }
+        console.warn('Notifications could not be marked as read.', error);
       }).finally(function () {
         markAll.classList.remove('is-busy');
       });
@@ -244,7 +276,21 @@
           setOpen(false);
           if (link) window.location.href = link;
         }, link ? 180 : 0);
+      }).catch(function (error) {
+        li.classList.remove('notify-item--pressed');
+        if (actionStatus) {
+          actionStatus.hidden = false;
+          actionStatus.textContent = 'Could not update this notification. Please try again.';
+        }
+        console.warn('Notification could not be marked as read.', error);
       });
+    });
+    list.addEventListener('keydown', function (event) {
+      var li = event.target.closest('.notify-item[role="link"]');
+      if (li && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        li.click();
+      }
     });
   }
 

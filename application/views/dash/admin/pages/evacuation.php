@@ -5,29 +5,36 @@ $centers = isset($centers) && is_array($centers) ? $centers : array();
 <div class="admin-evacuation-page">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <div class="admin-split admin-split--wide">
-	<section class="glass-card">
-		<h2><?php echo $edit ? 'Edit evacuation pin' : 'Add evacuation pin'; ?></h2>
-		<p class="admin-muted">Add the official location for a barangay in Dulag, Leyte. Use the exact latitude and longitude from the MDRRMO-approved location.</p>
+	<section class="glass-card admin-evacuation-card">
+		<header class="admin-evacuation-card__head">
+			<h2><?php echo $edit ? 'Edit evacuation pin' : 'Add evacuation pin'; ?></h2>
+			<p class="admin-muted">Enter the official center details and place its approved location on the map.</p>
+		</header>
 		<form method="post" action="<?php echo site_url('admin/evacuation'); ?>" class="admin-form">
 			<input type="hidden" name="id" value="<?php echo $edit ? (int) $edit['id'] : 0; ?>">
-			<label>Center name <input type="text" name="name" required maxlength="160" value="<?php echo $edit ? html_escape($edit['name']) : ''; ?>" placeholder="Barangay evacuation center"></label>
-			<label>Barangay <input type="text" name="barangay" required maxlength="80" value="<?php echo $edit ? html_escape($edit['barangay']) : ''; ?>" placeholder="Barangay name"></label>
-			<label>Address <input type="text" name="address" required maxlength="220" value="<?php echo $edit ? html_escape($edit['address']) : ''; ?>" placeholder="Street or landmark, Dulag, Leyte"></label>
-			<div class="admin-form-row">
+			<label class="admin-evacuation-field--name">Center name <input type="text" name="name" required maxlength="160" value="<?php echo $edit ? html_escape($edit['name']) : ''; ?>" placeholder="Barangay evacuation center"></label>
+			<label class="admin-evacuation-field--barangay">Barangay <input type="text" name="barangay" required maxlength="80" value="<?php echo $edit ? html_escape($edit['barangay']) : ''; ?>" placeholder="Barangay name"></label>
+			<label class="admin-evacuation-field--address">Address <input type="text" name="address" required maxlength="220" value="<?php echo $edit ? html_escape($edit['address']) : ''; ?>" placeholder="Street or landmark, Dulag, Leyte"></label>
+			<div class="admin-form-row admin-evacuation-coordinates">
 				<label>Latitude <input type="number" id="evacuationLatitude" name="latitude" required step="0.000001" min="9" max="12" value="<?php echo $edit ? html_escape($edit['latitude']) : ''; ?>" placeholder="10.952500"></label>
 				<label>Longitude <input type="number" id="evacuationLongitude" name="longitude" required step="0.000001" min="123" max="127" value="<?php echo $edit ? html_escape($edit['longitude']) : ''; ?>" placeholder="125.032200"></label>
 			</div>
-			<p class="admin-muted">Click the map to place or move the evacuation pin.</p>
+			<p class="admin-muted admin-evacuation-map-note">Click the map to place or move the evacuation pin.</p>
 			<div id="evacuationAdminMap" class="evacuation-admin-map" aria-label="Click to select evacuation center location"></div>
-			<label>Capacity note <input type="text" name="capacity" maxlength="120" value="<?php echo $edit ? html_escape($edit['capacity']) : 'Confirm current capacity with MDRRMO'; ?>"></label>
-			<label>Contact number <input type="text" name="phone" maxlength="30" value="<?php echo $edit ? html_escape($edit['phone']) : '053 325 0000'; ?>"></label>
-			<label class="admin-check"><input type="checkbox" name="active" value="1"<?php echo (!$edit || ! empty($edit['active'])) ? ' checked' : ''; ?>> Visible to residents</label>
-			<button class="btn btn--primary" type="submit"><?php echo $edit ? 'Update pin' : 'Save pin'; ?></button>
-			<?php if ($edit): ?><a class="btn btn--ghost" href="<?php echo site_url('admin/evacuation'); ?>">Cancel edit</a><?php endif; ?>
+			<label class="admin-evacuation-field--capacity">Capacity note <input type="text" name="capacity" maxlength="120" value="<?php echo $edit ? html_escape($edit['capacity']) : 'Confirm current capacity with MDRRMO'; ?>"></label>
+			<label class="admin-evacuation-field--phone">Contact number <input type="text" name="phone" maxlength="30" value="<?php echo $edit ? html_escape($edit['phone']) : '053 325 0000'; ?>"></label>
+			<label class="admin-check admin-evacuation-field--active"><input type="checkbox" name="active" value="1"<?php echo (!$edit || ! empty($edit['active'])) ? ' checked' : ''; ?>> Visible to residents</label>
+			<div class="admin-evacuation-form-actions">
+				<button class="btn btn--primary" type="submit"><?php echo $edit ? 'Update pin' : 'Save pin'; ?></button>
+				<?php if ($edit): ?><a class="btn btn--ghost" href="<?php echo site_url('admin/evacuation'); ?>">Cancel edit</a><?php endif; ?>
+			</div>
 		</form>
 	</section>
-	<section class="glass-card">
-		<h2>Published pins (<?php echo count($centers); ?>)</h2>
+	<section class="glass-card admin-evacuation-card">
+		<header class="admin-evacuation-card__head">
+			<h2>Published evacuation centers <span class="admin-evacuation-count"><?php echo count($centers); ?></span></h2>
+			<p class="admin-muted">Locations currently managed in the public evacuation directory.</p>
+		</header>
 		<?php if (empty($centers)): ?>
 			<p>No evacuation pins have been added.</p>
 		<?php else: ?>

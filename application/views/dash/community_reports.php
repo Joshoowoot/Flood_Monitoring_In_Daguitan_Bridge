@@ -17,14 +17,14 @@ $form_value = function ($key) use ($form_values) {
 	<meta name="description" content="Submit and track a local flooding or hazard report for MDRRMO review.">
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006j">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="portal-page resident-portal community-reports-page">
 	<a class="skip-link" href="#main">Skip to content</a>
 	<div class="gov-bar"><div class="gov-bar__inner"><span>Republic of the Philippines · Municipality of Dulag, Leyte</span><span>Municipal Disaster Risk Reduction and Management Office</span></div></div>
-	<header class="topbar"><div class="topbar__inner"><a class="brand" href="<?php echo html_escape($portal_url); ?>"><span class="brand__mark"><img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40"></span><span class="brand__text"><span class="brand__name brand__name--desktop">DAGUITAN FLOOD MONITOR</span><span class="brand__name brand__name--mobile">Daguitan Monitor</span></span></a><div class="topbar__actions"><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
+	<header class="topbar"><div class="topbar__inner"><a class="brand" href="<?php echo html_escape($portal_url); ?>"><span class="brand__mark"><img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40"></span><span class="brand__text"><span class="brand__name brand__name--desktop">DAGUITAN FLOOD MONITOR</span><span class="brand__name brand__name--mobile">Daguitan Monitor</span></span></a><div class="topbar__actions"><?php $this->load->view('partials/notifications_bell'); ?><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
 	<main id="main" class="resident-layout">
 		<aside class="resident-sidebar" id="residentSidebar" aria-label="Resident portal navigation">
 			<div class="resident-sidebar__profile"><img class="resident-sidebar__avatar resident-sidebar__avatar--logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt=""><div><strong><?php echo html_escape($auth_name); ?></strong><span>Resident account</span></div></div>
@@ -57,7 +57,7 @@ $form_value = function ($key) use ($form_values) {
 			<div class="community-reports-grid">
 				<section class="community-report-panel" aria-labelledby="reportFormTitle">
 					<header><p class="card-kicker">Submit a report</p><h2 id="reportFormTitle">What did you observe?</h2><p>Share a specific location and what you saw. Photo is optional.</p></header>
-					<form class="community-report-form" method="post" enctype="multipart/form-data" action="<?php echo site_url('portal/reports'); ?>">
+					<form class="community-report-form" id="communityReportForm" method="post" enctype="multipart/form-data" action="<?php echo site_url('portal/reports'); ?>">
 						<input type="hidden" name="report_token" value="<?php echo html_escape($report_token); ?>">
 						<div class="community-report-form__fields">
 							<label for="reportType">Report type
@@ -86,9 +86,11 @@ $form_value = function ($key) use ($form_values) {
 							<label class="community-report-form__wide" for="reportPhoto">Photo (optional)
 								<input id="reportPhoto" name="report_photo" type="file" accept="image/jpeg,image/png,image/webp">
 								<small>JPEG, PNG, or WebP; maximum 3 MB. Avoid including identifiable people if possible.</small>
+								<span class="community-report-photo-status" id="reportPhotoStatus" role="status" aria-live="polite">No photo selected.</span>
 							</label>
 						</div>
-						<button class="btn btn--primary" type="submit">Submit report</button>
+						<button class="btn btn--primary" id="reportSubmit" type="submit">Submit report</button>
+						<p class="community-report-submit-status" id="reportSubmitStatus" role="status" aria-live="polite" hidden></p>
 						<p class="community-report-form__privacy">Your report and optional photo are visible only to you and authorized MDRRMO admins. Reports are stored in this site's local database.</p>
 					</form>
 				</section>
@@ -121,6 +123,9 @@ $form_value = function ($key) use ($form_values) {
 	</main>
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions. This report form is not monitored as an emergency hotline.</p></div></footer>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 </body>
 </html>
