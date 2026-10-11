@@ -67,8 +67,8 @@ const int ECHO_PIN = 18;  // ESP32 D18 / GPIO 18
 // Replace these with your actual Wi-Fi information.
 // DO NOT share your Wi-Fi password with anyone.
 
-const char* WIFI_SSID     = ".";
-const char* WIFI_PASSWORD = "ExtendCutie";
+const char* WIFI_SSID     = "HAHAHAHA";
+const char* WIFI_PASSWORD = "ayawdreako";
 
 
 // ======================================================
@@ -76,7 +76,7 @@ const char* WIFI_PASSWORD = "ExtendCutie";
 // ======================================================
 
 // PC running XAMPP / CodeIgniter
-const char* PC_IP = "192.168.0.100";
+const char* PC_IP = "192.168.100.154";
 
 // Must match application/config/monitor.php
 const char* API_KEY = "daguitan-esp32-key";
@@ -106,7 +106,11 @@ String ingestUrl() {
 //
 // It will be replaced after measuring/calibrating
 // the prototype.
-const float REFERENCE_HEIGHT_CM = 200.0;
+const float REFERENCE_HEIGHT_CM = 70.07;
+
+// Sensor distance correction.
+// Keep at 0.0 until calibration is verified.
+const float DISTANCE_OFFSET_CM = 0.0;
 
 
 // ======================================================
@@ -288,48 +292,66 @@ void connectWifi() {
 // READ DISTANCE
 // ======================================================
 
+
 float readDistanceCM() {
+  const int SAMPLE_COUNT = 5;
+  const unsigned long ECHO_TIMEOUT_US = 30000;
 
-  // Send trigger pulse
+  float readings[SAMPLE_COUNT];
+  int validCount = 0;
 
-  digitalWrite(TRIG_PIN, LOW);
+  for (int i = 0; i < SAMPLE_COUNT; i++) {
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(3);
 
-  delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
 
-
-  digitalWrite(TRIG_PIN, HIGH);
-
-  delayMicroseconds(10);
-
-  digitalWrite(TRIG_PIN, LOW);
-
-
-  // Read echo pulse
-
-  unsigned long duration =
-    pulseIn(
+    unsigned long duration = pulseIn(
       ECHO_PIN,
       HIGH,
-      30000
+      ECHO_TIMEOUT_US
     );
 
+    if (duration > 0) {
+      float distance = duration * 0.0343f / 2.0f;
 
-  // No echo received
+      if (distance >= 2.0f && distance <= 450.0f) {
+        readings[validCount] = distance;
+        validCount++;
+      }
+    }
 
-  if (duration == 0) {
-
-    return -1.0;
+    delay(60);
   }
 
+  if (validCount < 3) {
+    return -1.0f;
+  }
 
-  // Convert echo duration to distance
+  // Sort readings from smallest to largest.
+  for (int i = 0; i < validCount - 1; i++) {
+    for (int j = i + 1; j < validCount; j++) {
+      if (readings[j] < readings[i]) {
+        float temp = readings[i];
+        readings[i] = readings[j];
+        readings[j] = temp;
+      }
+    }
+  }
 
-  float distance =
-    duration * 0.0343 / 2.0;
+  // Return the median reading.
+  if (validCount % 2 == 1) {
+    return readings[validCount / 2];
+  }
 
-
-  return distance;
+  return (
+    readings[(validCount / 2) - 1] +
+    readings[validCount / 2]
+  ) / 2.0f;
 }
+
 
 
 // ======================================================
@@ -818,9 +840,12 @@ void loop() {
   // 3. CONVERT DISTANCE TO WATER LEVEL
   // ----------------------------------------------------
 
+  float correctedDistance =
+  distance + DISTANCE_OFFSET_CM;
+
   float rawWaterLevel =
-    REFERENCE_HEIGHT_CM -
-    distance;
+  REFERENCE_HEIGHT_CM -
+  correctedDistance;
 
 
   // Prevent negative water level
