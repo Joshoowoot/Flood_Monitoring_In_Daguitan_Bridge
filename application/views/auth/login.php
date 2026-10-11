@@ -7,7 +7,7 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 $error = isset($error) ? $error : '';
 $auth_mode = (isset($auth_mode) && $auth_mode === 'signup') ? 'signup' : 'signin';
 $is_signup = ($auth_mode === 'signup');
-$asset_v = '20261006a';
+$asset_v = '20261007-mobile-auth2';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -96,6 +96,10 @@ $asset_v = '20261006a';
 
 			<section class="auth-card">
 				<div class="auth-card__inner">
+					<a class="auth-home-link" href="<?php echo site_url('/'); ?>">
+						<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/><path d="M9 12h11"/></svg>
+						Back to home
+					</a>
 					<div class="auth-card__brand">
 						<img src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40">
 						<div>

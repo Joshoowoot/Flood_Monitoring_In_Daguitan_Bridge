@@ -10,8 +10,8 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 	<meta name="description" content="Resident evacuation centers for Dulag, Leyte.">
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006c">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -37,6 +37,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				</span>
 			</a>
 			<div class="topbar__actions">
+				<?php $this->load->view('partials/notifications_bell'); ?>
 				<span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span>
 				<a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a>
 				<button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false">
@@ -112,7 +113,8 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 					<?php endforeach; ?>
 					<span class="hazard-legend__evacuation"><i></i>Evacuation center</span>
 				</div>
-				<div id="evacuationMap" class="evacuation-map__canvas" aria-label="Map of hazards and evacuation centers"></div>
+				<p class="evacuation-map__status" id="evacuationMapStatus" role="status" aria-live="polite">Map is optional. Search and choose a location from the list below if map tiles are slow or unavailable.</p>
+				<div id="evacuationMap" class="evacuation-map__canvas" role="region" tabindex="0" aria-label="Map of hazards and evacuation centers"></div>
 			</div>
 		</section>
 
@@ -121,9 +123,13 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				<h2 id="centerListTitle">Available locations</h2>
 				<p>Center capacity can change during an active emergency. Confirm availability before you leave.</p>
 			</div>
+			<label class="evacuation-search" for="centerSearch">Find a center
+				<input id="centerSearch" type="search" inputmode="search" autocomplete="off" placeholder="Search by center, barangay, or address">
+			</label>
+			<p class="evacuation-search__status" id="centerSearchStatus" role="status" aria-live="polite"><?php echo count($centers); ?> locations listed</p>
 			<div class="evacuation-grid">
 				<?php foreach ($centers as $index => $center): ?>
-				<article class="glass-card evacuation-card<?php echo $index === 0 ? ' evacuation-card--nearest' : ''; ?>">
+				<article class="glass-card evacuation-card<?php echo $index === 0 ? ' evacuation-card--nearest' : ''; ?>" data-center-search="<?php echo html_escape($center['name'] . ' ' . $center['barangay'] . ' ' . $center['address']); ?>">
 					<?php if ($index === 0): ?><p class="card-kicker">Nearest listed center</p><?php endif; ?>
 					<h3><?php echo html_escape($center['name']); ?></h3>
 					<p class="card-kicker">Barangay <?php echo html_escape($center['barangay']); ?></p>
@@ -133,9 +139,10 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 						<div><dt>Capacity</dt><dd><?php echo html_escape($center['capacity']); ?></dd></div>
 					</dl>
 					<div class="evacuation-card__actions">
-						<a class="btn btn--primary btn--compact" href="<?php echo html_escape($center['maps']); ?>" target="_blank" rel="noopener">Directions</a>
+						<a class="btn btn--primary btn--compact" href="<?php echo html_escape($center['maps']); ?>" target="_blank" rel="noopener" data-current-location-directions>Directions</a>
 						<a class="btn btn--ghost btn--compact" href="<?php echo html_escape($center['phone_link']); ?>">Call MDRRMO</a>
 					</div>
+					<p class="evacuation-card__directions-status" hidden role="status" aria-live="polite"></p>
 				</article>
 			<?php endforeach; ?>
 			</div>
@@ -158,8 +165,11 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 			<p class="footer__note">In an emergency, follow MDRRMO and barangay instructions.</p>
 		</div>
 	</footer>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	<script>
 		(function () {
@@ -213,7 +223,10 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 				attribution: '&copy; OpenStreetMap contributors',
 				maxZoom: 19
-			}).addTo(map);
+			}).addTo(map).on('tileerror', function () {
+				var status = document.getElementById('evacuationMapStatus');
+				if (status) status.textContent = 'Map tiles could not be loaded. Use the searchable evacuation-center list below for directions and contact details.';
+			});
 			var bounds = [];
 			centers.forEach(function (center) {
 				var point = [Number(center.latitude), Number(center.longitude)];

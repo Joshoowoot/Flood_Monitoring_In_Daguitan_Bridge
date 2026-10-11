@@ -39,6 +39,7 @@ $notify_unread = isset($notify_unread) ? (int) $notify_unread : 0;
 				Mark all read
 			</button>
 		</div>
+		<p class="notify-action-status" id="notifyActionStatus" role="status" aria-live="polite" hidden></p>
 
 		<div class="notify-panel__body">
 			<ul class="notify-list" id="notifyList" aria-live="polite">

@@ -10,8 +10,8 @@
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006f">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20260925z">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-about-mobile1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-publicheader1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page about-page">
@@ -46,6 +46,12 @@
 						<a class="btn btn--primary btn--compact" href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 					</div>
 				<?php endif; ?>
+				<button class="icon-btn" type="button" id="notifyBtn" aria-label="Notifications, no unread alerts">
+					<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/>
+						<path d="M10 19a2 2 0 0 0 4 0"/>
+					</svg>
+				</button>
 				<button class="icon-btn hamburger" type="button" id="menuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
 					<span></span><span></span><span></span>
 				</button>
@@ -322,6 +328,6 @@
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array('homeUrl' => $home_url, 'serviceWorkerUrl' => $base_url . 'sw.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260929about"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-publicheader1"></script>
 </body>
 </html>

@@ -86,7 +86,7 @@ class Portal extends CI_Controller {
 		$barangay = (string) $this->session->userdata('auth_barangay');
 		$live = $this->Monitor_model->get_status($barangay);
 		$base = rtrim(base_url(), '/');
-		$this->load->view('announcements', array(
+		$this->load->view('announcements', array_merge(array(
 			'base_url'          => $base . '/',
 			'asset_url'         => $base . '/assets/',
 			'status_url'        => $base . '/index.php/api/status',
@@ -105,20 +105,20 @@ class Portal extends CI_Controller {
 			'weather'           => $live['weather'],
 			'announcement'      => $live['announcement'],
 			'announcements'     => $this->Monitor_model->list_published_announcements($barangay),
-		));
+		), $this->notification_view_data()));
 	}
 
 	public function go_bag()
 	{
 		$base = rtrim(base_url(), '/');
-		$this->load->view('dash/go_bag', array(
+		$this->load->view('dash/go_bag', array_merge(array(
 			'base_url'   => $base . '/',
 			'asset_url'  => $base . '/assets/',
 			'page_title' => 'Go Bag Checklist',
 			'auth_name'  => $this->session->userdata('auth_name'),
 			'logout_url' => site_url('auth/logout'),
 			'portal_url' => site_url('portal'),
-		));
+		), $this->notification_view_data()));
 	}
 
 	public function reports()
@@ -215,7 +215,7 @@ class Portal extends CI_Controller {
 		}
 
 		$base = rtrim(base_url(), '/');
-		$this->load->view('dash/community_reports', array(
+		$this->load->view('dash/community_reports', array_merge(array(
 			'base_url' => $base . '/',
 			'asset_url' => $base . '/assets/',
 			'page_title' => 'Flood and Hazard Reports',
@@ -231,7 +231,7 @@ class Portal extends CI_Controller {
 			'report_notice' => $this->session->flashdata('report_notice'),
 			'report_form_values' => $form_values,
 			'report_photo_base' => site_url('portal/report-photo'),
-		));
+		), $this->notification_view_data()));
 	}
 
 	public function report_photo($id = 0)
@@ -356,7 +356,7 @@ class Portal extends CI_Controller {
 		}
 
 		$form_token = (string) $this->session->userdata('profile_form_token');
-		$this->load->view('dash/profile', array(
+		$this->load->view('dash/profile', array_merge(array(
 			'asset_url'  => $base . '/assets/',
 			'page_title' => 'My Profile',
 			'auth_name'  => $this->session->userdata('auth_name'),
@@ -370,7 +370,7 @@ class Portal extends CI_Controller {
 			'profile_form_values' => $form_values,
 			'logout_url' => site_url('auth/logout'),
 			'portal_url' => site_url('portal'),
-		));
+		), $this->notification_view_data()));
 	}
 
 	protected function profile_save_notice($success, $sync)
@@ -390,7 +390,7 @@ class Portal extends CI_Controller {
 	{
 		$base = rtrim(base_url(), '/');
 		$live = $this->Monitor_model->get_status();
-		$this->load->view('dash/help', array(
+		$this->load->view('dash/help', array_merge(array(
 			'asset_url'  => $base . '/assets/',
 			'page_title' => 'Help and How to Use',
 			'auth_name'  => $this->session->userdata('auth_name'),
@@ -398,7 +398,7 @@ class Portal extends CI_Controller {
 			'status_url' => $base . '/index.php/api/status',
 			'logout_url' => site_url('auth/logout'),
 			'portal_url' => site_url('portal'),
-		));
+		), $this->notification_view_data()));
 	}
 
 	public function evacuation_centers()
@@ -417,7 +417,7 @@ class Portal extends CI_Controller {
 			$centers[] = $center;
 		}
 
-		$this->load->view('dash/evacuation_centers', array(
+		$this->load->view('dash/evacuation_centers', array_merge(array(
 			'base_url' => $base . '/',
 			'asset_url' => $base . '/assets/',
 			'page_title' => 'Evacuation Centers',
@@ -429,6 +429,26 @@ class Portal extends CI_Controller {
 				return ! empty($hazard['active']);
 			})),
 			'hazard_types' => $this->Hazard_model->types(),
-		));
+		), $this->notification_view_data()));
+	}
+
+	protected function notification_view_data()
+	{
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$base = rtrim(base_url(), '/');
+
+		return array(
+			'notify_audience' => 'user',
+			'notify_unread' => ($user_id > 0)
+				? $this->Notification_model->count_unread($user_id, 'user')
+				: 0,
+			'notify_config' => array(
+				'listUrl' => $base . '/index.php/api/notifications',
+				'readUrl' => $base . '/index.php/api/notifications/read',
+				'readAllUrl' => $base . '/index.php/api/notifications/read_all',
+				'pollMs' => 30000,
+			),
+		);
 	}
 }

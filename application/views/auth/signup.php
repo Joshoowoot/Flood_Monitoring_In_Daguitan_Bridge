@@ -3,7 +3,7 @@ $phone = isset($phone) ? $phone : '';
 $name = isset($name) ? $name : '';
 $username = isset($username) ? $username : '';
 $error = isset($error) ? $error : '';
-$asset_v = '20260925f';
+$asset_v = '20261007-signup-layout';
 ?>
 <!DOCTYPE html>
 <html lang="en">

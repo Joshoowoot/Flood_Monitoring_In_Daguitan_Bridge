@@ -27,9 +27,9 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006b">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-hide-phone-mobile1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=2">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-bottomremoved1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page">
@@ -157,7 +157,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 						<strong id="heroTrend"><?php echo $trend_arrow; ?> <?php echo html_escape($m['trend_label']); ?></strong>
 					</div>
 					<div>
-						<span class="meta">Last Updated</span>
+						<span class="status-panel__freshness-label">Sensor data received</span>
 						<time id="heroUpdated" datetime="<?php echo html_escape($m['last_updated_iso']); ?>"><?php echo html_escape($m['last_updated']); ?></time>
 					</div>
 				</div>
@@ -248,6 +248,9 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 						<h2 id="weatherTitle">Dulag weather</h2>
 						<p class="wx-now__cond" id="wxCardCond"><?php echo html_escape($w['condition']); ?></p>
 						<p class="wx-now__source" id="wxCardSource"><?php echo html_escape($w['source']); ?></p>
+						<p class="wx-now__updated"><span>Weather updated</span>
+							<time id="wxCardUpdated"<?php echo ! empty($w['retrieved_at_iso']) ? ' datetime="' . html_escape($w['retrieved_at_iso']) . '"' : ''; ?>><?php echo html_escape(isset($w['retrieved_at']) ? $w['retrieved_at'] : 'Update time unavailable'); ?></time>
+						</p>
 					</div>
 				</div>
 				<ul class="wx-now__stats">
@@ -300,14 +303,19 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 					<h3>Red / critical</h3>
 					<p class="card-copy">Follow MDRRMO instructions. Do not cross flowing water or wait on the bridge.</p>
 				</article>
-				<article class="glass-card reveal">
-					<div class="glass-card__icon" aria-hidden="true">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.2a2 2 0 0 1 2.1-.4c.8.2 1.7.4 2.6.6A2 2 0 0 1 22 16.9z"/></svg>
-					</div>
-					<h3>Hotlines</h3>
-					<p class="card-copy">Call MDRRMO Dulag or barangay responders if someone is trapped.</p>
-				</article>
 			</div>
+			<article class="hotline-panel glass-card reveal">
+				<div class="hotline-panel__heading">
+					<h3>Emergency hotlines</h3>
+					<p>Call MDRRMO Dulag or barangay responders if someone is trapped.</p>
+				</div>
+				<ul class="hotline-panel__list">
+					<li><strong>DRR / Rescue</strong><span><a href="tel:09175738524">0917-573-8524</a> / <a href="tel:09705592222">0970-559-2222</a></span></li>
+					<li><strong>Bureau of Fire Protection (BFP)</strong><span><a href="tel:09177938524">0917-793-8524</a> / <a href="tel:09171135292">0917-113-5292</a> or <a href="tel:09603061905">0960-306-1905</a></span></li>
+					<li><strong>Philippine National Police (PNP)</strong><span><a href="tel:09176838524">0917-683-8524</a> / <a href="tel:09985986493">0998-598-6493</a></span></li>
+					<li><strong>Rural Health Unit (RHU)</strong><span><a href="tel:09175938524">0917-593-8524</a></span></li>
+				</ul>
+			</article>
 		</section>
 
 		<section class="cta-band reveal">
@@ -360,25 +368,6 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 		</div>
 	</footer>
 
-	<nav class="bottom-nav" aria-label="App">
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : '#home'); ?>" class="is-active">
-			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="m3 10 9-7 9 7"/><path d="M5.5 9v11h13V9M9.5 20v-6h5v6"/></svg>
-			Home
-		</a>
-		<a href="<?php echo html_escape(isset($home_url) ? $home_url : ''); ?>#monitor">
-			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 12h4l2.5-4 4.5 8 2.5-4H21"/></svg>
-			Monitor
-		</a>
-		<a href="<?php echo html_escape(isset($announcements_url) ? $announcements_url : site_url('announcements')); ?>">
-			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M5 3.5h14a2 2 0 0 1 2 2v15H7a2 2 0 0 1-2-2z"/><path d="M5 18.5a2 2 0 0 0 2 2M9 8h8M9 12h8M9 16h5"/></svg>
-			News
-		</a>
-		<a href="<?php echo html_escape(isset($about_url) ? $about_url : site_url('about')); ?>">
-			<svg class="bottom-nav__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
-			About
-		</a>
-	</nav>
-
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array(
 			'monitor' => $m,
@@ -389,7 +378,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 			'pollMs' => 5000,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=4"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20260924a"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=5"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-bottomremoved1"></script>
 </body>
 </html>

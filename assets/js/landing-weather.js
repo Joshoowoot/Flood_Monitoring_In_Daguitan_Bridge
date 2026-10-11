@@ -100,6 +100,12 @@
     set("wxCardCloud", `${Number(weather.cloud_pct || 0)}%`);
     set("wxCardPressure", `${Number(weather.pressure_hpa || 1013)} hPa`);
     set("wxCardSource", weather.source || "");
+    const updated = document.getElementById("wxCardUpdated");
+    if (updated) {
+      if (weather.retrieved_at_iso) updated.dateTime = weather.retrieved_at_iso;
+      else updated.removeAttribute("datetime");
+      updated.textContent = weather.retrieved_at || "Update time unavailable";
+    }
     const icon = document.getElementById("wxCardIcon");
     if (icon) icon.dataset.theme = theme;
     renderWeek(Array.isArray(weather.forecast) ? weather.forecast : []);

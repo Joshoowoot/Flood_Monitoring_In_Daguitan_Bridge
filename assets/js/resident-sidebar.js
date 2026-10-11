@@ -1,9 +1,50 @@
 (function () {
   var sidebar = document.getElementById('residentSidebar');
   var toggle = document.getElementById('residentSidebarToggle');
+  var closeButton = document.getElementById('residentSidebarClose');
   var backdrop = document.getElementById('residentSidebarBackdrop');
 
   if (!sidebar || !toggle || !backdrop) return;
+
+  var main = sidebar.closest('main');
+  if (main && backdrop.parentElement !== main) {
+    main.insertBefore(backdrop, main.firstChild);
+  }
+
+  if (!closeButton) {
+    closeButton = document.createElement('button');
+    closeButton.className = 'resident-sidebar__close';
+    closeButton.type = 'button';
+    closeButton.id = 'residentSidebarClose';
+    closeButton.setAttribute('aria-label', 'Close resident navigation');
+    closeButton.textContent = '×';
+    sidebar.insertBefore(closeButton, sidebar.firstChild);
+  }
+
+  var bottomNavLinks = document.querySelectorAll('.resident-dashboard .bottom-nav a[href^="#"]');
+  var topbar = document.querySelector('.topbar');
+
+  function updateHeaderHeight() {
+    if (topbar) {
+      document.documentElement.style.setProperty(
+        '--resident-header-height',
+        Math.ceil(topbar.getBoundingClientRect().height) + 'px'
+      );
+    }
+  }
+
+  function updateBottomNavigation() {
+    var activeHash = window.location.hash || '#home';
+    bottomNavLinks.forEach(function (link) {
+      var active = link.getAttribute('href') === activeHash;
+      link.classList.toggle('is-active', active);
+      if (active) {
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.removeAttribute('aria-current');
+      }
+    });
+  }
 
   function setOpen(open, restoreFocus) {
     sidebar.classList.toggle('is-open', open);
@@ -23,6 +64,25 @@
   toggle.addEventListener('click', function () {
     setOpen(!sidebar.classList.contains('is-open'));
   });
+  if (closeButton) {
+    closeButton.addEventListener('click', function () {
+      setOpen(false);
+    });
+  }
+  bottomNavLinks.forEach(function (link) {
+    link.addEventListener('click', function () {
+      bottomNavLinks.forEach(function (item) {
+        item.classList.remove('is-active');
+        item.removeAttribute('aria-current');
+      });
+      link.classList.add('is-active');
+      link.setAttribute('aria-current', 'page');
+    });
+  });
+  window.addEventListener('hashchange', updateBottomNavigation);
+  window.addEventListener('resize', updateHeaderHeight);
+  updateHeaderHeight();
+  updateBottomNavigation();
   backdrop.addEventListener('click', function () {
     setOpen(false);
   });

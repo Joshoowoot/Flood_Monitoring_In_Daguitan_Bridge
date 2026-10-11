@@ -42,9 +42,9 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261006g">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-footer-facebook2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006n">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="landing-page announce-page<?php echo ! empty($resident_portal) ? ' portal-page resident-portal' : ''; ?>">
@@ -107,12 +107,16 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 					<a class="btn btn--primary btn--compact" href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 				</div>
 				<?php endif; ?>
+				<?php if ( ! empty($resident_portal)): ?>
+				<?php $this->load->view('partials/notifications_bell'); ?>
+				<?php else: ?>
 				<button class="icon-btn" type="button" id="notifyBtn" aria-label="Notifications, no unread alerts">
 					<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/>
 						<path d="M10 19a2 2 0 0 0 4 0"/>
 					</svg>
 				</button>
+				<?php endif; ?>
 				<?php if ( ! empty($resident_portal)): ?>
 				<button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false">
 					<span></span><span></span><span></span>
@@ -232,11 +236,19 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 					<h3>Emergency / red</h3>
 					<p class="card-copy">Follow MDRRMO instructions. Do not cross flowing water or wait on the bridge.</p>
 				</article>
-				<article class="glass-card reveal">
-					<h3>Hotlines</h3>
-					<p class="card-copy">Call MDRRMO Dulag or barangay responders if someone is trapped.</p>
-				</article>
 			</div>
+			<article class="hotline-panel glass-card reveal">
+				<div class="hotline-panel__heading">
+					<h3>Emergency hotlines</h3>
+					<p>Call MDRRMO Dulag or barangay responders if someone is trapped.</p>
+				</div>
+				<ul class="hotline-panel__list">
+					<li><strong>DRR / Rescue</strong><span><a href="tel:09175738524">0917-573-8524</a> / <a href="tel:09705592222">0970-559-2222</a></span></li>
+					<li><strong>Bureau of Fire Protection (BFP)</strong><span><a href="tel:09177938524">0917-793-8524</a> / <a href="tel:09171135292">0917-113-5292</a> or <a href="tel:09603061905">0960-306-1905</a></span></li>
+					<li><strong>Philippine National Police (PNP)</strong><span><a href="tel:09176838524">0917-683-8524</a> / <a href="tel:09985986493">0998-598-6493</a></span></li>
+					<li><strong>Rural Health Unit (RHU)</strong><span><a href="tel:09175938524">0917-593-8524</a></span></li>
+				</ul>
+			</article>
 		</section>
 
 		<section class="section" id="notices">
@@ -293,9 +305,10 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 				<iframe
 					title="MDRRMO Dulag Facebook page and timeline"
 					src="https://www.facebook.com/plugins/page.php?href=<?php echo rawurlencode('https://www.facebook.com/profile.php?id=100063639583165'); ?>&tabs=timeline&width=500&height=680&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true"
+					data-responsive-width="true"
 					width="500"
 					height="680"
-					style="border:none;overflow:hidden"
+					style="border:none"
 					scrolling="yes"
 					frameborder="0"
 					allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
@@ -362,9 +375,12 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=1"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261006c"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-facebookwidth1"></script>
 	<?php if ( ! empty($resident_portal)): ?>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<?php endif; ?>
 </body>

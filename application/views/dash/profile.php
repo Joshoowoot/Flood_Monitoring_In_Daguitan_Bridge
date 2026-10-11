@@ -14,14 +14,14 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 	<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<meta name="theme-color" content="#9b1224"><title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20260924d">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261006d">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="portal-page resident-portal profile-page">
 	<a class="skip-link" href="#main">Skip to content</a>
 	<div class="gov-bar"><div class="gov-bar__inner"><span>Republic of the Philippines · Municipality of Dulag, Leyte</span><span>Municipal Disaster Risk Reduction and Management Office</span></div></div>
-	<header class="topbar"><div class="topbar__inner"><a class="brand" href="<?php echo html_escape($portal_url); ?>"><span class="brand__mark"><img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40"></span><span class="brand__text"><span class="brand__name brand__name--desktop">DAGUITAN FLOOD MONITOR</span><span class="brand__name brand__name--mobile">Daguitan Monitor</span></span></a><div class="topbar__actions"><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
+	<header class="topbar"><div class="topbar__inner"><a class="brand" href="<?php echo html_escape($portal_url); ?>"><span class="brand__mark"><img class="brand__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="40" height="40"></span><span class="brand__text"><span class="brand__name brand__name--desktop">DAGUITAN FLOOD MONITOR</span><span class="brand__name brand__name--mobile">Daguitan Monitor</span></span></a><div class="topbar__actions"><?php $this->load->view('partials/notifications_bell'); ?><span class="btn btn--ghost btn--compact portal-user"><?php echo html_escape($auth_name); ?></span><a class="btn btn--primary btn--compact" href="<?php echo html_escape($logout_url); ?>">Sign out</a><button class="resident-sidebar-toggle" type="button" id="residentSidebarToggle" aria-label="Open resident navigation" aria-controls="residentSidebar" aria-expanded="false"><span></span><span></span><span></span></button></div></div></header>
 	<main id="main" class="resident-layout">
 		<aside class="resident-sidebar" id="residentSidebar" aria-label="Resident portal navigation"><div class="resident-sidebar__profile"><img class="resident-sidebar__avatar resident-sidebar__avatar--logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt=""><div><strong><?php echo html_escape($auth_name); ?></strong><span>Resident account</span></div></div><nav class="resident-sidebar__nav" aria-label="Resident portal"><a href="<?php echo html_escape($portal_url); ?>">Dashboard</a><a href="<?php echo site_url('portal/go-bag'); ?>">Go Bag</a><a href="<?php echo site_url('portal/evacuation-centers'); ?>">Evacuation Centers</a><a href="<?php echo site_url('portal/announcements'); ?>">Announcements</a><a href="<?php echo site_url('portal/reports'); ?>">Flood / Hazard Reports</a><a class="is-active" href="<?php echo site_url('portal/profile'); ?>" aria-current="page">My Profile</a><a href="<?php echo site_url('portal/help'); ?>">Help / How to Use</a></nav><a class="resident-sidebar__signout" href="<?php echo html_escape($logout_url); ?>">Sign out</a><div class="resident-sidebar__government"><span>Republic of the Philippines</span><strong>Municipality of Dulag, Leyte</strong></div></aside>
 		<div class="resident-layout__content">
@@ -115,6 +115,9 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 	</main>
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions.</p></div></footer>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=1"></script>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 </body>
 </html>
