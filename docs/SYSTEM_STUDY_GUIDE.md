@@ -370,6 +370,24 @@ For a new local installation, import the full schema. For an existing installati
 
 Tables are also **auto-created** on first use (`Admin_portal_model`, `Notification_model`, `Sync_model`).
 
+### Hosted cloud database
+
+The cloud database connection defaults to a second local XAMPP schema for development. To use a hosted MySQL database, configure these environment variables on the Windows account that runs Apache and the scheduled PHP CLI task (use Windows system environment variables if Apache runs as a service). Restart Apache and Task Scheduler tasks/processes after changing them; do not put production credentials in source control:
+
+| Variable | Purpose |
+|----------|---------|
+| `FLOOD_CLOUD_DB_HOST` | Hosted MySQL hostname |
+| `FLOOD_CLOUD_DB_PORT` | MySQL port (defaults to `3306`) |
+| `FLOOD_CLOUD_DB_NAME` | Existing database/schema name |
+| `FLOOD_CLOUD_DB_USERNAME` | Database user |
+| `FLOOD_CLOUD_DB_PASSWORD` | Database password |
+
+Create the cloud database/schema with the hosting provider first and allow connections from the web server. The app creates/updates the sync tables after connecting, but does not create a remote database. Then use **Admin → Sync to cloud** and check the sync status and PHP application log if the connection fails. Some providers require additional TLS settings.
+
+For automatic retries even when no new sensor packet or admin request arrives, schedule the CLI worker `php index.php sync_job run` to run once per minute. On Windows, create a Task Scheduler task with the XAMPP PHP executable (for example, `C:\xampp\php\php.exe`) as the program and `index.php sync_job run` as the arguments; set the repository root as the task's working directory. The worker only runs from CLI, copies pending/failed rows when internet is reachable, and returns a non-zero exit code if the cloud connection or copy fails.
+
+The ESP32 firmware stores its unsent queue in Preferences/NVS flash, restores it after restart, and retries every 30 seconds while backlog remains. The queue is bounded to 24 readings; when full, the firmware keeps its existing policy of dropping the oldest unsent entry and reports this over Serial. For local-first operation during an internet outage, the ESP32 must still be able to reach the XAMPP PC's LAN IP over the station's Wi-Fi; the local network, PC, and Apache service must remain available.
+
 ### Table reference
 
 | Table | Purpose | Key columns |

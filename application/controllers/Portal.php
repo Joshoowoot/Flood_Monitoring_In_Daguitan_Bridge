@@ -19,6 +19,8 @@ class Portal extends CI_Controller {
 	{
 		$barangay = (string) $this->session->userdata('auth_barangay');
 		$live = $this->Monitor_model->get_status($barangay);
+		$this->load->model('Admin_portal_model');
+		$live['monitor'] = $this->Admin_portal_model->enrich_monitor($live['monitor']);
 		$this->load->model('Evacuation_center_model');
 		$evacuation_centers = array_values(array_filter($this->Evacuation_center_model->all(), function ($center) {
 			return ! empty($center['active']);
@@ -71,6 +73,9 @@ class Portal extends CI_Controller {
 				'listUrl'    => $base . '/index.php/api/notifications',
 				'readUrl'    => $base . '/index.php/api/notifications/read',
 				'readAllUrl' => $base . '/index.php/api/notifications/read_all',
+				'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
+				'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
+				'serviceWorkerUrl' => $base . '/sw.js',
 				'pollMs'     => 30000,
 			),
 			'actions_map'  => $actions,
@@ -447,6 +452,9 @@ class Portal extends CI_Controller {
 				'listUrl' => $base . '/index.php/api/notifications',
 				'readUrl' => $base . '/index.php/api/notifications/read',
 				'readAllUrl' => $base . '/index.php/api/notifications/read_all',
+				'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
+				'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
+				'serviceWorkerUrl' => $base . '/sw.js',
 				'pollMs' => 30000,
 			),
 		);

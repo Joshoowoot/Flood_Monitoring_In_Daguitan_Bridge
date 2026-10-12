@@ -23,3 +23,17 @@ CREATE TABLE IF NOT EXISTS `notification_reads` (
 	PRIMARY KEY (`notification_id`, `user_id`),
 	KEY `idx_notification_reads_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+	`endpoint_hash` CHAR(64) NOT NULL,
+	`user_id` INT UNSIGNED NOT NULL,
+	`audience` ENUM('admin','user') NOT NULL,
+	`endpoint` TEXT NOT NULL,
+	`public_key` VARCHAR(255) NOT NULL,
+	`auth_token` VARCHAR(255) NOT NULL,
+	`content_encoding` VARCHAR(32) NOT NULL DEFAULT 'aes128gcm',
+	`created_at` DATETIME NOT NULL,
+	`updated_at` DATETIME NOT NULL,
+	PRIMARY KEY (`endpoint_hash`),
+	KEY `idx_push_subscriptions_user` (`user_id`, `audience`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

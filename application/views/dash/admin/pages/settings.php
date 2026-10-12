@@ -43,6 +43,20 @@ $s = $settings;
 		</dl>
 		<p class="admin-settings-account-note">Password changes are managed through the database or seed accounts.</p>
 	</section>
+	<section class="glass-card admin-settings-card admin-settings-card--storage">
+		<header class="admin-settings-card__head">
+			<p class="admin-kicker">Data pipeline</p>
+			<h2>Hybrid storage</h2>
+		</header>
+		<dl class="dash-dl">
+			<div><dt>Local database</dt><dd>MDRRMO_DULAG</dd></div>
+			<div><dt>Cloud target</dt><dd id="admCloudTarget"><?php echo html_escape($sync['cloud_target']); ?></dd></div>
+			<div><dt>Cloud database</dt><dd id="admCloudDatabase"><?php echo html_escape($sync['cloud_database']); ?></dd></div>
+			<div><dt>Waiting to copy</dt><dd id="admWaitingCopy"><?php echo (int) $sync['pending_total']; ?> row(s)</dd></div>
+			<div><dt>Last cloud copy</dt><dd id="admLastCloudCopy"><?php echo ! empty($sync['last_synced_at']) ? html_escape($sync['last_synced_at']) : 'Not yet'; ?></dd></div>
+			<div><dt>Published advisories</dt><dd><?php echo (int) $published_announcements; ?></dd></div>
+		</dl>
+	</section>
 	<div class="admin-settings-actions">
 		<p>Changes apply to monitoring and alert notifications after saving.</p>
 		<button class="btn btn--primary" type="submit">Save settings</button>

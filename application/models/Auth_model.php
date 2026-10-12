@@ -66,6 +66,26 @@ class Auth_model extends CI_Model {
 		return $row ? $row : NULL;
 	}
 
+	public function find_resident_by_name($name, $exclude_user_id = 0)
+	{
+		$name = trim(preg_replace('/\s+/u', ' ', (string) $name));
+		if ($name === '' || ! $this->db->field_exists('name', 'users'))
+		{
+			return NULL;
+		}
+
+		$this->db
+			->where('role', 'user')
+			->where('LOWER(TRIM(`name`)) = LOWER(' . $this->db->escape($name) . ')', NULL, FALSE);
+		if ((int) $exclude_user_id > 0)
+		{
+			$this->db->where('id !=', (int) $exclude_user_id);
+		}
+
+		$row = $this->db->limit(1)->get('users')->row_array();
+		return $row ? $row : NULL;
+	}
+
 	public function find_by_login($login)
 	{
 		$login = trim((string) $login);
@@ -147,7 +167,7 @@ class Auth_model extends CI_Model {
 	public function register_resident($username, $name, $phone, $barangay, $password)
 	{
 		$username = strtolower(trim((string) $username));
-		$name = trim((string) $name);
+		$name = trim(preg_replace('/\s+/u', ' ', (string) $name));
 		$phone = $this->normalize_phone($phone);
 		$barangay = trim((string) $barangay);
 		$this->load->model('Hazard_model');
@@ -155,19 +175,27 @@ class Auth_model extends CI_Model {
 
 		if ( ! isset($barangays[$barangay]))
 		{
-			return array('ok' => FALSE, 'error' => 'Select your barangay from the list.');
+			return array('ok' => FALSE, 'error' => 'Select your barangay from the list.', 'field' => 'signup-barangay');
+		}
+		if (mb_strlen($name, 'UTF-8') < 2 || mb_strlen($name, 'UTF-8') > 120)
+		{
+			return array('ok' => FALSE, 'error' => 'Enter your full name using 2 to 120 characters.', 'field' => 'signup-name');
 		}
 		if ($this->find_by_username($username))
 		{
-			return array('ok' => FALSE, 'error' => 'That username is already taken.');
+			return array('ok' => FALSE, 'error' => 'That username is already taken.', 'field' => 'signup-username');
 		}
 		if ($phone !== '' && $this->find_by_phone($phone))
 		{
-			return array('ok' => FALSE, 'error' => 'That mobile number is already registered.');
+			return array('ok' => FALSE, 'error' => 'That mobile number is already registered.', 'field' => 'signup-phone');
+		}
+		if ($this->find_resident_by_name($name))
+		{
+			return array('ok' => FALSE, 'error' => 'A resident account with that full name already exists. Check your name or contact MDRRMO if this is an error.', 'field' => 'signup-name');
 		}
 		if ( ! $this->is_valid_phone($phone))
 		{
-			return array('ok' => FALSE, 'error' => 'Enter a valid Philippine mobile number (09XXXXXXXXX).');
+			return array('ok' => FALSE, 'error' => 'Enter a valid Philippine mobile number (09XXXXXXXXX).', 'field' => 'signup-phone');
 		}
 
 		$ok = $this->db->insert('users', array(
@@ -183,6 +211,14 @@ class Auth_model extends CI_Model {
 
 		if ( ! $ok)
 		{
+			if ($this->find_by_phone($phone))
+			{
+				return array('ok' => FALSE, 'error' => 'That mobile number is already registered.', 'field' => 'signup-phone');
+			}
+			if ($this->find_by_username($username))
+			{
+				return array('ok' => FALSE, 'error' => 'That username is already taken.', 'field' => 'signup-username');
+			}
 			return array('ok' => FALSE, 'error' => 'Could not create your account. Please try again.');
 		}
 
@@ -214,13 +250,17 @@ class Auth_model extends CI_Model {
 	public function update_resident_profile($user_id, $name, $phone, $barangay)
 	{
 		$user_id = (int) $user_id;
-		$name = trim((string) $name);
+		$name = trim(preg_replace('/\s+/u', ' ', (string) $name));
 		$phone = $this->normalize_phone($phone);
 		$barangay = trim((string) $barangay);
 
-		if ($user_id < 1 || strlen($name) < 2 || strlen($name) > 120)
+		if ($user_id < 1 || mb_strlen($name, 'UTF-8') < 2 || mb_strlen($name, 'UTF-8') > 120)
 		{
 			return array('ok' => FALSE, 'error' => 'Enter a name between 2 and 120 characters.');
+		}
+		if ($this->find_resident_by_name($name, $user_id))
+		{
+			return array('ok' => FALSE, 'error' => 'A resident account with that full name already exists. Check your name or contact MDRRMO if this is an error.');
 		}
 		if ( ! $this->is_valid_barangay($barangay))
 		{

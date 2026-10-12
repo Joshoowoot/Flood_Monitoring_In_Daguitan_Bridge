@@ -11,7 +11,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -166,7 +166,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 		</div>
 	</footer>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>

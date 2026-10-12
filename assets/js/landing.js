@@ -137,6 +137,134 @@
     if (el) el.textContent = value;
   };
 
+  const warningDetails = document.getElementById("warningDetails");
+  const warningDetailsMeter = document.getElementById("warningDetailsMeter");
+  let warningDetailsTrigger = null;
+  const communityImpacts = {
+    green: {
+      intro: "The water is below the advisory threshold. Flood impacts are less likely at this level, but heavy rain or changing river conditions can raise the risk.",
+      effects: [
+        "No immediate flood impact is indicated by this reading."
+      ],
+      actions: [
+        "Continue normal activities and keep an eye on official updates.",
+        "Know your household’s evacuation route and keep drains clear."
+      ]
+    },
+    yellow: {
+      intro: "The river has reached the caution range. Risk may increase in low-lying places, especially if the water keeps rising or heavy rain continues.",
+      effects: [
+        "Water may collect near riverbanks and on low-lying roads.",
+        "Travel may become slippery or difficult in affected areas."
+      ],
+      actions: [
+        "Prepare essential items and follow official updates.",
+        "Check on children, older adults, and neighbors who may need help.",
+        "Stay away from the river and never cross floodwater."
+      ]
+    },
+    red: {
+      intro: "The critical threshold has been reached. Flooding may affect low-lying homes, roads, and nearby areas. Fast-moving water and debris can be dangerous.",
+      effects: [
+        "Flooding may reach homes and roads in low-lying areas.",
+        "Fast or deep water can make travel life-threatening."
+      ],
+      actions: [
+        "Move to higher ground if water is rising near you.",
+        "Follow MDRRMO or barangay evacuation instructions promptly.",
+        "Never walk or drive through floodwater. Contact local emergency services if someone is in immediate danger."
+      ]
+    }
+  };
+  const formatMeters = (value) => `${Number(value).toFixed(2)} m`;
+  const updateCommunityImpacts = (level) => {
+    const impacts = communityImpacts[level] || communityImpacts.green;
+    setText("warningDetailsCommunityIntro", impacts.intro);
+    const fillList = (id, entries) => {
+      const list = document.getElementById(id);
+      if (!list) return;
+      const items = entries.map((text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        return item;
+      });
+      list.replaceChildren(...items);
+    };
+    fillList("warningDetailsEffects", impacts.effects);
+    fillList("warningDetailsActions", impacts.actions);
+  };
+  const updateWarningDetails = (monitor) => {
+    const yellow = Number(monitor?.threshold_yellow_m ?? data.thresholds?.yellow ?? 1.5);
+    const red = Number(monitor?.threshold_red_m ?? data.thresholds?.red ?? 2.5);
+    const level = Number(monitor?.water_level_m ?? 0);
+    const max = Math.max(red * 1.2, red + 0.5);
+    const yellowStop = `${Math.min(100, Math.max(0, (yellow / max) * 100))}%`;
+    const redStop = `${Math.min(100, Math.max(0, (red / max) * 100))}%`;
+    const readingPosition = `${Math.min(100, Math.max(0, (level / max) * 100))}%`;
+
+    setText("warningDetailsCurrent", formatMeters(level));
+    setText("warningDetailsYellow", formatMeters(yellow));
+    setText("warningDetailsRed", formatMeters(red));
+    warningDetailsMeter?.setAttribute("aria-valuenow", String(level));
+    warningDetailsMeter?.setAttribute("aria-valuemax", String(max));
+    warningDetailsMeter?.setAttribute("aria-valuetext", `Current water level ${formatMeters(level)}; advisory threshold ${formatMeters(yellow)}; critical threshold ${formatMeters(red)}`);
+    warningDetailsMeter?.style.setProperty("--yellow-stop", yellowStop);
+    warningDetailsMeter?.style.setProperty("--red-stop", redStop);
+    warningDetailsMeter?.style.setProperty("--reading-position", readingPosition);
+    if (warningDetailsTrigger) {
+      const selectedLevel = warningDetailsTrigger.dataset.warningDetails;
+      const range = selectedLevel === "green"
+        ? `Below ${formatMeters(yellow)} (advisory threshold).`
+        : selectedLevel === "yellow"
+          ? `From ${formatMeters(yellow)} to below ${formatMeters(red)}.`
+          : `At or above ${formatMeters(red)}.`;
+      setText("warningDetailsRange", range);
+    }
+  };
+  const closeWarningDetails = () => {
+    if (!warningDetails?.open) return;
+    warningDetails.close();
+  };
+  const resetWarningDetailsTrigger = () => {
+    warningDetailsTrigger?.setAttribute("aria-expanded", "false");
+    warningDetailsTrigger = null;
+  };
+
+  if (warningDetails) {
+    document.body.append(warningDetails);
+    document.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-warning-details]");
+      if (!button) return;
+      if (warningDetailsTrigger === button && warningDetails.open) {
+        closeWarningDetails();
+        return;
+      }
+      warningDetailsTrigger?.setAttribute("aria-expanded", "false");
+      warningDetailsTrigger = button;
+      warningDetailsTrigger.setAttribute("aria-expanded", "true");
+      warningDetails.dataset.level = button.dataset.warningDetails;
+      setText("warningDetailsLevel", `${button.dataset.warningDetails.toUpperCase()} warning level`);
+      const selectedTitle = button.querySelector(".warn-board__spec strong")?.textContent || button.querySelector("#heroStatusLabel")?.textContent || "Water-level details";
+      setText("warningDetailsTitle", selectedTitle.trim().toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase()));
+      updateCommunityImpacts(button.dataset.warningDetails);
+      updateWarningDetails(lastMonitor);
+      if (!warningDetails.open) warningDetails.showModal();
+    });
+    warningDetails.querySelector(".warning-details__close")?.addEventListener("click", closeWarningDetails);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && warningDetails.open) {
+        event.preventDefault();
+        closeWarningDetails();
+      }
+    });
+    warningDetails.addEventListener("click", (event) => {
+      if (event.target === warningDetails) {
+        closeWarningDetails();
+      }
+    });
+    warningDetails.addEventListener("close", resetWarningDetailsTrigger);
+  }
+
   const connectionText = document.getElementById("portalConnectionText");
   let connectionState = navigator.onLine ? "connected" : "offline";
   let lastMonitor = data.monitor || null;
@@ -146,15 +274,11 @@
     const sensorOffline = monitor?.sensor_status === "offline" || monitor?.sensor_status === "waiting";
     connection.classList.toggle("is-offline", connectionState === "offline" || sensorOffline || requestFailed);
     if (connectionState === "offline") {
-      connectionText.textContent = monitor?.last_updated
-        ? `You’re offline · last sensor reading ${monitor.last_updated}`
-        : "You’re offline · live flood readings are unavailable";
+      connectionText.textContent = "You’re offline · showing the last saved reading";
     } else if (requestFailed) {
-      connectionText.textContent = monitor?.last_updated
-        ? `Live update delayed · last sensor reading ${monitor.last_updated}`
-        : "Live update delayed · waiting for a sensor reading";
+      connectionText.textContent = "Live update delayed · showing the last saved reading";
     } else if (monitor?.sensor_status === "offline") {
-      connectionText.textContent = `Monitoring station offline · last reading ${monitor.last_updated}`;
+      connectionText.textContent = "Monitoring station offline · showing the last saved reading";
     } else if (monitor?.sensor_status === "waiting") {
       connectionText.textContent = "Monitoring station is waiting for its first reading";
     } else {
@@ -171,10 +295,12 @@
     const ratePrefix = m.rate_cm_min > 0 ? "+" : "";
     lastMonitor = m;
     renderConnection(m);
+    updateWarningDetails(m);
 
     const badge = document.getElementById("heroStatusBadge");
     if (badge) {
       badge.className = `status-badge status-badge--${m.warning_level}`;
+      badge.dataset.warningDetails = m.warning_level;
     }
     setText("heroStatusLabel", String(m.warning_label || "").toUpperCase());
     setText("heroStatusSr", `Warning level: ${m.warning_label}`);

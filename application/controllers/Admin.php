@@ -163,6 +163,7 @@ class Admin extends CI_Controller {
 			'page_lede'    => 'Stored ultrasonic readings with trend, rate of rise, and threshold classification.',
 			'history_rows' => $history_rows,
 			'history_count'=> count($history_rows),
+			'history_chart'=> $this->Admin_portal_model->history_chart_series(),
 			'filters'      => $filters,
 			'filter_date_from' => $this->input->get('date_from'),
 			'filter_date_to'   => $this->input->get('date_to'),
@@ -272,7 +273,7 @@ class Admin extends CI_Controller {
 				$msg = ($action === 'publish') ? 'Announcement published.' : 'Announcement unpublished.';
 				if ($send_push)
 				{
-					$msg .= ' Push notification queued (requires configured web push).';
+					$msg .= ' Browser push goes to subscribed devices when configured; the in-app advisory remains available to everyone.';
 				}
 				$this->session->set_flashdata('sync_notice', $msg);
 			}
@@ -613,6 +614,7 @@ class Admin extends CI_Controller {
 			'page_lede'    => 'Flood thresholds, monitoring windows, and notification preferences.',
 			'sync_notice'  => $this->session->flashdata('sync_notice'),
 			'ingest_url'   => rtrim(base_url(), '/') . '/index.php/api/ingest',
+			'published_announcements' => $this->Admin_portal_model->count_published_announcements(),
 		) + $ctx);
 	}
 
@@ -757,6 +759,9 @@ class Admin extends CI_Controller {
 			'listUrl'    => $base . '/index.php/api/notifications',
 			'readUrl'    => $base . '/index.php/api/notifications/read',
 			'readAllUrl' => $base . '/index.php/api/notifications/read_all',
+			'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
+			'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
+			'serviceWorkerUrl' => $base . '/sw.js',
 			'pollMs'     => 30000,
 		);
 		if ( ! isset($data['portal_stats']))
