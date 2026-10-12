@@ -31,9 +31,10 @@
     var w = rect.width;
     var h = rect.height;
     var pad = { t: 16, r: 16, b: 28, l: 42 };
-    var yellow = parseFloat(cfg.chart.yellow || cfg.thresholds.yellow || 1.5);
-    var red = parseFloat(cfg.chart.red || cfg.thresholds.red || 2.5);
-    var maxY = Math.max(red * 1.15, 3);
+    var yellow = parseFloat(cfg.chart.yellow || cfg.thresholds.yellow || 0.1);
+    var red = parseFloat(cfg.chart.red || cfg.thresholds.red || 0.2);
+    var maxValue = Math.max.apply(null, points.map(function (point) { return Number(point.water_level_m); }));
+    var maxY = Math.max(red * 1.15, maxValue * 1.12, 0.3);
     function yScale(v) {
       var inner = h - pad.t - pad.b;
       return pad.t + inner - (v / maxY) * inner;
@@ -114,8 +115,8 @@
     ctx.fillStyle = '#6b5558';
     ctx.font = '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText('0 m', 6, yScale(0) + 4);
-    ctx.fillText(yellow.toFixed(1) + ' m', 6, yScale(yellow) + 4);
-    ctx.fillText(red.toFixed(1) + ' m', 6, yScale(red) + 4);
+    ctx.fillText(yellow.toFixed(2) + ' m', 6, yScale(yellow) + 4);
+    ctx.fillText(red.toFixed(2) + ' m', 6, yScale(red) + 4);
     var analyticsRange = canvas.getAttribute('data-window-labels') === 'analytics';
     if (analyticsRange) {
       var span = now - start;
@@ -183,8 +184,8 @@
     var w = rect.width;
     var h = rect.height;
     var pad = { t: 18, r: 20, b: 38, l: 52 };
-    var yellow = Number(cfg.historyChart.yellow) || 1.5;
-    var red = Number(cfg.historyChart.red) || 2.5;
+    var yellow = Number(cfg.historyChart.yellow) || 0.1;
+    var red = Number(cfg.historyChart.red) || 0.2;
     var start = Number(period.start);
     var end = Number(period.end);
     var values = [];
@@ -194,7 +195,7 @@
       });
     });
     var maxValue = values.length ? Math.max.apply(null, values) : red;
-    var maxY = Math.max(red * 1.12, Math.ceil(maxValue * 1.12 * 2) / 2, 1);
+    var maxY = Math.max(red * 1.12, Math.ceil(maxValue * 1.12 * 2) / 2, 0.5);
     var innerW = w - pad.l - pad.r;
     var innerH = h - pad.t - pad.b;
     function xScale(ts) {
@@ -293,8 +294,8 @@
 
   function updateThreshold(m) {
     var level = Number(m.water_level_m);
-    var yellow = Number(m.threshold_yellow_m || cfg.thresholds.yellow || 1.5);
-    var red = Number(m.threshold_red_m || cfg.thresholds.red || 2.5);
+    var yellow = Number(m.threshold_yellow_m || cfg.thresholds.yellow || 0.1);
+    var red = Number(m.threshold_red_m || cfg.thresholds.red || 0.2);
     var context = m.sensor_status === 'waiting' ? 'Waiting for telemetry' : (level >= red ? 'Critical threshold reached' : (level >= yellow ? (red - level).toFixed(2) + ' m to critical threshold' : (yellow - level).toFixed(2) + ' m to monitor threshold'));
     var distance = '—';
     var distanceTarget = 'to advisory threshold';

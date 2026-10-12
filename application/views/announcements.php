@@ -375,7 +375,7 @@ if ($featured_level !== 'red' && $featured_level !== 'yellow')
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=1"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-facebookwidth1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261012-water-level-bands1"></script>
 	<?php if ( ! empty($resident_portal)): ?>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>

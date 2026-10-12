@@ -328,6 +328,6 @@
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array('homeUrl' => $home_url, 'serviceWorkerUrl' => $base_url . 'sw.js'), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-publicheader1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261012-water-level-bands1"></script>
 </body>
 </html>

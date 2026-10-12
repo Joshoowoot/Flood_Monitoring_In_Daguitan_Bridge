@@ -1,59 +1,113 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 $edit = isset($edit_row) && is_array($edit_row) ? $edit_row : NULL;
 $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
+$published_count = 0;
+foreach ($announcements as $announcement)
+{
+	if ( ! empty($announcement['is_published'])) $published_count++;
+}
+$draft_count = count($announcements) - $published_count;
+$level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 'Emergency');
 ?>
 <div class="admin-announcements-page">
-<div class="admin-split admin-split--wide">
-	<section class="glass-card">
-		<h2><?php echo $edit ? 'Edit announcement' : 'Create announcement'; ?></h2>
+	<section class="glass-card admin-announcement-composer">
+		<div class="admin-announcement-section-head">
+			<div>
+				<p class="admin-kicker"><?php echo $edit ? 'Update public information' : 'Message composer'; ?></p>
+				<h2><?php echo $edit ? 'Edit announcement' : 'Create announcement'; ?></h2>
+				<p class="admin-muted">Write a clear advisory, choose who should receive it, and decide whether to publish now or save it as a draft.</p>
+			</div>
+		</div>
 		<form method="post" action="<?php echo site_url('admin/announcements'); ?>" class="admin-form">
 			<input type="hidden" name="id" value="<?php echo $edit ? (int) $edit['id'] : 0; ?>">
-			<label>Title <input type="text" name="title" required maxlength="160" value="<?php echo $edit ? html_escape($edit['title']) : ''; ?>"></label>
-			<label>Message <textarea name="body" rows="5" required><?php echo $edit ? html_escape($edit['body']) : ''; ?></textarea></label>
-			<label>Level
-				<select name="level">
-					<option value="info"<?php echo ($edit && $edit['level'] === 'info') ? ' selected' : ''; ?>>Information</option>
-					<option value="yellow"<?php echo ($edit && $edit['level'] === 'yellow') ? ' selected' : ''; ?>>Advisory (yellow)</option>
-					<option value="red"<?php echo ($edit && $edit['level'] === 'red') ? ' selected' : ''; ?>>Emergency (red)</option>
-				</select>
-			</label>
-			<label>Target
-				<select name="barangay">
-					<option value=""<?php echo ($edit && empty($edit['barangay'])) ? ' selected' : ''; ?>>Municipality-wide · all residents</option>
-					<?php foreach ($barangays as $key => $label): ?>
-						<option value="<?php echo html_escape($key); ?>"<?php echo ($edit && isset($edit['barangay']) && $edit['barangay'] === $key) ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
-					<?php endforeach; ?>
-				</select>
-			</label>
-			<label class="admin-check"><input type="checkbox" name="is_published" value="1"<?php echo ($edit && ! empty($edit['is_published'])) ? ' checked' : ''; ?>> Published (visible to selected residents; municipality-wide reaches everyone)</label>
-			<button class="btn btn--primary" type="submit"><?php echo $edit ? 'Update announcement' : 'Save announcement'; ?></button>
-			<?php if ($edit): ?>
-				<a class="btn btn--ghost" href="<?php echo site_url('admin/announcements'); ?>">Cancel edit</a>
-			<?php endif; ?>
+			<div class="admin-announcement-field admin-announcement-field--title">
+				<label for="announcementTitle">Title</label>
+				<input id="announcementTitle" type="text" name="title" required maxlength="160" value="<?php echo $edit ? html_escape($edit['title']) : ''; ?>" placeholder="e.g. Flood advisory for coastal communities">
+				<p class="admin-announcement-help">Use a short, specific heading residents can understand at a glance.</p>
+			</div>
+			<div class="admin-announcement-field admin-announcement-field--message">
+				<label for="announcementBody">Message</label>
+				<textarea id="announcementBody" name="body" rows="6" required placeholder="Explain what is happening, who is affected, and what residents should do."><?php echo $edit ? html_escape($edit['body']) : ''; ?></textarea>
+				<p class="admin-announcement-help">Include the affected area, safety guidance, and any useful timing information.</p>
+			</div>
+			<div class="admin-announcement-settings">
+				<div class="admin-announcement-field">
+					<label for="announcementLevel">Advisory level</label>
+					<select id="announcementLevel" name="level">
+						<option value="info"<?php echo ($edit && $edit['level'] === 'info') ? ' selected' : ''; ?>>Information</option>
+						<option value="yellow"<?php echo ($edit && $edit['level'] === 'yellow') ? ' selected' : ''; ?>>Advisory · Yellow</option>
+						<option value="red"<?php echo ($edit && $edit['level'] === 'red') ? ' selected' : ''; ?>>Emergency · Red</option>
+					</select>
+					<p class="admin-announcement-help">Choose the level that best reflects urgency.</p>
+				</div>
+				<div class="admin-announcement-field">
+					<label for="announcementTarget">Audience</label>
+					<select id="announcementTarget" name="barangay">
+						<option value=""<?php echo ($edit && empty($edit['barangay'])) ? ' selected' : ''; ?>>Municipality-wide · all residents</option>
+						<?php foreach ($barangays as $key => $label): ?>
+							<option value="<?php echo html_escape($key); ?>"<?php echo ($edit && isset($edit['barangay']) && $edit['barangay'] === $key) ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<p class="admin-announcement-help">Municipality-wide reaches all residents.</p>
+				</div>
+				<label class="admin-announcement-publish">
+					<input type="checkbox" name="is_published" value="1"<?php echo ($edit && ! empty($edit['is_published'])) ? ' checked' : ''; ?>>
+					<span><strong>Publish immediately</strong><small>Leave unchecked to save as a draft.</small></span>
+				</label>
+			</div>
+			<div class="admin-announcement-form-actions">
+				<button class="btn btn--primary" type="submit"><?php echo $edit ? 'Update announcement' : 'Save announcement'; ?></button>
+				<?php if ($edit): ?>
+					<a class="btn btn--ghost" href="<?php echo site_url('admin/announcements'); ?>">Cancel editing</a>
+				<?php endif; ?>
+			</div>
 		</form>
 	</section>
-	<section class="glass-card">
+
+	<section class="glass-card admin-announcement-library">
 		<div class="admin-announcements-list-head">
-			<h2>Published &amp; drafts (<?php echo count($announcements); ?>)</h2>
+			<div class="admin-announcement-list-title">
+				<p class="admin-kicker">Announcement library</p>
+				<h2>Published &amp; drafts</h2>
+				<div class="admin-announcement-counts" aria-label="Announcement totals">
+					<span><?php echo number_format($published_count); ?> published</span>
+					<span><?php echo number_format($draft_count); ?> drafts</span>
+				</div>
+			</div>
 			<?php if ( ! empty($announcements)): ?>
 				<form class="admin-announcements-search" id="adminAnnouncementSearchForm" role="search">
 					<label class="admin-sr-only" for="adminAnnouncementSearch">Search announcements</label>
-					<input type="search" id="adminAnnouncementSearch" placeholder="Search by title or message" autocomplete="off">
+					<input type="search" id="adminAnnouncementSearch" placeholder="Search by title or message" autocomplete="off" aria-controls="adminAnnouncementList">
 					<button class="btn btn--ghost btn--compact" type="submit">Search</button>
 				</form>
 			<?php endif; ?>
 		</div>
 		<?php if (empty($announcements)): ?>
-			<p>No announcements yet. Create one to display on the public monitor.</p>
+			<div class="admin-announcements-empty">
+				<strong>No announcements yet</strong>
+				<p>Create an announcement to share official updates with residents.</p>
+			</div>
 		<?php else: ?>
 			<ul class="admin-announce-list" id="adminAnnouncementList">
 				<?php foreach ($announcements as $ann): ?>
 					<li class="glass-card admin-announce-item">
-						<div>
-							<strong><?php echo html_escape($ann['title']); ?></strong>
+						<?php
+						$level = isset($ann['level']) ? strtolower((string) $ann['level']) : 'info';
+						if ( ! isset($level_labels[$level])) $level = 'info';
+						?>
+						<div class="admin-announce-main">
+							<div class="admin-announce-badges">
+								<span class="admin-announcement-level admin-announcement-level--<?php echo html_escape($level); ?>"><?php echo html_escape($level_labels[$level]); ?></span>
+								<span class="admin-announcement-status<?php echo $ann['is_published'] ? ' is-published' : ''; ?>"><?php echo $ann['is_published'] ? 'Published' : 'Draft'; ?></span>
+								<?php if ( ! empty($ann['push_sent'])): ?><span class="admin-announcement-push">Push sent</span><?php endif; ?>
+							</div>
+							<h3><?php echo html_escape($ann['title']); ?></h3>
 							<p class="admin-announcement-body is-collapsed"><?php echo nl2br(html_escape($ann['body'])); ?></p>
 							<button class="admin-announcement-toggle" type="button" aria-expanded="false">See more</button>
-							<p class="admin-muted"><?php echo html_escape($ann['level']); ?> · <?php echo empty($ann['barangay']) ? 'Municipality-wide' : 'Barangay ' . html_escape($ann['barangay']); ?> · <?php echo $ann['is_published'] ? 'Published' : 'Draft'; ?><?php echo $ann['push_sent'] ? ' · Push sent' : ''; ?> · Updated <?php echo html_escape($ann['updated_at']); ?></p>
+							<div class="admin-announcement-meta">
+								<span><?php echo empty($ann['barangay']) ? 'Municipality-wide audience' : 'Barangay ' . html_escape($ann['barangay']); ?></span>
+								<span>Updated <?php echo html_escape($ann['updated_at']); ?></span>
+							</div>
 						</div>
 						<div class="admin-announce-actions">
 							<a class="btn btn--ghost btn--compact" href="<?php echo site_url('admin/announcements?edit=' . (int) $ann['id']); ?>">Edit</a>
@@ -61,7 +115,7 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 								<form method="post" action="<?php echo site_url('admin/announcements'); ?>">
 									<input type="hidden" name="action" value="publish">
 									<input type="hidden" name="id" value="<?php echo (int) $ann['id']; ?>">
-									<label class="admin-check"><input type="checkbox" name="send_push" value="1"> Send push</label>
+									<label class="admin-check"><input type="checkbox" name="send_push" value="1"> Notify subscribed devices</label>
 									<button class="btn btn--primary btn--compact" type="submit">Publish</button>
 								</form>
 							<?php else: ?>
@@ -80,7 +134,7 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 					</li>
 				<?php endforeach; ?>
 			</ul>
-			<p class="admin-announcements-search-empty admin-muted" id="adminAnnouncementSearchEmpty" role="status" hidden>No announcements match your search.</p>
+			<p class="admin-announcements-search-empty admin-muted" id="adminAnnouncementSearchEmpty" role="status" hidden>No announcements match your search. Try another title or message.</p>
 		<?php endif; ?>
 	</section>
 </div>

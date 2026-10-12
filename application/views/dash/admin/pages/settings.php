@@ -8,6 +8,7 @@ $s = $settings;
 			<h2>Flood warning thresholds</h2>
 		</header>
 		<p class="admin-muted">Warning levels are derived from these water-level values only.</p>
+		<p class="admin-muted">Default ranges: Green 0–9.99 cm, Yellow 10–19.99 cm, Red 20 cm and above.</p>
 		<label>Yellow advisory (m) <input type="number" step="0.01" min="0" name="monitor_threshold_yellow_m" value="<?php echo html_escape($s['monitor_threshold_yellow_m']); ?>" required></label>
 		<label>Red critical (m) <input type="number" step="0.01" min="0" name="monitor_threshold_red_m" value="<?php echo html_escape($s['monitor_threshold_red_m']); ?>" required></label>
 	</section>

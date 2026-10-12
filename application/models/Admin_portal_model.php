@@ -18,8 +18,8 @@ class Admin_portal_model extends CI_Model {
 	public function settings()
 	{
 		$defaults = array(
-			'monitor_threshold_yellow_m' => (float) $this->Monitor_model_cfg('monitor_threshold_yellow_m', 1.5),
-			'monitor_threshold_red_m'    => (float) $this->Monitor_model_cfg('monitor_threshold_red_m', 2.5),
+			'monitor_threshold_yellow_m' => (float) $this->Monitor_model_cfg('monitor_threshold_yellow_m', 0.1),
+			'monitor_threshold_red_m'    => (float) $this->Monitor_model_cfg('monitor_threshold_red_m', 0.2),
 			'monitor_sensor_height_cm'   => (int) $this->Monitor_model_cfg('monitor_sensor_height_cm', 400),
 			'monitor_offline_after'      => (int) $this->Monitor_model_cfg('monitor_offline_after', 90),
 			'notify_residents_email'     => FALSE,

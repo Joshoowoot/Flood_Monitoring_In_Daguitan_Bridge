@@ -35,7 +35,7 @@ function admin_nav_icon($key) {
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261012-alert-cards-landscape2">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261012-evacuation-directory-compact1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="admin-portal">
@@ -144,7 +144,7 @@ function admin_nav_icon($key) {
 		echo json_encode($admin_js, JSON_UNESCAPED_SLASHES);
 		?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=20261012-alerts-landscape1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=20261012-water-level-bands1"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;

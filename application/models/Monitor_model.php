@@ -60,10 +60,10 @@ class Monitor_model extends CI_Model {
 			? date('M j, Y · g:i A', $received)
 			: 'No reading received';
 
-		$max_level = max(3.0, (float) $this->cfg('monitor_threshold_red_m', 2.5) * 1.2);
+		$max_level = max(0.3, (float) $this->cfg('monitor_threshold_red_m', 0.2) * 1.2, $level * 1.1);
 		$gauge = (int) min(100, max(4, round(($level / $max_level) * 100)));
-		$yellow = (float) $this->cfg('monitor_threshold_yellow_m', 1.5);
-		$red = (float) $this->cfg('monitor_threshold_red_m', 2.5);
+		$yellow = (float) $this->cfg('monitor_threshold_yellow_m', 0.1);
+		$red = (float) $this->cfg('monitor_threshold_red_m', 0.2);
 		$ett = $online
 			? $this->estimate_time_to_threshold($level, $trend['rate_cm_min'], $warning['level'], $yellow, $red)
 			: array('minutes' => NULL, 'label' => $has_reading ? 'Station offline' : 'Waiting for telemetry');
@@ -628,8 +628,8 @@ class Monitor_model extends CI_Model {
 
 	protected function classify_warning($level)
 	{
-		$red = (float) $this->cfg('monitor_threshold_red_m', 2.5);
-		$yellow = (float) $this->cfg('monitor_threshold_yellow_m', 1.5);
+		$red = (float) $this->cfg('monitor_threshold_red_m', 0.2);
+		$yellow = (float) $this->cfg('monitor_threshold_yellow_m', 0.1);
 
 		if ($level >= $red)
 		{

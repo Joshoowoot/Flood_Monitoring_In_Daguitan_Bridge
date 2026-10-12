@@ -1,8 +1,8 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 $m = $monitor;
 $i = $infra;
-$yellow = isset($thresholds['yellow']) ? (float) $thresholds['yellow'] : 1.5;
-$red = isset($thresholds['red']) ? (float) $thresholds['red'] : 2.5;
+$yellow = isset($thresholds['yellow']) ? (float) $thresholds['yellow'] : 0.1;
+$red = isset($thresholds['red']) ? (float) $thresholds['red'] : 0.2;
 $level = (float) $m['water_level_m'];
 $is_live = isset($m['sensor_status']) && $m['sensor_status'] === 'online';
 $is_waiting = isset($m['sensor_status']) && $m['sensor_status'] === 'waiting';

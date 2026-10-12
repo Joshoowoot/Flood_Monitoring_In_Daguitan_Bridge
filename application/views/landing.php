@@ -387,6 +387,6 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=5"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261011-warning-shared3"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261012-water-level-bands1"></script>
 </body>
 </html>

@@ -193,8 +193,8 @@ Current development configuration has used placeholder values:
 
 ```php
 monitor_sensor_height_cm = 400
-monitor_threshold_yellow_m = 1.50
-monitor_threshold_red_m = 2.50
+monitor_threshold_yellow_m = 0.10
+monitor_threshold_red_m = 0.20
 ```
 
 The current ESP32 prototype testing sketch has also used:
@@ -205,7 +205,7 @@ REFERENCE_HEIGHT_CM = 200.0
 
 These are **development/testing values**, not final field threshold values.
 
-Do not treat placeholder values as final official thresholds.
+The current requested warning bands are Green from 0 to below 10 cm, Yellow from 10 to below 20 cm, and Red from 20 cm upward. Do not treat these prototype thresholds as final official field thresholds without MDRRMO confirmation.
 
 ---
 

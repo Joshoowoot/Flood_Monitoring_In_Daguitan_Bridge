@@ -20,8 +20,8 @@ $config['monitor_sensor_height_cm'] = 400;
 $config['monitor_offline_after'] = 90;
 
 /* Water-level thresholds in meters. */
-$config['monitor_threshold_yellow_m'] = 1.50;
-$config['monitor_threshold_red_m'] = 2.50;
+$config['monitor_threshold_yellow_m'] = 0.10;
+$config['monitor_threshold_red_m'] = 0.20;
 
 $config['monitor_station'] = 'Daguitan Bridge Monitoring Station';
 $config['monitor_location'] = 'Daguitan Bridge, Dulag, Leyte';

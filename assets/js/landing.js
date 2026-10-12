@@ -194,8 +194,8 @@
     fillList("warningDetailsActions", impacts.actions);
   };
   const updateWarningDetails = (monitor) => {
-    const yellow = Number(monitor?.threshold_yellow_m ?? data.thresholds?.yellow ?? 1.5);
-    const red = Number(monitor?.threshold_red_m ?? data.thresholds?.red ?? 2.5);
+    const yellow = Number(monitor?.threshold_yellow_m ?? data.thresholds?.yellow ?? 0.1);
+    const red = Number(monitor?.threshold_red_m ?? data.thresholds?.red ?? 0.2);
     const level = Number(monitor?.water_level_m ?? 0);
     const max = Math.max(red * 1.2, red + 0.5);
     const yellowStop = `${Math.min(100, Math.max(0, (yellow / max) * 100))}%`;

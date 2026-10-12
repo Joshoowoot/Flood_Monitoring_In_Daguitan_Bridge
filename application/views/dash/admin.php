@@ -77,8 +77,8 @@ $a = $announcement;
 			<section class="glass-card">
 				<h2>Station configuration</h2>
 				<dl class="dash-dl">
-					<div><dt>Yellow advisory</dt><dd><?php echo number_format((float) $thresholds['yellow'], 2); ?> m</dd></div>
-					<div><dt>Red / critical</dt><dd><?php echo number_format((float) $thresholds['red'], 2); ?> m</dd></div>
+					<div><dt>Yellow advisory</dt><dd><?php echo number_format((float) $thresholds['yellow'], 2); ?> m (<?php echo number_format((float) $thresholds['yellow'] * 100, 0); ?> cm)</dd></div>
+					<div><dt>Red / critical</dt><dd><?php echo number_format((float) $thresholds['red'], 2); ?> m (<?php echo number_format((float) $thresholds['red'] * 100, 0); ?> cm)</dd></div>
 					<div><dt>Sensor height</dt><dd><?php echo (int) $thresholds['height']; ?> cm</dd></div>
 					<div><dt>Public ingest</dt><dd class="mono"><?php echo html_escape($ingest_url); ?></dd></div>
 					<div><dt>ESP32 proxy URL</dt><dd class="mono"><?php echo html_escape($proxy_url); ?></dd></div>
