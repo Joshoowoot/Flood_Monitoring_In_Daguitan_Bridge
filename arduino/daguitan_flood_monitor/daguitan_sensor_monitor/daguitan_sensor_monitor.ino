@@ -106,7 +106,9 @@ String ingestUrl() {
 //
 // It will be replaced after measuring/calibrating
 // the prototype.
-const float REFERENCE_HEIGHT_CM = 70.07;
+
+//70.07 main refheight
+const float REFERENCE_HEIGHT_CM = 69.99;
 
 // Sensor distance correction.
 // Keep at 0.0 until calibration is verified.
