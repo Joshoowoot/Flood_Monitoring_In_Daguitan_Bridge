@@ -7,7 +7,7 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 $error = isset($error) ? $error : '';
 $auth_mode = (isset($auth_mode) && $auth_mode === 'signup') ? 'signup' : 'signin';
 $is_signup = ($auth_mode === 'signup');
-$asset_v = '20261007-mobile-auth2';
+$asset_v = '20261009-auth-validation-ux1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -113,16 +113,18 @@ $asset_v = '20261007-mobile-auth2';
 						<button class="auth-tab<?php echo $is_signup ? ' is-active' : ''; ?>" type="button" role="tab" data-auth-mode="signup" aria-controls="panel-signup" id="tab-signup"<?php echo $is_signup ? ' aria-selected="true" aria-current="page"' : ' aria-selected="false"'; ?>>Sign up</button>
 					</nav>
 
-					<?php if ($error): ?>
-						<p class="auth-error" role="alert"><?php echo html_escape($error); ?></p>
-					<?php endif; ?>
-
 					<div class="auth-modes" id="authModes">
 						<div class="auth-mode auth-mode--signin<?php echo $is_signup ? '' : ' is-active'; ?>" data-panel="signin" role="tabpanel" id="panel-signin" aria-labelledby="tab-signin" <?php echo $is_signup ? 'hidden' : ''; ?>>
 							<header class="auth-welcome">
 								<h2>Welcome back</h2>
 								<p class="auth-lead">Use your username or 11-digit mobile number.</p>
 							</header>
+							<?php if ($error && ! $is_signup): ?>
+								<div class="auth-error" id="authError" role="alert" tabindex="-1" data-error-field="<?php echo html_escape($error_field); ?>">
+									<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg>
+									<div><strong>Unable to sign in</strong><p><?php echo html_escape($error); ?></p></div>
+								</div>
+							<?php endif; ?>
 							<form method="post" action="<?php echo site_url('login'); ?>" class="auth-form" id="signinForm">
 								<label class="auth-field">
 									<span class="auth-field__label">Username or mobile</span>
@@ -130,7 +132,7 @@ $asset_v = '20261007-mobile-auth2';
 										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 											<circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8S17.6 15.8 19 19"/>
 										</svg>
-										<input type="text" name="username" required value="<?php echo $is_signup ? '' : html_escape($username); ?>" placeholder="juan or 09171234567" autocomplete="username" autocapitalize="none" spellcheck="false">
+										<input id="signin-username" type="text" name="username" required value="<?php echo $is_signup ? '' : html_escape($username); ?>" placeholder="juan or 09171234567" autocomplete="username" autocapitalize="none" spellcheck="false" aria-label="Username or mobile number">
 									</span>
 								</label>
 								<label class="auth-field">
@@ -156,6 +158,12 @@ $asset_v = '20261007-mobile-auth2';
 								<h2>Create your account</h2>
 								<p class="auth-lead">Free resident registration. You can sign in with mobile later.</p>
 							</header>
+							<?php if ($error && $is_signup): ?>
+								<div class="auth-error" id="authError" role="alert" tabindex="-1" data-error-field="<?php echo html_escape($error_field); ?>">
+									<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg>
+									<div><strong>Check your details</strong><p><?php echo html_escape($error); ?></p></div>
+								</div>
+							<?php endif; ?>
 							<form method="post" action="<?php echo site_url('signup'); ?>" class="auth-form" id="signupForm" novalidate>
 								<div class="signup-progress" aria-label="Registration progress">
 									<span class="signup-progress__step is-active" data-signup-progress="1">1. Personal details</span>
@@ -169,8 +177,9 @@ $asset_v = '20261007-mobile-auth2';
 										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 											<circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8S17.6 15.8 19 19"/>
 										</svg>
-										<input type="text" name="name" required value="<?php echo html_escape($name); ?>" placeholder="Juan Dela Cruz" autocomplete="name">
+										<input id="signup-name" type="text" name="name" required minlength="2" maxlength="120" value="<?php echo html_escape($name); ?>" placeholder="Juan Dela Cruz" autocomplete="name">
 									</span>
+									<span class="auth-hint">Use your full name. A full name and mobile number can only be registered once.</span>
 								</label>
 								<label class="auth-field">
 									<span class="auth-field__label">Mobile number</span>
@@ -178,6 +187,7 @@ $asset_v = '20261007-mobile-auth2';
 										<span class="auth-country-code" aria-hidden="true">+63</span>
 										<input id="signup-phone" type="tel" name="phone" required value="<?php echo html_escape($phone); ?>" placeholder="09171234567" autocomplete="tel" inputmode="numeric" maxlength="11" pattern="09[0-9]{9}" title="11 digits starting with 09">
 									</span>
+									<span class="auth-hint">This number must not already be linked to another resident account.</span>
 								</label>
 								<label class="auth-field">
 									<span class="auth-field__label">Barangay</span>
@@ -185,7 +195,7 @@ $asset_v = '20261007-mobile-auth2';
 										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M3 10.5 12 4l9 6.5"/><path d="M5.5 9.5V20h13V9.5M9 20v-6h6v6"/>
 										</svg>
-										<select name="barangay" required autocomplete="address-level3" aria-label="Select your barangay">
+										<select id="signup-barangay" name="barangay" required autocomplete="address-level3" aria-label="Select your barangay">
 											<option value="">Select your barangay</option>
 											<?php foreach ($barangays as $value => $label): ?>
 												<option value="<?php echo html_escape($value); ?>"<?php echo $barangay === $value ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
@@ -202,7 +212,7 @@ $asset_v = '20261007-mobile-auth2';
 										<svg class="auth-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 											<path d="M4 20V10l8-5 8 5v10"/><path d="M9 20v-6h6v6"/>
 										</svg>
-										<input type="text" name="username" required value="<?php echo html_escape($username); ?>" placeholder="juan_delacruz" autocomplete="username" autocapitalize="none" spellcheck="false" pattern="[a-z0-9_]{3,32}" title="3–32 characters: letters, numbers, underscore">
+										<input id="signup-username" type="text" name="username" required value="<?php echo html_escape($username); ?>" placeholder="juan_delacruz" autocomplete="username" autocapitalize="none" spellcheck="false" pattern="[a-z0-9_]{3,32}" title="3–32 characters: letters, numbers, underscore">
 									</span>
 								</label>
 								<label class="auth-field">

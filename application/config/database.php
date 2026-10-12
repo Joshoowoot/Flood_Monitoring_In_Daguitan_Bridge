@@ -97,14 +97,22 @@ $db['default'] = array(
 
 /*
 | Cloud / remote copy. Used only when the internet probe succeeds.
-| Change hostname/username/password/database for a real remote MySQL server.
+| Set FLOOD_CLOUD_DB_HOST, FLOOD_CLOUD_DB_PORT, FLOOD_CLOUD_DB_NAME,
+| FLOOD_CLOUD_DB_USERNAME, and FLOOD_CLOUD_DB_PASSWORD in the server
+| environment to use a hosted MySQL database. Defaults preserve local XAMPP.
 */
+$cloud_env = function ($name, $default) {
+	$value = getenv($name);
+	return ($value !== FALSE && $value !== '') ? $value : $default;
+};
+
 $db['cloud'] = array(
 	'dsn'	=> '',
-	'hostname' => 'localhost',
-	'username' => 'root',
-	'password' => '',
-	'database' => 'MDRRMO_DULAG_CLOUD',
+	'hostname' => $cloud_env('FLOOD_CLOUD_DB_HOST', 'localhost'),
+	'port' => (int) $cloud_env('FLOOD_CLOUD_DB_PORT', 3306),
+	'username' => $cloud_env('FLOOD_CLOUD_DB_USERNAME', 'root'),
+	'password' => $cloud_env('FLOOD_CLOUD_DB_PASSWORD', ''),
+	'database' => $cloud_env('FLOOD_CLOUD_DB_NAME', 'MDRRMO_DULAG_CLOUD'),
 	'dbdriver' => 'mysqli',
 	'dbprefix' => '',
 	'pconnect' => FALSE,

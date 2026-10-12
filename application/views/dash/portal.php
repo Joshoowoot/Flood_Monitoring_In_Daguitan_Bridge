@@ -26,9 +26,10 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261011-warning-shared3">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-resident-mobile-plus2">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/resident-portal.css?v=20261011-status-card-clean1">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -83,8 +84,6 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 				</button>
 			</div>
 			<nav class="drawer__nav" aria-label="Mobile">
-				<a href="#home">Status</a>
-				<a href="#monitor">Live data</a>
 				<a href="<?php echo site_url('portal/go-bag'); ?>">Go Bag</a>
 				<a href="<?php echo site_url('/'); ?>">Public site</a>
 				<a href="<?php echo html_escape($logout_url); ?>">Sign out</a>
@@ -134,19 +133,16 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 			<article class="status-panel reveal" aria-labelledby="statusTitle">
 				<div class="status-panel__wave" aria-hidden="true"></div>
 				<p class="status-panel__kicker" id="statusTitle">Current Flood Status</p>
-				<p class="status-badge status-badge--<?php echo html_escape($warning_key); ?>" id="heroStatusBadge">
+				<button class="status-badge status-badge--<?php echo html_escape($warning_key); ?>" id="heroStatusBadge" type="button" data-warning-details="<?php echo html_escape($warning_key); ?>" aria-expanded="false" aria-controls="warningDetails" title="View impacts and safety guidance for this level">
 					<span class="status-dot" aria-hidden="true"></span>
 					<span id="heroStatusLabel"><?php echo strtoupper(html_escape($m['warning_label'])); ?></span>
 					<span class="sr-only" id="heroStatusSr">Warning level: <?php echo html_escape($m['warning_label']); ?></span>
-				</p>
+					<span class="portal-status-badge__hint" aria-hidden="true">Details</span>
+				</button>
 				<p class="portal-status-guidance" id="heroGuidance"><?php echo html_escape($initial_action); ?></p>
-				<div class="portal-status-actions">
-					<a class="btn btn--primary btn--compact" href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">Evacuation centers</a>
-					<a class="portal-status-actions__link" href="<?php echo html_escape(site_url('portal/help')); ?>">Safety guide</a>
-				</div>
 				<p class="portal-connection" id="portalConnection" role="status" aria-live="polite">
 					<span class="portal-connection__dot" aria-hidden="true"></span>
-					<span id="portalConnectionText"><?php echo html_escape($m['sensor_label'] === 'Online' ? 'Live station · updates every few seconds' : ($m['sensor_label'] . ' · ' . $m['last_updated'])); ?></span>
+					<span id="portalConnectionText"><?php echo html_escape($m['sensor_status'] === 'online' ? 'Live station · updates every few seconds' : ($m['sensor_status'] === 'waiting' ? 'Waiting for the first sensor reading' : 'Monitoring station offline · showing the last saved reading')); ?></span>
 				</p>
 				<div class="status-panel__grid">
 					<div>
@@ -158,7 +154,7 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 						<strong id="heroTrend"><?php echo $trend_arrow; ?> <?php echo html_escape($m['trend_label']); ?></strong>
 					</div>
 					<div>
-						<span class="meta">Last Updated</span>
+						<span class="meta">Reading Time</span>
 						<time id="heroUpdated" datetime="<?php echo html_escape($m['last_updated_iso']); ?>"><?php echo html_escape($m['last_updated']); ?></time>
 					</div>
 				</div>
@@ -168,20 +164,23 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 			</article>
 		</section>
 
+		<?php $this->load->view('partials/warning_details_dialog'); ?>
+
 		<?php if ( ! empty($resident_announcements)): ?>
 		<section class="section section--tight resident-barangay-alerts" aria-labelledby="barangayAlertsTitle">
 			<header class="section__head">
-				<div>
+				<div class="resident-barangay-alerts__intro">
 					<h2 id="barangayAlertsTitle">Alerts for you</h2>
 					<p><?php echo $resident_barangay !== '' ? 'Your barangay notices appear first, followed by municipality-wide announcements.' : 'Municipality-wide announcements are shown here. Add your barangay in My Profile to also see notices for your area.'; ?></p>
 				</div>
 				<a class="resident-barangay-alerts__all" href="<?php echo html_escape(site_url('portal/announcements')); ?>">All announcements <span aria-hidden="true">→</span></a>
 			</header>
-			<div class="resident-barangay-alerts__list">
+			<div class="resident-barangay-alerts__list<?php echo count($resident_announcements) === 1 ? ' resident-barangay-alerts__list--single' : ''; ?>">
 				<?php foreach (array_slice($resident_announcements, 0, 4) as $resident_announcement):
 					$notice_level = isset($resident_announcement['level']) ? $resident_announcement['level'] : 'info';
 					$notice_target = isset($resident_announcement['barangay']) ? trim((string) $resident_announcement['barangay']) : '';
 					$notice_label = ($notice_level === 'red') ? 'Emergency' : (($notice_level === 'yellow') ? 'Advisory' : 'Information');
+					$notice_body = isset($resident_announcement['body']) ? (string) $resident_announcement['body'] : '';
 				?>
 				<article class="resident-barangay-alert resident-barangay-alert--<?php echo html_escape($notice_level); ?>">
 					<div class="resident-barangay-alert__meta">
@@ -189,7 +188,10 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 						<span><?php echo $notice_target !== '' ? 'Barangay ' . html_escape($notice_target) : 'Municipality-wide'; ?></span>
 					</div>
 					<h3><?php echo html_escape($resident_announcement['title']); ?></h3>
-					<p><?php echo html_escape($resident_announcement['body']); ?></p>
+					<details class="resident-barangay-alert__details">
+						<summary>Read full announcement</summary>
+						<p><?php echo nl2br(html_escape($notice_body)); ?></p>
+					</details>
 				</article>
 				<?php endforeach; ?>
 			</div>
@@ -317,26 +319,19 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 		</div>
 	</footer>
 
-	<nav class="bottom-nav" aria-label="Portal">
-		<a href="#home" class="is-active" aria-current="page">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
-			<span>Status</span>
-		</a>
-		<a href="#monitor">
-			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2M3 20c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2M3 10c2.1 0 2.1-2 4.2-2s2.1 2 4.2 2 2.1-2 4.2-2 2.1 2 4.2 2"/></svg>
-			<span>Live data</span>
-		</a>
-	</nav>
-
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array(
 			'monitor' => $m,
+			'thresholds' => array(
+				'yellow' => (float) $m['threshold_yellow_m'],
+				'red' => (float) $m['threshold_red_m'],
+			),
 			'statusUrl' => $status_url,
 			'pollMs' => 5000,
 			'actions' => $actions_map,
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-resident-mobile-plus"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261011-warning-shared3"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
@@ -374,7 +369,7 @@ $initial_action = (isset($actions[0]) && is_string($actions[0])) ? $actions[0] :
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261007-resident-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
 	<?php endif; ?>
 </body>
 </html>

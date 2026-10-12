@@ -184,6 +184,92 @@ class Admin_portal_model extends CI_Model {
 		);
 	}
 
+	public function history_chart_series()
+	{
+		$settings = $this->settings();
+		$periods = array(
+			'week' => array('range' => 7 * 86400, 'step' => 3600, 'label' => 'Past 7 days'),
+			'month' => array('range' => 30 * 86400, 'step' => 86400, 'label' => 'Past 30 days'),
+			'year' => array('range' => 365 * 86400, 'step' => 2629800, 'label' => 'Past 12 months'),
+		);
+		$series = array();
+
+		if ( ! $this->db->table_exists('water_readings'))
+		{
+			foreach ($periods as $key => $period)
+			{
+				$end = time();
+				$series[$key] = array(
+					'label' => $period['label'],
+					'start' => $end - $period['range'],
+					'end' => $end,
+					'points' => array(),
+				);
+			}
+			return array(
+				'periods' => $series,
+				'yellow' => (float) $settings['monitor_threshold_yellow_m'],
+				'red'    => (float) $settings['monitor_threshold_red_m'],
+			);
+		}
+
+		$now = time();
+		foreach ($periods as $key => $period)
+		{
+			$start = $now - $period['range'];
+			$sql = 'SELECT FLOOR((received_at - ?) / ?) AS bucket, '
+				. 'AVG(CASE WHEN water_level_m < ? THEN water_level_m END) AS green, '
+				. 'AVG(CASE WHEN water_level_m >= ? AND water_level_m < ? THEN water_level_m END) AS yellow, '
+				. 'AVG(CASE WHEN water_level_m >= ? THEN water_level_m END) AS red '
+				. 'FROM water_readings WHERE received_at >= ? AND received_at <= ? '
+				. 'GROUP BY bucket ORDER BY bucket ASC';
+			$query = $this->db->query($sql, array(
+				$start,
+				$period['step'],
+				$settings['monitor_threshold_yellow_m'],
+				$settings['monitor_threshold_yellow_m'],
+				$settings['monitor_threshold_red_m'],
+				$settings['monitor_threshold_red_m'],
+				$start,
+				$now,
+			));
+			$bucket_rows = array();
+			foreach ($query->result_array() as $row)
+			{
+				$bucket_rows[(int) $row['bucket']] = $row;
+			}
+			$points = array();
+			if ($bucket_rows)
+			{
+				$bucket_count = (int) ceil($period['range'] / $period['step']);
+				for ($bucket_index = 0; $bucket_index < $bucket_count; $bucket_index++)
+				{
+					$row = isset($bucket_rows[$bucket_index]) ? $bucket_rows[$bucket_index] : array();
+					$bucket_start = $start + ($bucket_index * $period['step']);
+					$points[] = array(
+						'ts'     => $bucket_start,
+						'label'  => date($key === 'week' ? 'D g A' : ($key === 'month' ? 'M j' : 'M Y'), $bucket_start),
+						'green'  => isset($row['green']) && $row['green'] !== NULL ? (float) $row['green'] : NULL,
+						'yellow' => isset($row['yellow']) && $row['yellow'] !== NULL ? (float) $row['yellow'] : NULL,
+						'red'    => isset($row['red']) && $row['red'] !== NULL ? (float) $row['red'] : NULL,
+					);
+				}
+			}
+			$series[$key] = array(
+				'label' => $period['label'],
+				'start' => $start,
+				'end' => $now,
+				'points' => $points,
+			);
+		}
+
+		return array(
+			'periods' => $series,
+			'yellow' => (float) $settings['monitor_threshold_yellow_m'],
+			'red'    => (float) $settings['monitor_threshold_red_m'],
+		);
+	}
+
 	public function history_table($limit = 200, $filters = array())
 	{
 		if ( ! empty($filters['since_ts']))
@@ -426,7 +512,7 @@ class Admin_portal_model extends CI_Model {
 				if ($saved)
 				{
 					$this->load->model('Notification_model');
-					$this->Notification_model->on_announcement_published($saved);
+					$this->Notification_model->on_announcement_published($saved, FALSE);
 				}
 			}
 			return array('ok' => TRUE, 'id' => (int) $id);
@@ -439,7 +525,7 @@ class Admin_portal_model extends CI_Model {
 			if ($saved)
 			{
 				$this->load->model('Notification_model');
-				$this->Notification_model->on_announcement_published($saved);
+				$this->Notification_model->on_announcement_published($saved, FALSE);
 			}
 		}
 		return array('ok' => TRUE, 'id' => $new_id);
@@ -460,11 +546,13 @@ class Admin_portal_model extends CI_Model {
 		{
 			return FALSE;
 		}
-		$update = array('is_published' => $publish ? 1 : 0);
-		if ($publish && $send_push)
+		$existing = $this->get_announcement((int) $id);
+		if ( ! $existing)
 		{
-			$update['push_sent'] = 1;
+			return FALSE;
 		}
+		$should_send_push = $publish && $send_push && empty($existing['push_sent']);
+		$update = array('is_published' => $publish ? 1 : 0);
 		$ok = $this->db->where('id', (int) $id)->update('announcements', $update);
 		if ($ok && $publish)
 		{
@@ -472,7 +560,15 @@ class Admin_portal_model extends CI_Model {
 			if ($row)
 			{
 				$this->load->model('Notification_model');
-				$this->Notification_model->on_announcement_published($row);
+				$delivered = $this->Notification_model->on_announcement_published($row, $should_send_push);
+				if ($should_send_push && $delivered)
+				{
+					$flagged = $this->db->where('id', (int) $id)->update('announcements', array('push_sent' => 1));
+					if ( ! $flagged)
+					{
+						log_message('error', 'Could not record push delivery for announcement ' . (int) $id . '.');
+					}
+				}
 			}
 		}
 		return $ok;

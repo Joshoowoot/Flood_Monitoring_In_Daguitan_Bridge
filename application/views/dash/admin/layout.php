@@ -34,8 +34,8 @@ function admin_nav_icon($key) {
 	<title><?php echo html_escape($page_title); ?> · MDRRMO Admin Portal</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-responsive">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261007-responsive">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261012-alert-cards-landscape2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="admin-portal">
@@ -137,15 +137,19 @@ function admin_nav_icon($key) {
 		{
 			$admin_js['chart'] = $chart;
 		}
+		if (isset($history_chart))
+		{
+			$admin_js['historyChart'] = $history_chart;
+		}
 		echo json_encode($admin_js, JSON_UNESCAPED_SLASHES);
 		?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=12"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=20261012-alerts-landscape1"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
 	<?php endif; ?>
 </body>
 </html>

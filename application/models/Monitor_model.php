@@ -55,10 +55,10 @@ class Monitor_model extends CI_Model {
 
 		$iso = $has_reading
 			? date('c', $received)
-			: date('c');
+			: '';
 		$display_time = $has_reading
-			? date('g:i A', $received)
-			: 'Waiting for Arduino';
+			? date('M j, Y · g:i A', $received)
+			: 'No reading received';
 
 		$max_level = max(3.0, (float) $this->cfg('monitor_threshold_red_m', 2.5) * 1.2);
 		$gauge = (int) min(100, max(4, round(($level / $max_level) * 100)));
@@ -131,22 +131,32 @@ class Monitor_model extends CI_Model {
 		$has_forecast = is_array($cached_wx) && ! empty($cached_wx['forecast']);
 		if ($fresh && $has_forecast)
 		{
-			return $cached_wx;
+			return $this->weather_with_freshness($cached_wx, $cached['fetched_at']);
 		}
 
 		$live = $this->fetch_open_meteo_weather();
 		if ($live !== NULL)
 		{
 			$this->write_weather_cache($live);
-			return $live;
+			return $this->weather_with_freshness($live, time());
 		}
 
 		if ($cached_wx !== NULL)
 		{
-			return $cached_wx;
+			return $this->weather_with_freshness($cached_wx, $cached['fetched_at']);
 		}
 
-		return $this->default_weather();
+		return $this->weather_with_freshness($this->default_weather(), 0);
+	}
+
+	protected function weather_with_freshness(array $weather, $fetched_at)
+	{
+		$fetched_at = (int) $fetched_at;
+		$weather['retrieved_at_iso'] = $fetched_at > 0 ? date('c', $fetched_at) : '';
+		$weather['retrieved_at'] = $fetched_at > 0
+			? date('M j, Y · g:i A', $fetched_at)
+			: 'Update time unavailable';
+		return $weather;
 	}
 
 	protected function read_weather_cache()

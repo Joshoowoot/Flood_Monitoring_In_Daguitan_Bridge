@@ -34,10 +34,21 @@ $notify_unread = isset($notify_unread) ? (int) $notify_unread : 0;
 				<button class="notify-tabs__btn is-active" type="button" role="tab" aria-selected="true" data-filter="all" id="notifyTabAll">All</button>
 				<button class="notify-tabs__btn" type="button" role="tab" aria-selected="false" data-filter="unread" id="notifyTabUnread">Unread</button>
 			</div>
+			<button class="notify-panel__mark" type="button" id="notifySoundButton" aria-pressed="true" aria-label="Turn in-page notification sound off" title="Background notification sound follows device settings">
+				<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15 9a5 5 0 0 1 0 6M18 6a9 9 0 0 1 0 12"/></svg>
+				<span id="notifySoundLabel">Page sound on</span>
+			</button>
 			<button class="notify-panel__mark" type="button" id="notifyMarkAll">
 				<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12l4 4L19 6"/></svg>
 				Mark all read
 			</button>
+		</div>
+		<div class="notify-push" id="notifyPush">
+			<div class="notify-push__copy">
+				<strong id="notifyPushTitle">Push alerts</strong>
+				<p id="notifyPushStatus" role="status" aria-live="polite">Checking notification support…</p>
+			</div>
+			<button class="notify-push__button" type="button" id="notifyPushButton" hidden>Enable on this device</button>
 		</div>
 		<p class="notify-action-status" id="notifyActionStatus" role="status" aria-live="polite" hidden></p>
 

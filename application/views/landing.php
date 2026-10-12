@@ -27,7 +27,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-hide-phone-mobile1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261011-warning-shared3">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-bottomremoved1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
@@ -206,27 +206,34 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 				</div>
 				<div class="warn-board__list" role="list" aria-label="Flood warning levels">
 					<div class="warning-track__item<?php echo $warning_key === 'green' ? ' is-active' : ''; ?>" role="listitem" data-level="green">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
-							<strong>Safe</strong>
-						</div>
-						<p class="warn-board__status">Below advisory threshold.</p>
+						<button class="warning-track__button" type="button" data-warning-details="green" aria-expanded="false" aria-controls="warningDetails">
+							<span class="warn-board__spec">
+								<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
+								<strong>Safe</strong>
+							</span>
+							<span class="warn-board__status">Below advisory threshold.</span>
+						</button>
 					</div>
 					<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
-							<strong>Monitor</strong>
-						</div>
-						<p class="warn-board__status">Approaching caution. Stay alert.</p>
+						<button class="warning-track__button" type="button" data-warning-details="yellow" aria-expanded="false" aria-controls="warningDetails">
+							<span class="warn-board__spec">
+								<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
+								<strong>Monitor</strong>
+							</span>
+							<span class="warn-board__status">Approaching caution. Stay alert.</span>
+						</button>
 					</div>
 					<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
-						<div class="warn-board__spec">
-							<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
-							<strong>Critical</strong>
-						</div>
-						<p class="warn-board__status">Critical threshold reached.</p>
+						<button class="warning-track__button" type="button" data-warning-details="red" aria-expanded="false" aria-controls="warningDetails">
+							<span class="warn-board__spec">
+								<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
+								<strong>Critical</strong>
+							</span>
+							<span class="warn-board__status">Critical threshold reached.</span>
+						</button>
 					</div>
 				</div>
+				<?php $this->load->view('partials/warning_details_dialog'); ?>
 			</article>
 
 			<?php
@@ -371,6 +378,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array(
 			'monitor' => $m,
+			'thresholds' => array('yellow' => (float) $yellow_m, 'red' => (float) $red_m),
 			'weather' => $w,
 			'announcement' => $a,
 			'statusUrl' => $status_url,
@@ -379,6 +387,6 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=5"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261007-bottomremoved1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261011-warning-shared3"></script>
 </body>
 </html>

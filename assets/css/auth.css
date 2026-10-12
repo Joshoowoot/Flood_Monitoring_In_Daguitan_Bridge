@@ -1161,16 +1161,46 @@
 }
 
 .auth-error {
-  background: rgba(177, 13, 30, 0.08);
-  border: 1px solid rgba(177, 13, 30, 0.22);
-  color: #b10d1e;
-  padding: 0.7rem 0.9rem;
-  border-radius: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: #fff5f4;
+  border: 1px solid rgba(177, 13, 30, 0.24);
+  border-left: 4px solid #b10d1e;
+  color: #86101d;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
   font-family: var(--auth-ui);
-  font-weight: 700;
-  margin: 0 0 0.9rem;
-  font-size: 0.86rem;
+  margin: 0.85rem 0;
+  font-size: 0.82rem;
   line-height: 1.4;
+}
+
+.auth-error > svg {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+}
+
+.auth-error strong {
+  display: block;
+  margin-bottom: 0.12rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.auth-error p {
+  margin: 0;
+  font-weight: 550;
+}
+
+.auth-error:focus {
+  outline: 3px solid rgba(177, 13, 30, 0.18);
+  outline-offset: 2px;
+}
+
+.auth-field [aria-invalid="true"] {
+  border-color: #b10d1e;
+  box-shadow: 0 0 0 3px rgba(177, 13, 30, 0.1);
 }
 
 .auth-card__actions {

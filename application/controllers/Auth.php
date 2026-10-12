@@ -25,31 +25,42 @@ class Auth extends CI_Controller {
 		}
 
 		$error = '';
+		$error_field = '';
 		$username = '';
 		if ($this->input->method(TRUE) === 'POST')
 		{
 			$username = trim((string) $this->input->post('username'));
 			$password = (string) $this->input->post('password');
-			$user = $this->Auth_model->verify($username, $password);
 
-			if ( ! $user)
+			if ($username === '' || $password === '')
 			{
-				$error = 'Incorrect username or password.';
-			}
-			elseif ($user['role'] !== 'user')
-			{
-				$error = 'This sign-in page is for residents only.';
+				$error = 'Enter your username or mobile number and password.';
+				$error_field = $username === '' ? 'signin-username' : 'login-password';
 			}
 			else
 			{
-				$this->Auth_model->record_login($user);
-				$this->establish_session($user);
-				return $this->redirect_for_role($user['role']);
+				$user = $this->Auth_model->verify($username, $password);
+				if ( ! $user)
+				{
+					$error = 'Sign-in failed. Check that your username or mobile number and password are correct.';
+				}
+				elseif ($user['role'] !== 'user')
+				{
+					$error = 'This sign-in page is for residents only.';
+					$error_field = 'signin-username';
+				}
+				else
+				{
+					$this->Auth_model->record_login($user);
+					$this->establish_session($user);
+					return $this->redirect_for_role($user['role']);
+				}
 			}
 		}
 
 		$data = $this->shell('Sign in');
 		$data['error'] = $error;
+		$data['error_field'] = $error_field;
 		$data['username'] = $username;
 		$data['name'] = '';
 		$data['phone'] = '';
@@ -70,6 +81,7 @@ class Auth extends CI_Controller {
 		$this->load->model('Hazard_model');
 		$barangays = $this->Hazard_model->barangays();
 		$error = '';
+		$error_field = '';
 		$username = '';
 		$name = '';
 		$phone = '';
@@ -83,25 +95,30 @@ class Auth extends CI_Controller {
 			$password = (string) $this->input->post('password');
 			$confirm = (string) $this->input->post('password_confirm');
 
-			if (strlen($name) < 2)
+			if (mb_strlen(trim($name), 'UTF-8') < 2 || mb_strlen(trim($name), 'UTF-8') > 120)
 			{
-				$error = 'Please enter your full name.';
+				$error = 'Enter your full name using 2 to 120 characters.';
+				$error_field = 'signup-name';
 			}
 			elseif ( ! isset($barangays[$barangay]))
 			{
 				$error = 'Select your barangay from the list.';
+				$error_field = 'signup-barangay';
 			}
 			elseif ( ! preg_match('/^[a-z0-9_]{3,32}$/', $username))
 			{
 				$error = 'Username must be 3–32 characters using letters, numbers, or underscore.';
+				$error_field = 'signup-username';
 			}
 			elseif (strlen($password) < 8)
 			{
 				$error = 'Password must be at least 8 characters.';
+				$error_field = 'signup-password';
 			}
 			elseif ($password !== $confirm)
 			{
 				$error = 'Passwords do not match.';
+				$error_field = 'signup-password-confirm';
 			}
 			else
 			{
@@ -109,6 +126,7 @@ class Auth extends CI_Controller {
 				if (empty($result['ok']))
 				{
 					$error = isset($result['error']) ? $result['error'] : 'Could not create your account.';
+					$error_field = isset($result['field']) ? $result['field'] : '';
 				}
 				else
 				{
@@ -124,6 +142,7 @@ class Auth extends CI_Controller {
 
 		$data = $this->shell('Sign up');
 		$data['error'] = $error;
+		$data['error_field'] = $error_field;
 		$data['username'] = $username;
 		$data['name'] = $name;
 		$data['phone'] = $phone;

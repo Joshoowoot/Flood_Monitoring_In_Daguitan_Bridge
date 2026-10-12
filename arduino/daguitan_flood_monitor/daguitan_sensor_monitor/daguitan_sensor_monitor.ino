@@ -32,6 +32,8 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <Preferences.h>
+#include <esp_system.h>
 
 
 // ======================================================
@@ -67,8 +69,8 @@ const int ECHO_PIN = 18;  // ESP32 D18 / GPIO 18
 // Replace these with your actual Wi-Fi information.
 // DO NOT share your Wi-Fi password with anyone.
 
-const char* WIFI_SSID     = "HAHAHAHA";
-const char* WIFI_PASSWORD = "ayawdreako";
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
 
 // ======================================================
@@ -76,7 +78,7 @@ const char* WIFI_PASSWORD = "ayawdreako";
 // ======================================================
 
 // PC running XAMPP / CodeIgniter
-const char* PC_IP = "192.168.100.154";
+const char* PC_IP = "192.168.1.100";
 
 // Must match application/config/monitor.php
 const char* API_KEY = "daguitan-esp32-key";
@@ -150,8 +152,9 @@ const unsigned long WIFI_RETRY_MS = 5000;
 // ======================================================
 
 // Maximum number of readings that can be temporarily
-// stored in ESP32 memory while the server is unavailable.
+// stored in ESP32 flash while the server is unavailable.
 const int QUEUE_MAX = 24;
+const unsigned long QUEUE_RETRY_MS = 30000;
 
 
 // ======================================================
@@ -167,18 +170,25 @@ struct QueuedReading {
   char uid[32];
 };
 
+struct QueueSnapshot {
+  uint8_t version;
+  uint8_t count;
+  QueuedReading readings[QUEUE_MAX];
+};
+
 
 // ======================================================
 // NETWORK VARIABLES
 // ======================================================
 
 WiFiClient wifiClient;
+Preferences queuePreferences;
 
-
-// Temporary local queue
 QueuedReading queue[QUEUE_MAX];
 
 int queueCount = 0;
+bool queueStorageReady = false;
+unsigned long lastQueueRetryAt = 0;
 
 
 // ======================================================
@@ -208,6 +218,45 @@ void setup() {
 
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
+
+  queueStorageReady = queuePreferences.begin("daguitan", false);
+  if (queueStorageReady) {
+    QueueSnapshot savedQueue;
+    size_t savedSize = queuePreferences.getBytesLength("readings");
+    if (savedSize == sizeof(savedQueue)) {
+      size_t restoredSize = queuePreferences.getBytes("readings", &savedQueue, sizeof(savedQueue));
+      if (restoredSize != sizeof(savedQueue)) {
+        Serial.println("Saved sensor queue could not be read; starting with an empty queue.");
+      } else if (savedQueue.version != 1 || savedQueue.count > QUEUE_MAX) {
+        Serial.println("Saved sensor queue version is unsupported; starting with an empty queue.");
+      } else {
+        bool validQueue = true;
+        for (int i = 0; i < savedQueue.count; i++) {
+          if (savedQueue.readings[i].uid[0] == '\0' ||
+              memchr(savedQueue.readings[i].uid, '\0', sizeof(savedQueue.readings[i].uid)) == NULL ||
+              !isfinite(savedQueue.readings[i].distance) ||
+              !isfinite(savedQueue.readings[i].waterLevel)) {
+            validQueue = false;
+            break;
+          }
+        }
+        if (validQueue) {
+          queueCount = savedQueue.count;
+          memcpy(queue, savedQueue.readings, queueCount * sizeof(QueuedReading));
+        } else {
+          Serial.println("Saved sensor queue is invalid; starting with an empty queue.");
+        }
+      }
+    } else if (savedSize != 0) {
+      Serial.println("Saved sensor queue has an invalid size; starting with an empty queue.");
+    }
+    if (savedSize != 0 && queueCount == 0) {
+      queuePreferences.remove("readings");
+    }
+    Serial.printf("Restored %d queued reading(s) from flash.\n", queueCount);
+  } else {
+    Serial.println("ERROR: Could not open flash storage; offline queue will only be kept in RAM.");
+  }
 
   // Make sure trigger starts LOW
   digitalWrite(TRIG_PIN, LOW);
@@ -503,11 +552,12 @@ void makeUid(
   snprintf(
     dest,
     n,
-    "esp-%04X-%lu",
+    "esp-%04X-%08lX-%08lX",
     (unsigned)(
       ESP.getEfuseMac() & 0xFFFF
     ),
-    (unsigned long)millis()
+    (unsigned long)millis(),
+    (unsigned long)esp_random()
   );
 }
 
@@ -736,6 +786,7 @@ void enqueueReading(
 
   queueCount++;
 
+  persistQueue();
 
   Serial.print(
     "Queued locally ("
@@ -746,6 +797,30 @@ void enqueueReading(
   Serial.println(
     " waiting)"
   );
+}
+
+bool persistQueue() {
+  if (!queueStorageReady) {
+    return false;
+  }
+
+  if (queueCount == 0) {
+    if (queuePreferences.remove("readings") || !queuePreferences.isKey("readings")) {
+      return true;
+    }
+    Serial.println("ERROR: Could not clear the persistent sensor queue.");
+    return false;
+  }
+
+  QueueSnapshot savedQueue = {};
+  savedQueue.version = 1;
+  savedQueue.count = queueCount;
+  memcpy(savedQueue.readings, queue, queueCount * sizeof(QueuedReading));
+  if (queuePreferences.putBytes("readings", &savedQueue, sizeof(savedQueue)) != sizeof(savedQueue)) {
+    Serial.println("ERROR: Could not save the sensor queue to flash.");
+    return false;
+  }
+  return true;
 }
 
 
@@ -789,6 +864,7 @@ void flushQueue() {
 
 
     queueCount--;
+    persistQueue();
   }
 }
 
@@ -798,6 +874,12 @@ void flushQueue() {
 // ======================================================
 
 void loop() {
+
+  if (queueCount > 0 &&
+      (lastQueueRetryAt == 0 || millis() - lastQueueRetryAt >= QUEUE_RETRY_MS)) {
+    lastQueueRetryAt = millis();
+    flushQueue();
+  }
 
   // ----------------------------------------------------
   // 1. READ SENSOR

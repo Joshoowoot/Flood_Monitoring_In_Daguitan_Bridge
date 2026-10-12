@@ -44,6 +44,9 @@
 		syncFieldState(input);
 		input.addEventListener('input', function () {
 			syncFieldState(input);
+			if (input.getAttribute('aria-invalid') === 'true') {
+				input.removeAttribute('aria-invalid');
+			}
 		});
 		input.addEventListener('blur', function () {
 			syncFieldState(input);
@@ -183,13 +186,24 @@
 			setSignupStep(2);
 		});
 		backSignupStep.addEventListener('click', function () {
-			setSignupStep(1);
+			var initialError = document.getElementById('authError');
+			var errorField = initialError && document.getElementById(initialError.getAttribute('data-error-field'));
+			setSignupStep(errorField && errorField.closest('[data-signup-step="2"]') ? 2 : 1);
 		});
 		setSignupStep(1);
 	}
 
 	if (signupForm) {
 		signupForm.addEventListener('submit', function (event) {
+			var activeStep = signupForm.querySelector('[data-signup-step="2"]:not([hidden])');
+			var securityFields = activeStep ? activeStep.querySelectorAll('input, select') : [];
+			for (var i = 0; i < securityFields.length; i += 1) {
+				if (!securityFields[i].reportValidity()) {
+					event.preventDefault();
+					securityFields[i].focus();
+					return;
+				}
+			}
 			if (pass && confirm && pass.value !== confirm.value) {
 				event.preventDefault();
 				checkMatch();
@@ -199,4 +213,15 @@
 	}
 
 	setMode(body.dataset.authMode === 'signup' ? 'signup' : 'signin', false);
+	var authError = document.getElementById('authError');
+	if (authError) {
+		var errorTarget = document.getElementById(authError.getAttribute('data-error-field'));
+		if (errorTarget) {
+			errorTarget.setAttribute('aria-invalid', 'true');
+			errorTarget.setAttribute('aria-errormessage', 'authError');
+			errorTarget.focus();
+		} else {
+			authError.focus();
+		}
+	}
 })();

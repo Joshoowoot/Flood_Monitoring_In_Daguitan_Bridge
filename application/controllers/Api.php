@@ -83,7 +83,10 @@ class Api extends CI_Controller {
 			return $this->json(array('ok' => FALSE, 'error' => 'invalid_id'), 400);
 		}
 
-		$this->Notification_model->mark_read($id, $user_id);
+		if ( ! $this->Notification_model->mark_read($id, $user_id))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'notification_not_accessible'), 404);
+		}
 		return $this->json(array(
 			'ok'     => TRUE,
 			'unread' => $this->Notification_model->count_unread($user_id, $role),
@@ -109,11 +112,116 @@ class Api extends CI_Controller {
 			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
 		}
 
-		$this->Notification_model->mark_all_read($user_id, $role);
+		if ( ! $this->Notification_model->mark_all_read($user_id, $role))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'notifications_not_updated'), 500);
+		}
 		return $this->json(array(
 			'ok'     => TRUE,
 			'unread' => 0,
 		));
+	}
+
+	public function notifications_push_status()
+	{
+		if ($this->input->method(TRUE) !== 'GET')
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'method_not_allowed'), 405);
+		}
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$role = (string) $this->session->userdata('auth_role');
+		if ($user_id <= 0 || ! in_array($role, array('admin', 'user'), TRUE))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
+		}
+
+		$this->load->library('web_push_service');
+		return $this->json(array(
+			'ok' => TRUE,
+			'push' => $this->web_push_service->client_config(),
+		));
+	}
+
+	public function notifications_push_subscription()
+	{
+		if ($this->input->method(TRUE) !== 'POST')
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'method_not_allowed'), 405);
+		}
+		if ( ! $this->is_same_origin_request())
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'invalid_origin'), 403);
+		}
+
+		$this->load->model('Notification_model');
+		$user_id = $this->Notification_model->resolve_user_id_from_session();
+		$role = (string) $this->session->userdata('auth_role');
+		if ($user_id <= 0 || ! in_array($role, array('admin', 'user'), TRUE))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'unauthorized'), 401);
+		}
+
+		$request = json_decode($this->input->raw_input_stream, TRUE);
+		if ( ! is_array($request) || ! isset($request['action']))
+		{
+			return $this->json(array('ok' => FALSE, 'error' => 'invalid_request'), 400);
+		}
+
+		if ($request['action'] === 'subscribe')
+		{
+			$this->load->library('web_push_service');
+			$push = $this->web_push_service->client_config();
+			if (empty($push['configured']))
+			{
+				return $this->json(array('ok' => FALSE, 'error' => 'push_not_configured'), 503);
+			}
+			if (empty($request['subscription']) || ! is_array($request['subscription']))
+			{
+				return $this->json(array('ok' => FALSE, 'error' => 'invalid_subscription'), 400);
+			}
+			$saved = $this->Notification_model->save_push_subscription($user_id, $role, $request['subscription']);
+			if ( ! $saved)
+			{
+				log_message('error', 'Could not save web push subscription for user ' . $user_id . '.');
+				return $this->json(array('ok' => FALSE, 'error' => 'subscription_not_saved'), 400);
+			}
+			return $this->json(array('ok' => TRUE));
+		}
+
+		if ($request['action'] === 'unsubscribe')
+		{
+			$endpoint = isset($request['endpoint']) ? (string) $request['endpoint'] : '';
+			if ($endpoint === '' || strlen($endpoint) > 2048)
+			{
+				return $this->json(array('ok' => FALSE, 'error' => 'invalid_endpoint'), 400);
+			}
+			if ( ! $this->Notification_model->delete_push_subscription($user_id, $endpoint))
+			{
+				log_message('error', 'Could not remove web push subscription for user ' . $user_id . '.');
+				return $this->json(array('ok' => FALSE, 'error' => 'subscription_not_removed'), 500);
+			}
+			return $this->json(array('ok' => TRUE));
+		}
+
+		return $this->json(array('ok' => FALSE, 'error' => 'invalid_action'), 400);
+	}
+
+	protected function is_same_origin_request()
+	{
+		$origin = $this->input->server('HTTP_ORIGIN');
+		$base = parse_url(base_url());
+		$source = is_string($origin) ? parse_url($origin) : FALSE;
+		if ( ! is_array($base) || ! is_array($source) || empty($base['scheme']) || empty($base['host']) || empty($source['scheme']) || empty($source['host']))
+		{
+			return FALSE;
+		}
+
+		$base_port = isset($base['port']) ? (int) $base['port'] : (strtolower($base['scheme']) === 'https' ? 443 : 80);
+		$source_port = isset($source['port']) ? (int) $source['port'] : (strtolower($source['scheme']) === 'https' ? 443 : 80);
+		return strtolower($base['scheme']) === strtolower($source['scheme'])
+			&& strtolower($base['host']) === strtolower($source['host'])
+			&& $base_port === $source_port;
 	}
 
 	public function sync()

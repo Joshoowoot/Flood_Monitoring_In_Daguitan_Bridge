@@ -91,12 +91,16 @@ class Sync_model extends CI_Model {
 			$row = $this->db->select_max('synced_at')->get('water_readings')->row_array();
 			$last = (isset($row['synced_at']) && $row['synced_at']) ? $row['synced_at'] : NULL;
 		}
+		$cloud_cfg = $this->cloud_config();
+		$cloud_host = isset($cloud_cfg['hostname']) ? strtolower((string) $cloud_cfg['hostname']) : 'localhost';
+		$local_hosts = array('localhost', '127.0.0.1', '::1');
 
 		return array(
 			'enabled'          => (bool) $this->cfg('sync_enabled', TRUE),
 			'internet'         => $online,
 			'internet_label'   => $online ? 'Online' : 'Offline',
-			'cloud_database'   => 'MDRRMO_DULAG_CLOUD',
+			'cloud_target'     => in_array($cloud_host, $local_hosts, TRUE) ? 'Local development database' : 'Hosted cloud database',
+			'cloud_database'   => isset($cloud_cfg['database']) ? $cloud_cfg['database'] : 'MDRRMO_DULAG_CLOUD',
 			'pending_readings' => $pending_readings,
 			'pending_users'    => $pending_users,
 			'synced_readings'  => $synced_readings,
@@ -140,6 +144,7 @@ class Sync_model extends CI_Model {
 		}
 		catch (Throwable $e)
 		{
+			log_message('error', 'Cloud sync could not start: ' . $e->getMessage());
 			$result['ok'] = FALSE;
 			$result['message'] = 'Local SQL is OK. Cloud copy could not start.';
 			return $result;
@@ -185,6 +190,7 @@ class Sync_model extends CI_Model {
 		}
 		catch (Throwable $e)
 		{
+			log_message('error', 'Cloud sync stopped after a connection error: ' . $e->getMessage());
 			$result['ok'] = FALSE;
 			$result['message'] = 'Local SQL is OK. Cloud copy stopped after a connection error.';
 			return $result;
@@ -330,11 +336,25 @@ class Sync_model extends CI_Model {
 
 		$previous = error_reporting();
 		error_reporting($previous & ~E_WARNING);
-		$cloud = @$this->load->database('cloud', TRUE);
-		error_reporting($previous);
+		try
+		{
+			$cloud = @$this->load->database('cloud', TRUE);
+		}
+		finally
+		{
+			error_reporting($previous);
+		}
 
 		if ( ! $cloud || empty($cloud->conn_id))
 		{
+			if ($cloud)
+			{
+				$error = $cloud->error();
+				if ( ! empty($error['message']))
+				{
+					log_message('error', 'Cloud database connection failed: ' . $error['message']);
+				}
+			}
 			return NULL;
 		}
 
@@ -384,8 +404,7 @@ class Sync_model extends CI_Model {
 
 	protected function ensure_cloud_schema_exists()
 	{
-		include APPPATH . 'config/database.php';
-		$cloud_cfg = (isset($db) && isset($db['cloud'])) ? $db['cloud'] : array();
+		$cloud_cfg = $this->cloud_config();
 		$host = isset($cloud_cfg['hostname']) ? strtolower((string) $cloud_cfg['hostname']) : 'localhost';
 		$schema = isset($cloud_cfg['database']) ? $cloud_cfg['database'] : 'MDRRMO_DULAG_CLOUD';
 		$local_hosts = array('localhost', '127.0.0.1', '::1');
@@ -393,6 +412,13 @@ class Sync_model extends CI_Model {
 		{
 			$this->db->query('CREATE DATABASE IF NOT EXISTS `' . str_replace('`', '', $schema) . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
 		}
+	}
+
+	protected function cloud_config()
+	{
+		$db = array();
+		include APPPATH . 'config/database.php';
+		return isset($db['cloud']) ? $db['cloud'] : array();
 	}
 
 	protected function ensure_local_schema()

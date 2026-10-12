@@ -1,6 +1,7 @@
 (function () {
   var cfg = window.DAGUITAN_ADMIN || {};
   var canvas = document.getElementById('adminWaterChart');
+  var historyCanvas = document.getElementById('adminHistoryChart');
 
   function drawChart() {
     if (!canvas || !cfg.chart || !cfg.chart.points) return;
@@ -11,9 +12,15 @@
       return Number(point.ts) >= start && Number(point.ts) <= now && Number.isFinite(Number(point.water_level_m));
     });
     var empty = document.getElementById('admChartEmpty');
+    if (!empty) empty = document.getElementById('adminAnalyticsChartEmpty');
     canvas.hidden = points.length === 0;
     if (empty) empty.hidden = points.length > 0;
     if (!points.length) return;
+    var pointStart = Math.min.apply(null, points.map(function (point) { return Number(point.ts); }));
+    if (canvas.getAttribute('data-window-labels') === 'analytics') {
+      start = Math.min(start, pointStart);
+      windowSeconds = Math.max(3600, now - start);
+    }
     var ctx = canvas.getContext('2d');
     var dpr = window.devicePixelRatio || 1;
     var rect = canvas.getBoundingClientRect();
@@ -69,7 +76,7 @@
     });
 
     ctx.fillStyle = 'rgba(107, 85, 88, 0.78)';
-    ctx.font = '700 10px Times New Roman, serif';
+    ctx.font = '700 10px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText('CRITICAL', w - pad.r - 48, yScale(red) - 6);
     ctx.fillText('MONITOR', w - pad.r - 43, yScale(yellow) - 6);
     ctx.fillText('SAFE', w - pad.r - 25, yScale(yellow) + 15);
@@ -105,16 +112,34 @@
     ctx.stroke();
 
     ctx.fillStyle = '#6b5558';
-    ctx.font = '11px Times New Roman, serif';
+    ctx.font = '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText('0 m', 6, yScale(0) + 4);
     ctx.fillText(yellow.toFixed(1) + ' m', 6, yScale(yellow) + 4);
     ctx.fillText(red.toFixed(1) + ' m', 6, yScale(red) + 4);
-    ctx.fillText('60 min ago', pad.l, h - 7);
-    ctx.textAlign = 'center';
-    ctx.fillText('30 min ago', pad.l + innerW / 2, h - 7);
-    ctx.textAlign = 'right';
-    ctx.fillText('Now', w - pad.r, h - 7);
-    ctx.textAlign = 'left';
+    var analyticsRange = canvas.getAttribute('data-window-labels') === 'analytics';
+    if (analyticsRange) {
+      var span = now - start;
+      var dateFormat = span <= 2 * 86400 ? { day: 'numeric', month: 'short', hour: 'numeric' }
+        : (span <= 120 * 86400 ? { day: 'numeric', month: 'short' } : { month: 'short', year: 'numeric' });
+      function formatDate(ts) {
+        return new Date(ts * 1000).toLocaleDateString(undefined, dateFormat);
+      }
+      ctx.fillText(formatDate(start), pad.l, h - 7);
+      ctx.textAlign = 'center';
+      ctx.fillText(formatDate(start + span / 2), pad.l + innerW / 2, h - 7);
+      ctx.textAlign = 'right';
+      ctx.fillText(formatDate(now), w - pad.r, h - 7);
+      ctx.textAlign = 'left';
+    } else {
+      ctx.fillText('60 min ago', pad.l, h - 7);
+    }
+    if (!analyticsRange) {
+      ctx.textAlign = 'center';
+      ctx.fillText('30 min ago', pad.l + innerW / 2, h - 7);
+      ctx.textAlign = 'right';
+      ctx.fillText('Now', w - pad.r, h - 7);
+      ctx.textAlign = 'left';
+    }
 
     ctx.beginPath();
     ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
@@ -123,9 +148,126 @@
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
     ctx.stroke();
+    if (points.length === 1) {
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#9b1224';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
     ctx.fillStyle = '#1a1012';
-    ctx.font = '700 12px Times New Roman, serif';
+    ctx.font = '700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
     ctx.fillText(Number(points[points.length - 1].water_level_m).toFixed(2) + ' m', Math.max(pad.l, lastX - 20), Math.max(14, lastY - 10));
+  }
+
+  function drawHistoryChart(periodKey) {
+    if (!historyCanvas || !cfg.historyChart || !cfg.historyChart.periods) return;
+    var period = cfg.historyChart.periods[periodKey];
+    if (!period) return;
+    var points = period.points || [];
+    var empty = document.getElementById('adminHistoryChartEmpty');
+    historyCanvas.hidden = points.length === 0;
+    if (empty) empty.hidden = points.length > 0;
+    if (!points.length) return;
+
+    var ctx = historyCanvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var rect = historyCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    historyCanvas.width = Math.round(rect.width * dpr);
+    historyCanvas.height = Math.round(rect.height * dpr);
+    ctx.scale(dpr, dpr);
+
+    var w = rect.width;
+    var h = rect.height;
+    var pad = { t: 18, r: 20, b: 38, l: 52 };
+    var yellow = Number(cfg.historyChart.yellow) || 1.5;
+    var red = Number(cfg.historyChart.red) || 2.5;
+    var start = Number(period.start);
+    var end = Number(period.end);
+    var values = [];
+    points.forEach(function (point) {
+      ['green', 'yellow', 'red'].forEach(function (key) {
+        if (point[key] != null && Number.isFinite(Number(point[key]))) values.push(Number(point[key]));
+      });
+    });
+    var maxValue = values.length ? Math.max.apply(null, values) : red;
+    var maxY = Math.max(red * 1.12, Math.ceil(maxValue * 1.12 * 2) / 2, 1);
+    var innerW = w - pad.l - pad.r;
+    var innerH = h - pad.t - pad.b;
+    function xScale(ts) {
+      return pad.l + ((ts - start) / Math.max(1, end - start)) * innerW;
+    }
+    function yScale(value) {
+      return pad.t + innerH - (value / maxY) * innerH;
+    }
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.font = '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.lineWidth = 1;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (var tick = 0; tick <= 4; tick += 1) {
+      var value = (maxY / 4) * tick;
+      var y = yScale(value);
+      ctx.strokeStyle = 'rgba(39, 53, 69, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(pad.l, y);
+      ctx.lineTo(w - pad.r, y);
+      ctx.stroke();
+      ctx.fillStyle = '#687585';
+      ctx.fillText(value.toFixed(1) + ' m', pad.l - 9, y);
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    var labelCount = Math.min(6, points.length);
+    var seenLabels = {};
+    for (var labelIndex = 0; labelIndex < labelCount; labelIndex += 1) {
+      var pointIndex = labelCount === 1 ? 0 : Math.round(labelIndex * (points.length - 1) / (labelCount - 1));
+      var point = points[pointIndex];
+      if (!point || !point.label || seenLabels[point.label]) continue;
+      seenLabels[point.label] = true;
+      ctx.fillStyle = '#687585';
+      ctx.fillText(point.label, xScale(Number(point.ts)), h - pad.b + 12);
+    }
+
+    [
+      { key: 'green', color: '#16834a' },
+      { key: 'yellow', color: '#c48a00' },
+      { key: 'red', color: '#c3323c' }
+    ].forEach(function (line) {
+      ctx.strokeStyle = line.color;
+      ctx.fillStyle = line.color;
+      ctx.lineWidth = 2.5;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      var active = false;
+      ctx.beginPath();
+      points.forEach(function (point) {
+        var value = point[line.key];
+        if (value == null || !Number.isFinite(Number(value))) {
+          active = false;
+          return;
+        }
+        var x = xScale(Number(point.ts));
+        var y = yScale(Number(value));
+        if (active) ctx.lineTo(x, y);
+        else ctx.moveTo(x, y);
+        active = true;
+      });
+      ctx.stroke();
+
+      points.forEach(function (point) {
+        var value = point[line.key];
+        if (value == null || !Number.isFinite(Number(value))) return;
+        ctx.beginPath();
+        ctx.arc(xScale(Number(point.ts)), yScale(Number(value)), points.length > 80 ? 1.8 : 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
   }
 
   function setText(id, text) {
@@ -142,7 +284,7 @@
     var age = m.age_seconds == null ? null : Math.max(0, Number(m.age_seconds));
     var ageLabel = age == null ? 'No telemetry received' : (age < 60 ? Math.floor(age) + ' sec ago' : Math.floor(age / 60) + ' min ago');
     if (hero) hero.classList.toggle('is-stale', !isLive);
-    if (label) label.textContent = isLive ? 'Current reading' : (isWaiting ? 'Waiting for reading' : 'Last known reading');
+    if (label) label.textContent = isLive ? 'River level' : (isWaiting ? 'Waiting for a reading' : 'Last known river level');
     if (fresh) {
       fresh.className = 'admin-freshness admin-freshness--' + (isLive ? 'live' : (isWaiting ? 'waiting' : 'stale'));
       fresh.textContent = isLive ? 'Live telemetry · packet received ' + ageLabel : (isWaiting ? 'Waiting for first telemetry' : 'Station offline · last packet ' + ageLabel);
@@ -154,13 +296,30 @@
     var yellow = Number(m.threshold_yellow_m || cfg.thresholds.yellow || 1.5);
     var red = Number(m.threshold_red_m || cfg.thresholds.red || 2.5);
     var context = m.sensor_status === 'waiting' ? 'Waiting for telemetry' : (level >= red ? 'Critical threshold reached' : (level >= yellow ? (red - level).toFixed(2) + ' m to critical threshold' : (yellow - level).toFixed(2) + ' m to monitor threshold'));
+    var distance = '—';
+    var distanceTarget = 'to advisory threshold';
+    if (m.sensor_status === 'waiting') {
+      distanceTarget = 'Waiting for telemetry';
+    } else if (level >= red) {
+      distanceTarget = 'Critical threshold reached';
+    } else if (level >= yellow) {
+      distance = Math.max(0, red - level).toFixed(2) + ' m';
+      distanceTarget = 'to critical threshold';
+    } else {
+      distance = Math.max(0, yellow - level).toFixed(2) + ' m';
+    }
     var meter = document.getElementById('admThresholdMeter');
     var fill = document.getElementById('admThresholdFill');
     var warning = m.warning_level || 'green';
     setText('admThresholdContext', context);
-    if (meter) meter.setAttribute('aria-valuenow', level.toFixed(2));
+    setText('admThresholdDistance', distance);
+    setText('admThresholdTarget', distanceTarget);
+    if (meter) {
+      meter.setAttribute('aria-valuenow', level.toFixed(2));
+      meter.setAttribute('aria-valuetext', m.sensor_status === 'waiting' ? 'Waiting for telemetry' : level.toFixed(2) + ' m');
+    }
     if (fill) {
-      fill.style.width = Math.max(0, Math.min(100, level / Math.max(red, 0.01) * 100)) + '%';
+      fill.style.width = m.sensor_status === 'waiting' ? '0%' : Math.max(0, Math.min(100, level / Math.max(red, 0.01) * 100)) + '%';
       fill.className = 'admin-threshold-track__fill admin-threshold-track__fill--' + warning;
     }
   }
@@ -182,8 +341,9 @@
   function updateWarningBadge(el, m) {
     if (!el) return;
     if (el.classList && el.classList.contains('status-badge')) {
-      el.textContent = m.warning_label;
-      el.className = 'status-badge status-badge--' + m.warning_level;
+      var isWaiting = m.sensor_status === 'waiting';
+      el.textContent = isWaiting ? 'Awaiting telemetry' : m.warning_label;
+      el.className = 'status-badge status-badge--' + (isWaiting ? 'waiting' : m.warning_level);
       return;
     }
     el.textContent = m.warning_label;
@@ -229,6 +389,12 @@
         }
         if (data.sync && data.sync.pending_total != null) {
           setText('admPendingSync', String(data.sync.pending_total));
+          setText('admWaitingCopy', String(data.sync.pending_total) + ' row(s)');
+        }
+        if (data.sync) {
+          if (data.sync.cloud_target) setText('admCloudTarget', data.sync.cloud_target);
+          if (data.sync.cloud_database) setText('admCloudDatabase', data.sync.cloud_database);
+          setText('admLastCloudCopy', data.sync.last_synced_at || 'Not yet');
         }
         var sensor = document.getElementById('admSensor');
         if (sensor) {
@@ -307,7 +473,28 @@
   }
 
   drawChart();
+  var historyPeriodButtons = document.querySelectorAll('[data-history-period]');
+  function selectedHistoryPeriod() {
+    var selected = document.querySelector('[data-history-period][aria-pressed="true"]');
+    return selected ? selected.getAttribute('data-history-period') : 'week';
+  }
+  historyPeriodButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      historyPeriodButtons.forEach(function (periodButton) {
+        var isSelected = periodButton === button;
+        periodButton.classList.toggle('is-active', isSelected);
+        periodButton.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      });
+      drawHistoryChart(button.getAttribute('data-history-period'));
+      var period = cfg.historyChart && cfg.historyChart.periods[button.getAttribute('data-history-period')];
+      if (historyCanvas && period) {
+        historyCanvas.setAttribute('aria-label', 'Average water level by warning category for ' + period.label.toLowerCase());
+      }
+    });
+  });
+  drawHistoryChart(selectedHistoryPeriod());
   window.addEventListener('resize', drawChart);
+  window.addEventListener('resize', function () { drawHistoryChart(selectedHistoryPeriod()); });
   if (cfg.statusUrl) {
     poll();
     setInterval(poll, cfg.pollMs || 5000);
