@@ -7,7 +7,7 @@ $barangays = isset($barangays) && is_array($barangays) ? $barangays : array();
 $error = isset($error) ? $error : '';
 $auth_mode = (isset($auth_mode) && $auth_mode === 'signup') ? 'signup' : 'signin';
 $is_signup = ($auth_mode === 'signup');
-$asset_v = '20261009-auth-validation-ux1';
+$asset_v = '20261014-auth-flow1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -148,7 +148,7 @@ $asset_v = '20261009-auth-validation-ux1';
 										</button>
 									</span>
 								</label>
-								<button class="btn btn--primary btn--block auth-submit" type="submit">Sign in</button>
+								<button class="btn btn--primary btn--block auth-submit" type="submit" data-default-label="Sign in">Sign in</button>
 							</form>
 							<p class="auth-switch">New here? <button type="button" class="auth-switch__btn" data-auth-mode="signup">Create an account</button></p>
 						</div>
@@ -165,7 +165,7 @@ $asset_v = '20261009-auth-validation-ux1';
 								</div>
 							<?php endif; ?>
 							<form method="post" action="<?php echo site_url('signup'); ?>" class="auth-form" id="signupForm" novalidate>
-								<div class="signup-progress" aria-label="Registration progress">
+								<div class="signup-progress" aria-label="Registration progress" aria-live="polite">
 									<span class="signup-progress__step is-active" data-signup-progress="1">1. Personal details</span>
 									<span class="signup-progress__line" aria-hidden="true"></span>
 									<span class="signup-progress__step" data-signup-progress="2">2. Account security</span>

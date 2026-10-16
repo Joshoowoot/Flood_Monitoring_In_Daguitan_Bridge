@@ -67,8 +67,8 @@ const int ECHO_PIN = 18;  // ESP32 D18 / GPIO 18
 // Replace these with your actual Wi-Fi information.
 // DO NOT share your Wi-Fi password with anyone.
 
-const char* WIFI_SSID     = "HAHAHAHA";
-const char* WIFI_PASSWORD = "ayawdreako";
+const char* WIFI_SSID     = "HAHA";
+const char* WIFI_PASSWORD = "ayawdireako";
 
 
 // ======================================================
@@ -76,7 +76,7 @@ const char* WIFI_PASSWORD = "ayawdreako";
 // ======================================================
 
 // PC running XAMPP / CodeIgniter
-const char* PC_IP = "192.168.100.154";
+const char* PC_IP = "172.16.0.102";
 
 // Must match application/config/monitor.php
 const char* API_KEY = "daguitan-esp32-key";
@@ -106,7 +106,7 @@ String ingestUrl() {
 //
 // It will be replaced after measuring/calibrating
 // the prototype.
-const float REFERENCE_HEIGHT_CM = 71.5;
+const float REFERENCE_HEIGHT_CM = 69.99;
 
 
 // ======================================================

@@ -62,8 +62,8 @@ foreach ($sensor_groups as $group_sensors)
 	<dl class="dash-dl">
 		<div><dt>Telemetry source</dt><dd><?php echo html_escape($m['source']); ?></dd></div>
 		<div><dt>Packet age</dt><dd id="admPacketAge"><?php echo $m['age_seconds'] !== NULL ? (int) $m['age_seconds'] . ' s' : '—'; ?></dd></div>
-		<div><dt>Cloud sync</dt><dd id="admCloudSync"><?php echo html_escape($sync['internet_label']); ?></dd></div>
-		<div><dt>Pending upload</dt><dd><?php echo (int) $sync['pending_total']; ?> row(s)</dd></div>
+		<div><dt>Cloud sync queue</dt><dd id="admCloudSync"><?php echo (int) $sync['pending_total'] > 0 ? (int) $sync['pending_total'] . ' pending' : 'Queue clear'; ?></dd></div>
+		<div><dt>Pending upload</dt><dd id="admPendingSync"><?php echo (int) $sync['pending_total']; ?> row(s)</dd></div>
 	</dl>
 	<div class="admin-sensor-summary__actions">
 		<form method="post" action="<?php echo site_url('admin/sync'); ?>">

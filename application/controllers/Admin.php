@@ -17,6 +17,7 @@ class Admin extends CI_Controller {
 		'hazards'       => array('label' => 'Hazard Map Pins', 'href' => 'admin/hazards'),
 		'sms'          => array('label' => 'SMS Broadcast', 'href' => 'admin/sms'),
 		'residents'     => array('label' => 'Residents', 'href' => 'admin/residents'),
+		'family_plans'  => array('label' => 'Shared Family Plans', 'href' => 'admin/family-plans'),
 		'reports'       => array('label' => 'Reports', 'href' => 'admin/reports'),
 		'settings'      => array('label' => 'Settings', 'href' => 'admin/settings'),
 	);
@@ -25,6 +26,8 @@ class Admin extends CI_Controller {
 	{
 		parent::__construct();
 		$this->load->helper(array('url', 'form'));
+		$this->load->helper('auth_session');
+		maintain_admin_session($this);
 		$this->load->model('Auth_model');
 	}
 
@@ -94,6 +97,7 @@ class Admin extends CI_Controller {
 						'auth_phone' => isset($user['phone']) ? $user['phone'] : '',
 						'auth_uid'   => isset($user['record_uid']) ? $user['record_uid'] : '',
 						'auth_id'    => isset($user['id']) ? (int) $user['id'] : 0,
+						'auth_last_activity' => time(),
 					));
 					redirect('admin');
 					return;
@@ -124,9 +128,9 @@ class Admin extends CI_Controller {
 			'page_heading' => 'Operations overview',
 			'page_lede'    => 'Real-time Daguitan Bridge telemetry, threshold-based warnings, and station health for MDRRMO Dulag.',
 			'chart'        => $this->Admin_portal_model->chart_series(80),
-			'history'      => $this->Admin_portal_model->history_table(12),
+			'history'      => $this->Admin_portal_model->history_table(5),
 			'snapshot'     => $this->Admin_portal_model->dashboard_snapshot(),
-			'recent_logins'=> $this->Admin_portal_model->list_recent_logins(8),
+			'recent_logins'=> $this->Admin_portal_model->list_recent_logins(5),
 			'sync_notice'  => $this->session->flashdata('sync_notice'),
 		) + $ctx);
 	}
@@ -279,13 +283,38 @@ class Admin extends CI_Controller {
 			}
 			else
 			{
-				$result = $this->Admin_portal_model->save_announcement((int) $this->input->post('id'), array(
+				$announcement_id = (int) $this->input->post('id');
+				$existing = $announcement_id > 0
+					? $this->Admin_portal_model->get_announcement($announcement_id)
+					: NULL;
+				if ($announcement_id > 0 && ! $existing)
+				{
+					$this->session->set_flashdata('sync_notice', 'That announcement could not be found.');
+					redirect('admin/announcements');
+					return;
+				}
+
+				$upload = $this->upload_announcement_images(
+					is_array($existing) && isset($existing['images']) ? count($existing['images']) : 0
+				);
+				if ( ! empty($upload['error']))
+				{
+					$this->session->set_flashdata('sync_notice', $upload['error']);
+					redirect('admin/announcements' . ($announcement_id > 0 ? '?edit=' . $announcement_id : ''));
+					return;
+				}
+
+				$result = $this->Admin_portal_model->save_announcement($announcement_id, array(
 					'title'         => $this->input->post('title'),
 					'body'          => $this->input->post('body'),
 					'level'         => $this->input->post('level'),
 					'barangay'      => $this->input->post('barangay'),
 					'is_published'  => $this->input->post('is_published'),
-				));
+				), $upload['images']);
+				if (empty($result['ok']))
+				{
+					$this->remove_announcement_uploads($upload['images']);
+				}
 				$this->session->set_flashdata('sync_notice', empty($result['ok'])
 					? (isset($result['error']) ? $result['error'] : 'Could not save.')
 					: 'Announcement saved.');
@@ -304,6 +333,116 @@ class Admin extends CI_Controller {
 			'barangays'     => $this->Hazard_model->barangays(),
 			'sync_notice'   => $this->session->flashdata('sync_notice'),
 		) + $ctx);
+	}
+
+	protected function upload_announcement_images($existing_count)
+	{
+		$uploaded = array();
+		if ( ! isset($_FILES['announcement_images']) || ! is_array($_FILES['announcement_images']['name'])
+			|| ! is_array($_FILES['announcement_images']['error'])
+			|| ! is_array($_FILES['announcement_images']['tmp_name'])
+			|| ! is_array($_FILES['announcement_images']['type'])
+			|| ! is_array($_FILES['announcement_images']['size']))
+		{
+			return array('images' => $uploaded, 'error' => '');
+		}
+
+		$files = $_FILES['announcement_images'];
+		$selected = array();
+		foreach ($files['name'] as $index => $name)
+		{
+			$error = isset($files['error'][$index]) ? (int) $files['error'][$index] : UPLOAD_ERR_NO_FILE;
+			if ($error === UPLOAD_ERR_NO_FILE)
+			{
+				continue;
+			}
+			$selected[] = $index;
+		}
+
+		if ((int) $existing_count + count($selected) > 5)
+		{
+			return array('images' => array(), 'error' => 'An announcement can have up to 5 images in total.');
+		}
+		if (empty($selected))
+		{
+			return array('images' => $uploaded, 'error' => '');
+		}
+
+		$upload_dir = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'announcement_uploads' . DIRECTORY_SEPARATOR;
+		if ( ! is_dir($upload_dir) && ! mkdir($upload_dir, 0750, TRUE) && ! is_dir($upload_dir))
+		{
+			log_message('error', 'Could not create announcement image storage directory.');
+			return array('images' => array(), 'error' => 'Image storage is unavailable. Please try again later.');
+		}
+
+		$this->load->library('upload');
+		$config = array(
+			'upload_path' => $upload_dir,
+			'allowed_types' => 'jpg|jpeg|png|webp',
+			'max_size' => 3072,
+			'max_width' => 6000,
+			'max_height' => 6000,
+			'encrypt_name' => TRUE,
+			'remove_spaces' => TRUE,
+			'file_ext_tolower' => TRUE,
+			'detect_mime' => TRUE,
+			'mod_mime_fix' => TRUE,
+		);
+		foreach ($selected as $index)
+		{
+			if ((int) $files['error'][$index] !== UPLOAD_ERR_OK)
+			{
+				$this->remove_announcement_uploads($uploaded);
+				return array('images' => array(), 'error' => 'One of the selected images could not be uploaded. Please check the file size and try again.');
+			}
+
+			$_FILES['announcement_image'] = array(
+				'name' => $files['name'][$index],
+				'type' => $files['type'][$index],
+				'tmp_name' => $files['tmp_name'][$index],
+				'error' => $files['error'][$index],
+				'size' => $files['size'][$index],
+			);
+			$this->upload->initialize($config, TRUE);
+			if ( ! $this->upload->do_upload('announcement_image'))
+			{
+				$error = trim(strip_tags($this->upload->display_errors('', ' ')));
+				unset($_FILES['announcement_image']);
+				$this->remove_announcement_uploads($uploaded);
+				return array('images' => array(), 'error' => 'Image upload failed: ' . $error);
+			}
+
+			$image = $this->upload->data();
+			unset($_FILES['announcement_image']);
+			if (empty($image['file_name']) || ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image['file_name']))
+			{
+				if ( ! empty($image['full_path']) && is_file($image['full_path']) && ! unlink($image['full_path']))
+				{
+					log_message('error', 'Could not remove an invalid uploaded announcement image.');
+				}
+				$this->remove_announcement_uploads($uploaded);
+				return array('images' => array(), 'error' => 'An uploaded image did not pass file validation.');
+			}
+			$uploaded[] = $image['file_name'];
+		}
+
+		return array('images' => $uploaded, 'error' => '');
+	}
+
+	protected function remove_announcement_uploads($images)
+	{
+		$upload_dir = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'announcement_uploads' . DIRECTORY_SEPARATOR;
+		foreach ($images as $image)
+		{
+			if (preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image))
+			{
+				$path = $upload_dir . $image;
+				if (is_file($path) && ! unlink($path))
+				{
+					log_message('error', 'Could not remove unused announcement image ' . $image . '.');
+				}
+			}
+		}
 	}
 
 	public function community_reports()
@@ -335,6 +474,16 @@ class Admin extends CI_Controller {
 				);
 				if ( ! empty($result['ok']))
 				{
+					if ( ! empty($result['changed']) && ! empty($result['report']['user_id']))
+					{
+						$this->load->model('Notification_model');
+						$this->Notification_model->on_community_report_updated(
+							(int) $result['report']['id'],
+							(int) $result['report']['user_id'],
+							$result['status'],
+							$result['admin_note']
+						);
+					}
 					$this->session->set_flashdata('sync_notice', 'Community report updated.');
 					redirect('admin/community-reports');
 					return;
@@ -398,35 +547,99 @@ class Admin extends CI_Controller {
 		$this->require_admin();
 		$this->load->model('Admin_portal_model');
 		$this->load->library('Sms_service');
+		if ( ! $this->session->userdata('sms_admin_token'))
+		{
+			$this->session->set_userdata('sms_admin_token', bin2hex(random_bytes(32)));
+		}
 		$residents = $this->Admin_portal_model->list_residents();
 		$recipients = array_values(array_filter($residents, function ($resident) {
 			return ! empty($resident['phone']);
 		}));
 		$error = '';
 		$success = '';
+		$sms_results = array();
 
 		if ($this->input->method(TRUE) === 'POST')
 		{
-			$message = trim((string) $this->input->post('message'));
-			if ($message === '')
+			$posted_token = (string) $this->input->post('sms_admin_token');
+			$session_token = (string) $this->session->userdata('sms_admin_token');
+			$action = (string) $this->input->post('action');
+			$recipient_id = (int) $this->input->post('recipient_id');
+			if ($session_token === '' || ! hash_equals($session_token, $posted_token))
 			{
-				$error = 'Write a message before sending.';
+				$error = 'This SMS form has expired. Refresh the page and try again.';
 			}
-			elseif (count($recipients) === 0)
+			elseif ($action === 'remove_phone')
 			{
-				$error = 'No resident phone numbers are available.';
-			}
-			else
-			{
-				$result = $this->sms_service->send_broadcast($recipients, $message);
-				if ($result['ok'])
+				$recipient = $this->Admin_portal_model->get_sms_recipient($recipient_id);
+				if ( ! $recipient || empty($recipient['phone']))
 				{
-					$success = 'SMS gateway accepted the message for ' . (int) $result['sent'] . ' resident(s).';
+					$error = 'That resident no longer has a mobile number to remove.';
+				}
+				elseif ($this->Admin_portal_model->clear_resident_phone($recipient_id))
+				{
+					$success = 'Mobile number removed. The resident account was kept.';
 				}
 				else
 				{
-					$error = $result['error'];
+					$error = 'Could not remove the mobile number. Check the database log and try again.';
 				}
+			}
+			elseif ($action === 'send_one' || $action === 'broadcast')
+			{
+				$message = trim((string) $this->input->post('message'));
+				if ($message === '')
+				{
+					$error = 'Write a message before sending.';
+				}
+				elseif (($message_length = preg_match_all('/./us', $message, $message_characters)) === FALSE)
+				{
+					$error = 'The message contains invalid text encoding.';
+				}
+				elseif ($message_length > 320)
+				{
+					$error = 'The message cannot exceed 320 characters.';
+				}
+				else
+				{
+					if ($action === 'send_one')
+					{
+						$recipient = $this->Admin_portal_model->get_sms_recipient($recipient_id);
+						$send_recipients = $recipient && ! empty($recipient['phone']) ? array($recipient) : array();
+						if (empty($send_recipients))
+						{
+							$error = 'That resident no longer has a mobile number.';
+						}
+					}
+					else
+					{
+						$send_recipients = $recipients;
+						if (empty($send_recipients))
+						{
+							$error = 'No resident phone numbers are available.';
+						}
+					}
+
+					if ($error === '')
+					{
+						$result = $this->sms_service->send_broadcast($send_recipients, $message);
+						$sms_results = isset($result['results']) ? $result['results'] : array();
+						if ((int) $result['sent'] > 0)
+						{
+							$success = $action === 'send_one'
+								? 'iProg queued the SMS for ' . $recipient['name'] . '. Handset delivery is not confirmed.'
+								: (int) $result['sent'] . ' of ' . (int) $result['total'] . ' SMS message(s) queued by iProg. Handset delivery is not confirmed.';
+						}
+						if ( ! $result['ok'])
+						{
+							$error = $result['error'];
+						}
+					}
+				}
+			}
+			else
+			{
+				$error = 'Invalid SMS action. Refresh the page and try again.';
 			}
 		}
 
@@ -435,8 +648,10 @@ class Admin extends CI_Controller {
 			'page_heading' => 'SMS broadcast',
 			'page_lede' => 'Send an emergency text message to residents with a registered mobile number.',
 			'recipients' => $recipients,
+			'sms_admin_token' => $this->session->userdata('sms_admin_token'),
 			'sms_error' => $error,
 			'sms_success' => $success,
+			'sms_results' => $sms_results,
 		));
 	}
 
@@ -448,6 +663,7 @@ class Admin extends CI_Controller {
 		{
 			$this->session->set_userdata('resident_delete_token', bin2hex(random_bytes(32)));
 		}
+
 		if ($this->input->method(TRUE) === 'POST' && (string) $this->input->post('action') === 'delete')
 		{
 			$posted_token = (string) $this->input->post('resident_delete_token');
@@ -499,6 +715,22 @@ class Admin extends CI_Controller {
 			'barangay_filter' => $barangay,
 			'sync_notice'  => $this->session->flashdata('sync_notice'),
 		) + $ctx);
+	}
+
+	public function family_plans()
+	{
+		$this->require_admin();
+		$this->load->model('Family_evacuation_plan_model');
+		$search = trim((string) $this->input->get('q'));
+		$plans = $this->Family_evacuation_plan_model->all_shared($search);
+		$this->render('family_plans', array(
+			'page_title' => 'Shared Family Plans',
+			'page_heading' => 'Shared family evacuation plans',
+			'page_lede' => 'View plans residents have deliberately shared with MDRRMO to support evacuation coordination.',
+			'family_plans' => is_array($plans) ? $plans : array(),
+			'family_plans_error' => $plans === FALSE ? 'Shared plans could not be loaded. Please check the database log and try again.' : '',
+			'family_plans_search' => $search,
+		));
 	}
 
 	public function reports()
@@ -559,18 +791,92 @@ class Admin extends CI_Controller {
 		{
 			if ((string) $this->input->post('action') === 'delete')
 			{
+				$existing = $this->Hazard_model->find((int) $this->input->post('id'));
 				$result = $this->Hazard_model->delete((int) $this->input->post('id'));
 				$notice = $result
 					? 'Hazard pin deleted.'
 					: 'Could not delete this hazard pin. Please refresh and try again.';
+				if ($result && $existing && ! empty($existing['image'])
+					&& ! $this->remove_hazard_image($existing['image']))
+				{
+					$notice = 'Hazard pin deleted, but its photo could not be removed. Please contact the system administrator.';
+				}
 			}
 			else
 			{
 				$id = (int) $this->input->post('id');
-				$result = $this->Hazard_model->save($this->input->post(), $id);
-				$notice = $result['ok']
-					? ($id > 0 ? 'Hazard pin updated.' : 'Hazard pin saved.')
-					: $result['error'];
+				$existing = $id > 0 ? $this->Hazard_model->find($id) : NULL;
+				$image = NULL;
+				$uploaded_image_path = NULL;
+				$upload_error = '';
+				if (isset($_FILES['image']) && isset($_FILES['image']['error'])
+					&& (int) $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE)
+				{
+					$upload_directory = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'hazard_uploads';
+					if ( ! is_dir($upload_directory) && ! @mkdir($upload_directory, 0750, TRUE) && ! is_dir($upload_directory))
+					{
+						log_message('error', 'Hazard photo upload directory could not be created.');
+						$upload_error = 'The photo storage folder is unavailable. Please contact the system administrator.';
+					}
+					else
+					{
+						$this->load->library('upload');
+						$this->upload->initialize(array(
+							'upload_path' => $upload_directory . DIRECTORY_SEPARATOR,
+							'allowed_types' => 'jpg|jpeg|png|webp',
+							'max_size' => 3072,
+							'file_name' => bin2hex(random_bytes(16)),
+							'overwrite' => FALSE,
+							'detect_mime' => TRUE,
+						));
+						if ( ! $this->upload->do_upload('image'))
+						{
+							$upload_error = trim(strip_tags($this->upload->display_errors('', '')));
+						}
+						else
+						{
+							$upload_data = $this->upload->data();
+							$image = isset($upload_data['file_name']) ? $upload_data['file_name'] : '';
+							$uploaded_image_path = isset($upload_data['full_path']) ? $upload_data['full_path'] : NULL;
+							$image_info = ($uploaded_image_path && is_file($uploaded_image_path))
+								? @getimagesize($uploaded_image_path)
+								: FALSE;
+							if ( ! is_string($image) || ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image)
+								|| ! is_array($image_info) || empty($image_info['mime'])
+								|| ! in_array($image_info['mime'], array('image/jpeg', 'image/png', 'image/webp'), TRUE))
+							{
+								if ($uploaded_image_path && is_file($uploaded_image_path) && ! @unlink($uploaded_image_path))
+								{
+									log_message('error', 'Could not remove rejected hazard photo upload.');
+								}
+								log_message('error', 'Uploaded hazard photo failed image validation.');
+								$image = NULL;
+								$uploaded_image_path = NULL;
+								$upload_error = 'Choose a valid JPG, PNG, or WebP photo.';
+							}
+						}
+					}
+				}
+				if ($upload_error !== '')
+				{
+					$notice = 'Photo upload failed: ' . $upload_error;
+				}
+				else
+				{
+					$result = $this->Hazard_model->save($this->input->post(), $id, $image);
+					$notice = $result['ok']
+						? ($id > 0 ? 'Hazard pin updated.' : 'Hazard pin saved.')
+						: $result['error'];
+					if ( ! $result['ok'] && $image !== NULL && ! $this->remove_hazard_image($image))
+					{
+						$notice .= ' The uploaded photo could not be removed; contact the system administrator.';
+					}
+					elseif ($result['ok'] && $image !== NULL && $existing && ! empty($existing['image'])
+						&& ! $this->remove_hazard_image($existing['image']))
+					{
+						$notice .= ' The previous photo could not be removed; contact the system administrator.';
+					}
+				}
 			}
 			$this->session->set_flashdata('sync_notice', $notice);
 			redirect('admin/hazards');
@@ -590,6 +896,25 @@ class Admin extends CI_Controller {
 			'edit_row'     => $edit,
 			'sync_notice'  => $this->session->flashdata('sync_notice'),
 		));
+	}
+
+	protected function remove_hazard_image($name)
+	{
+		if ( ! is_string($name) || ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $name))
+		{
+			return FALSE;
+		}
+		$path = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'hazard_uploads' . DIRECTORY_SEPARATOR . $name;
+		if ( ! is_file($path))
+		{
+			return TRUE;
+		}
+		if ( ! @unlink($path))
+		{
+			log_message('error', 'Could not remove hazard photo ' . $name . '.');
+			return FALSE;
+		}
+		return TRUE;
 	}
 
 	public function settings()
@@ -762,7 +1087,7 @@ class Admin extends CI_Controller {
 			'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
 			'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
 			'serviceWorkerUrl' => $base . '/sw.js',
-			'pollMs'     => 30000,
+			'pollMs'     => 5000,
 		);
 		if ( ! isset($data['portal_stats']))
 		{

@@ -17,6 +17,7 @@ user_guide_src/cilexer/dist/*
 user_guide_src/cilexer/pycilexer.egg-info/*
 /vendor/
 /application/config/web_push_keys.php
+/application/config/sms_credentials.php
 
 # IDE Files
 #-------------------------

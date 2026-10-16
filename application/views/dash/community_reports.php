@@ -18,7 +18,7 @@ $form_value = function ($key) use ($form_values) {
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261012-reports-landscape1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="portal-page resident-portal community-reports-page">
@@ -105,13 +105,17 @@ $form_value = function ($key) use ($form_values) {
 						<div class="community-report-list">
 							<?php foreach ($reports as $report): ?>
 								<article class="community-report-card">
-									<div class="community-report-card__head">
-										<div><span class="community-report-type"><?php echo html_escape($report['type_label']); ?></span><h3><?php echo html_escape($report['landmark']); ?></h3></div>
-										<span class="community-report-status community-report-status--<?php echo html_escape($report['status']); ?>"><?php echo html_escape($report['status_label']); ?></span>
+									<div class="community-report-card__summary">
+										<div class="community-report-card__head">
+											<div><span class="community-report-type"><?php echo html_escape($report['type_label']); ?></span><h3><?php echo html_escape($report['landmark']); ?></h3></div>
+											<span class="community-report-status community-report-status--<?php echo html_escape($report['status']); ?>"><?php echo html_escape($report['status_label']); ?></span>
+										</div>
+										<p class="community-report-card__area">Barangay <?php echo html_escape($report['barangay']); ?> · <?php echo html_escape(date('M j, Y · g:i A', strtotime($report['created_at']))); ?></p>
 									</div>
-									<p class="community-report-card__area">Barangay <?php echo html_escape($report['barangay']); ?> · <?php echo html_escape(date('M j, Y · g:i A', strtotime($report['created_at']))); ?></p>
-									<p class="community-report-card__description"><?php echo nl2br(html_escape($report['description'])); ?></p>
-									<?php if (!empty($report['has_photo'])): ?><a class="community-report-photo-link" href="<?php echo html_escape($report_photo_base . '/' . (int) $report['id']); ?>" target="_blank" rel="noopener">View submitted photo</a><?php endif; ?>
+									<div class="community-report-card__content">
+										<p class="community-report-card__description"><?php echo nl2br(html_escape($report['description'])); ?></p>
+										<?php if (!empty($report['has_photo'])): ?><a class="community-report-photo-link" href="<?php echo html_escape($report_photo_base . '/' . (int) $report['id']); ?>" target="_blank" rel="noopener">View submitted photo</a><?php endif; ?>
+									</div>
 									<?php if (!empty($report['admin_note'])): ?><div class="community-report-followup"><strong>MDRRMO follow-up</strong><p><?php echo nl2br(html_escape($report['admin_note'])); ?></p><?php if (!empty($report['reviewed_by'])): ?><small>Updated by <?php echo html_escape($report['reviewed_by']); ?></small><?php endif; ?></div><?php endif; ?>
 								</article>
 							<?php endforeach; ?>
@@ -124,7 +128,7 @@ $form_value = function ($key) use ($form_values) {
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions. This report form is not monitored as an emergency hotline.</p></div></footer>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 </body>

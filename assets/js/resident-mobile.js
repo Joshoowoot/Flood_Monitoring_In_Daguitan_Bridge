@@ -65,6 +65,7 @@
   var centerSearch = document.getElementById('centerSearch');
   var searchStatus = document.getElementById('centerSearchStatus');
   var centerCards = Array.prototype.slice.call(document.querySelectorAll('.evacuation-card[data-center-search]'));
+  var emptySearchState = document.getElementById('evacuationSearchEmpty');
 
   if (centerSearch && searchStatus) {
     centerSearch.addEventListener('input', function () {
@@ -75,7 +76,35 @@
         card.hidden = !matches;
         if (matches) visible += 1;
       });
-      searchStatus.textContent = visible + (visible === 1 ? ' location found' : ' locations found');
+      searchStatus.textContent = query
+        ? visible + (visible === 1 ? ' location found' : ' locations found')
+        : visible + (visible === 1 ? ' location listed' : ' locations listed');
+      if (emptySearchState) emptySearchState.hidden = visible !== 0;
     });
+  }
+
+  var announcementQuickLinks = Array.prototype.slice.call(
+    document.querySelectorAll('.resident-portal.announce-page .bottom-nav a[href^="#"]')
+  );
+  if (announcementQuickLinks.length) {
+    var updateAnnouncementQuickNavigation = function () {
+      var activeHash = window.location.hash || '#notices';
+      announcementQuickLinks.forEach(function (link) {
+        var active = link.getAttribute('href') === activeHash;
+        link.classList.toggle('is-active', active);
+        if (active) {
+          link.setAttribute('aria-current', 'page');
+        } else {
+          link.removeAttribute('aria-current');
+        }
+      });
+    };
+    announcementQuickLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        window.setTimeout(updateAnnouncementQuickNavigation, 0);
+      });
+    });
+    window.addEventListener('hashchange', updateAnnouncementQuickNavigation);
+    updateAnnouncementQuickNavigation();
   }
 })();

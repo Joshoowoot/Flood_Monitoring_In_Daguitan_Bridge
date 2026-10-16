@@ -11,7 +11,32 @@
 	</div>
 	<?php if (! empty($sms_error)): ?><p class="admin-notice admin-notice--error" role="alert"><?php echo html_escape($sms_error); ?></p><?php endif; ?>
 	<?php if (! empty($sms_success)): ?><p class="admin-notice" role="status"><?php echo html_escape($sms_success); ?></p><?php endif; ?>
+	<?php if (! empty($sms_results)): ?>
+		<div class="admin-sms-results" role="status" aria-label="SMS gateway results">
+			<strong>iProg request results</strong>
+			<p>Queued means iProg accepted the request. It does not confirm delivery to the phone.</p>
+			<ul>
+			<?php foreach ($sms_results as $sms_result): ?>
+				<li>
+					<div class="admin-sms-results__recipient">
+						<strong><?php echo html_escape($sms_result['name'] !== '' ? $sms_result['name'] : 'Unknown recipient'); ?></strong>
+						<?php if ($sms_result['phone'] !== ''): ?><span>Destination: +<?php echo html_escape($sms_result['phone']); ?></span><?php endif; ?>
+					</div>
+					<?php if (! empty($sms_result['ok'])): ?>
+						<span class="sync-pill sync-pill--synced">Submitted to iProg</span>
+						<?php if ($sms_result['message_id'] !== ''): ?><small>Reference: <?php echo html_escape($sms_result['message_id']); ?></small><?php endif; ?>
+					<?php else: ?>
+						<span class="sync-pill">Not submitted</span>
+						<small><?php echo html_escape($sms_result['error']); ?></small>
+					<?php endif; ?>
+				</li>
+			<?php endforeach; ?>
+			</ul>
+		</div>
+	<?php endif; ?>
 	<form method="post" action="<?php echo site_url('admin/sms'); ?>" class="admin-sms-form" data-recipient-count="<?php echo (int) count($recipients); ?>">
+		<input type="hidden" name="sms_admin_token" value="<?php echo html_escape($sms_admin_token); ?>">
+		<input type="hidden" name="action" value="broadcast">
 		<label for="smsMessage">Message</label>
 		<div class="admin-sms-template-actions">
 			<button type="button" class="btn btn--ghost btn--compact sms-template" data-template="🚨 MDRRMO DULAG ALERT
@@ -88,21 +113,63 @@ document.addEventListener('DOMContentLoaded', function () {
 		const count = Number(form.dataset.recipientCount) || 0;
 		if (!window.confirm('Send this SMS to ' + count + ' residents? Review the message before confirming.')) event.preventDefault();
 	});
+	document.querySelectorAll('.admin-sms-recipient-action--send').forEach(function (sendForm) {
+		sendForm.addEventListener('submit', function (event) {
+			const message = textarea.value.trim();
+			if (!message) {
+				event.preventDefault();
+				textarea.focus();
+				window.alert('Write a message above before sending.');
+				return;
+			}
+			sendForm.querySelector('[name="message"]').value = message;
+			const phone = sendForm.dataset.phone || 'this resident';
+			if (!window.confirm('Send this SMS to ' + phone + '? Review the message above before confirming.')) event.preventDefault();
+		});
+	});
+	document.querySelectorAll('.admin-sms-recipient-action--remove').forEach(function (removeForm) {
+		removeForm.addEventListener('submit', function (event) {
+			const phone = removeForm.dataset.phone || 'this number';
+			if (!window.confirm('Remove ' + phone + ' from this resident profile? Their account will not be deleted.')) event.preventDefault();
+		});
+	});
 	updateMessageMetrics();
 });
 </script>
 
 <section class="glass-card admin-sms-recipients">
 	<h2>Recipients with mobile numbers</h2>
+	<?php if (! empty($recipients)): ?><p>Use the message above to send to one resident, or remove a number without deleting the resident account.</p><?php endif; ?>
 	<?php if (empty($recipients)): ?>
 		<p>No residents have a mobile number on file.</p>
 	<?php else: ?>
 		<div class="admin-sms-table-scroll">
 		<table class="dash-table">
-			<thead><tr><th>Name</th><th>Mobile</th><th>Status</th></tr></thead>
+			<thead><tr><th>Name</th><th>Mobile</th><th>Status</th><th>Actions</th></tr></thead>
 			<tbody>
 			<?php foreach ($recipients as $recipient): ?>
-				<tr><td><?php echo html_escape($recipient['name']); ?></td><td><?php echo html_escape($recipient['phone']); ?></td><td><span class="sync-pill sync-pill--synced">Ready</span></td></tr>
+				<tr>
+					<td><?php echo html_escape($recipient['name']); ?></td>
+					<td><?php echo html_escape($recipient['phone']); ?></td>
+					<td><span class="sync-pill sync-pill--synced">Ready</span></td>
+					<td>
+						<div class="admin-sms-recipient-actions">
+						<form method="post" action="<?php echo site_url('admin/sms'); ?>" class="admin-sms-recipient-action--send" data-phone="<?php echo html_escape($recipient['phone']); ?>">
+							<input type="hidden" name="sms_admin_token" value="<?php echo html_escape($sms_admin_token); ?>">
+							<input type="hidden" name="action" value="send_one">
+							<input type="hidden" name="recipient_id" value="<?php echo (int) $recipient['id']; ?>">
+							<input type="hidden" name="message" value="">
+							<button class="btn btn--primary btn--compact" type="submit">Send SMS</button>
+						</form>
+						<form method="post" action="<?php echo site_url('admin/sms'); ?>" class="admin-sms-recipient-action--remove" data-phone="<?php echo html_escape($recipient['phone']); ?>">
+							<input type="hidden" name="sms_admin_token" value="<?php echo html_escape($sms_admin_token); ?>">
+							<input type="hidden" name="action" value="remove_phone">
+							<input type="hidden" name="recipient_id" value="<?php echo (int) $recipient['id']; ?>">
+							<button class="btn btn--ghost btn--compact" type="submit">Delete number</button>
+						</form>
+						</div>
+					</td>
+				</tr>
 			<?php endforeach; ?>
 			</tbody>
 		</table>

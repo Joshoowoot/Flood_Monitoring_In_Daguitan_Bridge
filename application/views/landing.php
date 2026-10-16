@@ -27,7 +27,7 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 	<link rel="manifest" href="<?php echo html_escape($base_url); ?>manifest.webmanifest">
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="apple-touch-icon" href="<?php echo html_escape($asset_url); ?>icons/pwa-icon-192.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261011-warning-shared3">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261016-alert-panel3">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing-weather.css?v=2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-bottomremoved1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
@@ -92,12 +92,16 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 					<a class="btn btn--primary btn--compact" href="<?php echo html_escape($signup_url); ?>">Sign up</a>
 				</div>
 				<?php endif; ?>
+				<?php if ( ! empty($notify_config)): ?>
+				<?php $this->load->view('partials/notifications_bell'); ?>
+				<?php else: ?>
 				<button class="icon-btn" type="button" id="notifyBtn" aria-label="Notifications, no unread alerts">
 					<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/>
 						<path d="M10 19a2 2 0 0 0 4 0"/>
 					</svg>
 				</button>
+				<?php endif; ?>
 				<button class="icon-btn hamburger" type="button" id="menuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
 					<span></span><span></span><span></span>
 				</button>
@@ -211,7 +215,10 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 								<span class="warning-chip warning-chip--green"><span aria-hidden="true">●</span> GREEN</span>
 								<strong>Safe</strong>
 							</span>
-							<span class="warn-board__status">Below advisory threshold.</span>
+							<span class="warn-board__status-group">
+								<span class="warn-board__status">Below advisory threshold.</span>
+								<span class="warn-board__action">View guidance <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></span>
+							</span>
 						</button>
 					</div>
 					<div class="warning-track__item<?php echo $warning_key === 'yellow' ? ' is-active' : ''; ?>" role="listitem" data-level="yellow">
@@ -220,7 +227,10 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 								<span class="warning-chip warning-chip--yellow"><span aria-hidden="true">●</span> YELLOW</span>
 								<strong>Monitor</strong>
 							</span>
-							<span class="warn-board__status">Approaching caution. Stay alert.</span>
+							<span class="warn-board__status-group">
+								<span class="warn-board__status">Approaching caution. Stay alert.</span>
+								<span class="warn-board__action">View guidance <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></span>
+							</span>
 						</button>
 					</div>
 					<div class="warning-track__item warning-track__item--critical<?php echo $warning_key === 'red' ? ' is-active' : ''; ?>" role="listitem" data-level="red">
@@ -229,7 +239,10 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 								<span class="warning-chip warning-chip--red"><span aria-hidden="true">●</span> RED</span>
 								<strong>Critical</strong>
 							</span>
-							<span class="warn-board__status">Critical threshold reached.</span>
+							<span class="warn-board__status-group">
+								<span class="warn-board__status">Critical threshold reached.</span>
+								<span class="warn-board__action">View guidance <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></span>
+							</span>
 						</button>
 					</div>
 				</div>
@@ -387,6 +400,13 @@ if ( ! preg_match('/^[a-z]+(-[a-z]+)?$/', $wx_theme))
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 	</script>
 	<script src="<?php echo html_escape($asset_url); ?>js/landing-weather.js?v=5"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261012-water-level-bands1"></script>
+	<?php if (isset($auth_role) && $auth_role === 'user'): ?>
+	<script src="<?php echo html_escape($asset_url); ?>js/monitor-alert-sound.js?v=20261016-alert-panel3"></script>
+	<?php endif; ?>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261016-alert-state2"></script>
+	<?php if ( ! empty($notify_config)): ?>
+	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
+	<?php endif; ?>
 </body>
 </html>

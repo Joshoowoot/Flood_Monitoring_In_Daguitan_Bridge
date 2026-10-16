@@ -4,7 +4,7 @@ $admin_login_notice = $this->session->flashdata('admin_login_notice');
 $nav_groups = array(
 	'Overview' => array('dashboard', 'live', 'history', 'analytics'),
 	'Operations' => array('alerts', 'announcements', 'community_reports', 'evacuation', 'hazards', 'sms', 'sensors'),
-	'Administration' => array('residents', 'reports', 'settings'),
+	'Administration' => array('residents', 'family_plans', 'reports', 'settings'),
 );
 function admin_nav_icon($key) {
 	$icons = array(
@@ -18,6 +18,7 @@ function admin_nav_icon($key) {
 		'evacuation' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.2"/></svg>',
 		'hazards' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2.8 20h18.4L12 3z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".7" fill="currentColor" stroke="none"/></svg>',
 		'residents' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.2"/><path d="M5 19c1.4-3.2 3.8-4.8 7-4.8s5.6 1.6 7 4.8"/></svg>',
+		'family_plans' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 5.5v13A2.5 2.5 0 0 1 6.5 16H20"/><path d="M9 8h7M9 11h5"/></svg>',
 		'reports' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h9l3 3v13H6z"/><path d="M9 13h6M9 17h4"/></svg>',
 		'settings' => '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
 	);
@@ -33,9 +34,9 @@ function admin_nav_icon($key) {
 	<meta name="robots" content="noindex,nofollow">
 	<title><?php echo html_escape($page_title); ?> · MDRRMO Admin Portal</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261016-alert-state2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261012-evacuation-directory-compact1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/admin-portal.css?v=20261014-family-plans1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="admin-portal">
@@ -116,7 +117,7 @@ function admin_nav_icon($key) {
 				<?php endif; ?>
 
 				<?php if ( ! empty($admin_login_notice)): ?>
-					<p class="admin-notice" role="status"><?php echo html_escape($admin_login_notice); ?></p>
+					<p class="admin-notice admin-notice--login" role="status" aria-live="polite" aria-atomic="true"><?php echo html_escape($admin_login_notice); ?></p>
 				<?php endif; ?>
 
 				<div class="admin-content">
@@ -144,12 +145,12 @@ function admin_nav_icon($key) {
 		echo json_encode($admin_js, JSON_UNESCAPED_SLASHES);
 		?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=20261012-water-level-bands1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/admin-portal.js?v=20261016-alert-state2"></script>
 	<?php if ( ! empty($notify_config)): ?>
 	<script>
 		window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
 	<?php endif; ?>
 </body>
 </html>

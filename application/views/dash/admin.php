@@ -9,7 +9,7 @@ $a = $announcement;
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<title><?php echo html_escape($page_title); ?> · MDRRMO Dulag</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261016-alert-state2">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-responsive">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -122,6 +122,6 @@ $a = $announcement;
 	<script>
 		window.DAGUITAN = <?php echo json_encode(array('statusUrl' => $status_url, 'pollMs' => 5000), JSON_UNESCAPED_SLASHES); ?>;
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/landing.js"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/landing.js?v=20261016-alert-state2"></script>
 </body>
 </html>

@@ -68,49 +68,147 @@ foreach ($reports as $report)
 			<p>No community reports match the selected filters. Try a different status or barangay.</p>
 		</div>
 	<?php else: ?>
-		<div class="admin-community-reports__list">
+		<div class="admin-community-reports__list" role="region" aria-label="Community reports. Scroll to see more reports." tabindex="0">
 			<?php foreach ($reports as $report): ?>
 				<article class="admin-community-report admin-community-report--<?php echo html_escape($report['status']); ?>">
-					<div class="admin-community-report__top">
-						<div class="admin-community-report__heading">
-							<div class="admin-community-report__eyebrow">
-								<span class="admin-community-report__type"><?php echo html_escape($report['type_label']); ?></span>
-								<span>Barangay <?php echo html_escape($report['barangay']); ?></span>
+					<button class="admin-community-report__open" type="button" aria-haspopup="dialog" aria-controls="communityReportDialog<?php echo (int) $report['id']; ?>">
+						<span class="admin-community-report__top">
+							<span class="admin-community-report__heading">
+								<span class="admin-community-report__eyebrow">
+									<span class="admin-community-report__type"><?php echo html_escape($report['type_label']); ?></span>
+									<span>Barangay <?php echo html_escape($report['barangay']); ?></span>
+								</span>
+								<strong><?php echo html_escape($report['landmark']); ?></strong>
+							</span>
+							<span class="admin-community-report__status admin-community-report__status--<?php echo html_escape($report['status']); ?>"><?php echo html_escape($report['status_label']); ?></span>
+						</span>
+						<span class="admin-community-report__summary">
+							<span><?php echo html_escape(! empty($report['reporter_name']) ? $report['reporter_name'] : $report['reporter_username']); ?></span>
+							<span aria-hidden="true">·</span>
+							<time datetime="<?php echo html_escape(date(DATE_ATOM, strtotime($report['created_at']))); ?>"><?php echo html_escape(date('M j, Y · g:i A', strtotime($report['created_at']))); ?></time>
+						</span>
+						<span class="admin-community-report__preview"><?php echo html_escape($report['description']); ?></span>
+						<span class="admin-community-report__open-label">View report and review <span aria-hidden="true">→</span></span>
+					</button>
+					<dialog class="admin-community-report__dialog" id="communityReportDialog<?php echo (int) $report['id']; ?>" aria-labelledby="communityReportDialogTitle<?php echo (int) $report['id']; ?>">
+						<div class="admin-community-report__dialog-head">
+							<div>
+								<p class="admin-kicker">Community report</p>
+								<h2 id="communityReportDialogTitle<?php echo (int) $report['id']; ?>"><?php echo html_escape($report['landmark']); ?></h2>
 							</div>
-							<h2><?php echo html_escape($report['landmark']); ?></h2>
+							<button class="admin-community-report__close" type="button" aria-label="Close report details">&times;</button>
 						</div>
-						<span class="admin-community-report__status admin-community-report__status--<?php echo html_escape($report['status']); ?>"><?php echo html_escape($report['status_label']); ?></span>
-					</div>
-					<div class="admin-community-report__details">
-						<p class="admin-community-report__by"><span>Submitted by</span> <?php echo html_escape(! empty($report['reporter_name']) ? $report['reporter_name'] : $report['reporter_username']); ?> <span aria-hidden="true">·</span> <time datetime="<?php echo html_escape(date(DATE_ATOM, strtotime($report['created_at']))); ?>"><?php echo html_escape(date('M j, Y · g:i A', strtotime($report['created_at']))); ?></time></p>
-						<p class="admin-community-report__description"><?php echo nl2br(html_escape($report['description'])); ?></p>
-						<?php if (!empty($report['has_photo'])): ?><a class="admin-community-report__photo" href="<?php echo html_escape($report_photo_base . '/' . (int) $report['id']); ?>" target="_blank" rel="noopener">View attached photo <span class="admin-community-report__photo-note">(opens in new tab)</span></a><?php endif; ?>
-					</div>
-					<form class="admin-community-report__review" method="post" action="<?php echo site_url('admin/community-reports'); ?>">
-						<input type="hidden" name="report_admin_token" value="<?php echo html_escape($report_token); ?>">
-						<input type="hidden" name="report_id" value="<?php echo (int) $report['id']; ?>">
-						<div class="admin-community-report__review-heading">
-							<h3>Administrator review</h3>
-							<p>Update the report status and share a safe, useful follow-up with the resident.</p>
+						<div class="admin-community-report__dialog-content">
+							<div class="admin-community-report__top">
+								<div class="admin-community-report__heading">
+									<div class="admin-community-report__eyebrow">
+										<span class="admin-community-report__type"><?php echo html_escape($report['type_label']); ?></span>
+										<span>Barangay <?php echo html_escape($report['barangay']); ?></span>
+									</div>
+								</div>
+								<span class="admin-community-report__status admin-community-report__status--<?php echo html_escape($report['status']); ?>"><?php echo html_escape($report['status_label']); ?></span>
+							</div>
+							<div class="admin-community-report__details">
+								<p class="admin-community-report__by"><span>Submitted by</span> <?php echo html_escape(! empty($report['reporter_name']) ? $report['reporter_name'] : $report['reporter_username']); ?> <span aria-hidden="true">·</span> <time datetime="<?php echo html_escape(date(DATE_ATOM, strtotime($report['created_at']))); ?>"><?php echo html_escape(date('M j, Y · g:i A', strtotime($report['created_at']))); ?></time></p>
+								<p class="admin-community-report__description"><?php echo nl2br(html_escape($report['description'])); ?></p>
+								<?php if (!empty($report['has_photo'])): ?><a class="admin-community-report__photo" href="<?php echo html_escape($report_photo_base . '/' . (int) $report['id']); ?>" target="_blank" rel="noopener">View attached photo <span class="admin-community-report__photo-note">(opens in new tab)</span></a><?php endif; ?>
+							</div>
+							<form class="admin-community-report__review" method="post" action="<?php echo site_url('admin/community-reports'); ?>">
+								<input type="hidden" name="report_admin_token" value="<?php echo html_escape($report_token); ?>">
+								<input type="hidden" name="report_id" value="<?php echo (int) $report['id']; ?>">
+								<div class="admin-community-report__review-heading">
+									<h3>Review and respond</h3>
+									<p>Set the report’s current status. You can also send the resident a helpful update.</p>
+								</div>
+								<label class="admin-community-report__review-status" for="communityReportReviewStatus<?php echo (int) $report['id']; ?>">
+									<span>Report status</span>
+									<select id="communityReportReviewStatus<?php echo (int) $report['id']; ?>" name="status" required>
+										<?php foreach ($report_statuses as $key => $label): ?>
+											<option value="<?php echo html_escape($key); ?>"<?php echo $report['status'] === $key ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
+										<?php endforeach; ?>
+									</select>
+									<small class="admin-community-report__status-help" data-status-help>Choose the stage that best describes the report right now.</small>
+								</label>
+								<label class="admin-community-report__review-note" for="communityReportNote<?php echo (int) $report['id']; ?>">
+									<span>Message to the resident <span class="admin-community-report__optional">(optional)</span></span>
+									<textarea id="communityReportNote<?php echo (int) $report['id']; ?>" name="admin_note" rows="4" maxlength="1000" aria-describedby="communityReportNoteHelp<?php echo (int) $report['id']; ?> communityReportNoteCount<?php echo (int) $report['id']; ?>" placeholder="Example: Thank you for reporting this. Please continue to follow your barangay’s water advisories."><?php echo html_escape(isset($report['admin_note']) ? $report['admin_note'] : ''); ?></textarea>
+									<span class="admin-community-report__note-foot">
+										<small id="communityReportNoteHelp<?php echo (int) $report['id']; ?>">Share confirmed information or practical guidance only. This message is visible to the resident.</small>
+										<small id="communityReportNoteCount<?php echo (int) $report['id']; ?>" class="admin-community-report__note-count" data-note-count><?php echo isset($report['admin_note']) ? strlen($report['admin_note']) : 0; ?>/1,000 characters</small>
+									</span>
+								</label>
+								<div class="admin-community-report__review-actions">
+									<button class="btn btn--primary" type="submit">Save status and message</button>
+									<?php if (!empty($report['reviewed_by'])): ?><span class="admin-community-report__updated">Last saved by <?php echo html_escape($report['reviewed_by']); ?> · <?php echo html_escape(date('M j, Y · g:i A', strtotime($report['updated_at']))); ?></span><?php endif; ?>
+								</div>
+							</form>
 						</div>
-						<label for="communityReportReviewStatus<?php echo (int) $report['id']; ?>">Update status
-							<select id="communityReportReviewStatus<?php echo (int) $report['id']; ?>" name="status" required>
-								<?php foreach ($report_statuses as $key => $label): ?>
-									<option value="<?php echo html_escape($key); ?>"<?php echo $report['status'] === $key ? ' selected' : ''; ?>><?php echo html_escape($label); ?></option>
-								<?php endforeach; ?>
-							</select>
-						</label>
-						<label for="communityReportNote<?php echo (int) $report['id']; ?>">Follow-up note for resident
-							<textarea id="communityReportNote<?php echo (int) $report['id']; ?>" name="admin_note" rows="3" maxlength="1000" placeholder="Optional: share a confirmed update or practical guidance."><?php echo html_escape(isset($report['admin_note']) ? $report['admin_note'] : ''); ?></textarea>
-							<small>Up to 1,000 characters. Do not include private staff information or unconfirmed response times.</small>
-						</label>
-						<div class="admin-community-report__review-actions">
-							<button class="btn btn--primary btn--compact" type="submit">Save review</button>
-							<?php if (!empty($report['reviewed_by'])): ?><span class="admin-community-report__updated">Last updated by <?php echo html_escape($report['reviewed_by']); ?> · <?php echo html_escape(date('M j, Y · g:i A', strtotime($report['updated_at']))); ?></span><?php endif; ?>
-						</div>
-					</form>
+					</dialog>
 				</article>
 			<?php endforeach; ?>
 		</div>
 	<?php endif; ?>
 </div>
+<?php if ( ! empty($reports)): ?>
+<script>
+(function () {
+	var cards = document.querySelectorAll('.admin-community-report');
+	cards.forEach(function (card) {
+		var trigger = card.querySelector('.admin-community-report__open');
+		var dialog = card.querySelector('.admin-community-report__dialog');
+		var review = card.querySelector('.admin-community-report__review');
+		if (review) {
+			var status = review.querySelector('select[name="status"]');
+			var statusHelp = review.querySelector('[data-status-help]');
+			var note = review.querySelector('textarea[name="admin_note"]');
+			var noteCount = review.querySelector('[data-note-count]');
+			var statusGuidance = {
+				received: 'Received: the report has been recorded and is waiting for review.',
+				reviewing: 'Under review: staff are checking the report and available information.',
+				action_taken: 'Action taken: a response or follow-up has started.',
+				resolved: 'Resolved: the reported issue has been addressed or no further action is needed.'
+			};
+			if (status && statusHelp) {
+				var updateStatusHelp = function () {
+					statusHelp.textContent = statusGuidance[status.value] || 'Choose the stage that best describes the report right now.';
+				};
+				status.addEventListener('change', updateStatusHelp);
+				updateStatusHelp();
+			}
+			if (note && noteCount) {
+				var updateNoteCount = function () {
+					noteCount.textContent = note.value.length.toLocaleString() + '/1,000 characters';
+				};
+				note.addEventListener('input', updateNoteCount);
+				updateNoteCount();
+			}
+		}
+		if (!trigger || !dialog || typeof dialog.showModal !== 'function') return;
+
+		var close = dialog.querySelector('.admin-community-report__close');
+		trigger.addEventListener('click', function () {
+			dialog.showModal();
+			if (close) close.focus();
+		});
+		if (close) close.addEventListener('click', function () { dialog.close(); });
+		dialog.addEventListener('cancel', function (event) {
+			event.preventDefault();
+			dialog.close();
+		});
+		dialog.addEventListener('click', function (event) {
+			if (event.target === dialog) dialog.close();
+		});
+	});
+	document.addEventListener('keydown', function (event) {
+		if (event.key !== 'Escape') return;
+		cards.forEach(function (card) {
+			var dialog = card.querySelector('.admin-community-report__dialog');
+			if (dialog && dialog.open) {
+				event.preventDefault();
+				dialog.close();
+			}
+		});
+	}, true);
+})();
+</script>
+<?php endif; ?>

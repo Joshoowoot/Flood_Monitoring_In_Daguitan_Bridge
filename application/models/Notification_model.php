@@ -278,6 +278,91 @@ class Notification_model extends CI_Model {
 		);
 	}
 
+	public function on_community_report_submitted($report, $resident_name)
+	{
+		if ( ! is_array($report) || empty($report['id']) || empty($report['user_id']))
+		{
+			return FALSE;
+		}
+		$type_labels = array(
+			'flooding' => 'Flooding',
+			'blocked_drainage' => 'Blocked drainage',
+			'rising_water' => 'Rising water',
+			'other_hazard' => 'Other hazard',
+		);
+		$type = isset($type_labels[$report['report_type']]) ? $type_labels[$report['report_type']] : 'Hazard';
+		$barangay = isset($report['barangay']) ? trim((string) $report['barangay']) : 'Unknown barangay';
+		$landmark = isset($report['landmark']) ? trim((string) $report['landmark']) : 'Location not provided';
+		return $this->notify_admins(
+			'community_report',
+			'New resident report: ' . $type,
+			trim((string) $resident_name) . ' · Barangay ' . $barangay . ' · ' . $landmark,
+			site_url('admin/community-reports'),
+			(int) $report['id']
+		);
+	}
+
+	public function on_community_report_updated($report_id, $user_id, $status, $admin_note = '')
+	{
+		$labels = array(
+			'received' => 'Received',
+			'reviewing' => 'Under review',
+			'action_taken' => 'Action taken',
+			'resolved' => 'Resolved',
+		);
+		if ((int) $report_id <= 0 || (int) $user_id <= 0 || ! isset($labels[$status]))
+		{
+			return FALSE;
+		}
+		$body = 'Your flood or hazard report status is now: ' . $labels[$status] . '.';
+		$admin_note = trim((string) $admin_note);
+		if ($admin_note !== '')
+		{
+			$body .= ' MDRRMO note: ' . $admin_note;
+		}
+		return $this->create(
+			'user',
+			'report_update',
+			'Your report has been updated',
+			$body,
+			site_url('portal/reports'),
+			(int) $report_id,
+			(int) $user_id
+		);
+	}
+
+	public function on_family_plan_shared($user_id, $resident_name, $barangay)
+	{
+		$user_id = (int) $user_id;
+		if ($user_id <= 0)
+		{
+			return FALSE;
+		}
+		return $this->notify_admins(
+			'family_plan',
+			'Resident shared a family evacuation plan',
+			trim((string) $resident_name) . ' · Barangay ' . trim((string) $barangay),
+			site_url('admin/family-plans'),
+			$user_id
+		);
+	}
+
+	public function on_family_plan_revoked($user_id, $resident_name, $barangay)
+	{
+		$user_id = (int) $user_id;
+		if ($user_id <= 0)
+		{
+			return FALSE;
+		}
+		return $this->notify_admins(
+			'family_plan_revoked',
+			'Resident revoked family-plan sharing',
+			trim((string) $resident_name) . ' · Barangay ' . trim((string) $barangay),
+			site_url('admin/family-plans'),
+			$user_id
+		);
+	}
+
 	public function on_announcement_published($row, $send_push = TRUE)
 	{
 		if ( ! is_array($row) || empty($row['id']))
@@ -417,6 +502,13 @@ class Notification_model extends CI_Model {
 			return;
 		}
 		$label = ($level === 'red') ? 'Critical flood alert' : 'Flood advisory';
+		$this->notify_admins(
+			'admin_flood_alert',
+			$label . ' generated',
+			(string) $title,
+			site_url('admin/alerts'),
+			(int) $alert_id
+		);
 		$this->notify_all_users(
 			'flood_alert',
 			$label,

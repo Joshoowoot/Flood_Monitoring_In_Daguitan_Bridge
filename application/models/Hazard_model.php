@@ -90,6 +90,11 @@ class Hazard_model extends CI_Model {
 			{
 				continue;
 			}
+			if (isset($hazard['image']) && (! is_string($hazard['image'])
+				|| ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $hazard['image'])))
+			{
+				unset($hazard['image']);
+			}
 			$hazard['type_label'] = $types[$hazard['type']]['label'];
 			$hazard['color'] = $types[$hazard['type']]['color'];
 			$hazards[] = $hazard;
@@ -109,7 +114,7 @@ class Hazard_model extends CI_Model {
 		return NULL;
 	}
 
-	public function save($input, $id = 0)
+	public function save($input, $id = 0, $image = NULL)
 	{
 		$types = $this->types();
 		$barangays = $this->barangays();
@@ -120,6 +125,11 @@ class Hazard_model extends CI_Model {
 		$latitude = isset($input['latitude']) ? $input['latitude'] : '';
 		$longitude = isset($input['longitude']) ? $input['longitude'] : '';
 
+		if ($image !== NULL && (! is_string($image)
+			|| ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image)))
+		{
+			return array('ok' => FALSE, 'error' => 'The uploaded hazard photo could not be validated.');
+		}
 		if ($name === '' || strlen($name) > 160)
 		{
 			return array('ok' => FALSE, 'error' => 'Enter a location name up to 160 characters.');
@@ -167,6 +177,14 @@ class Hazard_model extends CI_Model {
 			{
 				if ((int) $hazard['id'] === $record['id'])
 				{
+					if ($image !== NULL)
+					{
+						$record['image'] = $image;
+					}
+					elseif (isset($hazard['image']))
+					{
+						$record['image'] = $hazard['image'];
+					}
 					$hazards[$index] = $record;
 					$found = TRUE;
 					break;
@@ -181,6 +199,10 @@ class Hazard_model extends CI_Model {
 		{
 			$ids = array_map(function ($hazard) { return (int) $hazard['id']; }, $hazards);
 			$record['id'] = empty($ids) ? 1 : max($ids) + 1;
+			if ($image !== NULL)
+			{
+				$record['image'] = $image;
+			}
 			$hazards[] = $record;
 		}
 
@@ -209,6 +231,15 @@ class Hazard_model extends CI_Model {
 
 	protected function write($hazards)
 	{
+		foreach ($hazards as &$hazard)
+		{
+			if (is_array($hazard))
+			{
+				unset($hazard['type_label'], $hazard['color']);
+			}
+		}
+		unset($hazard);
+
 		$json = json_encode(array_values($hazards), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 		if ($json === FALSE)
 		{

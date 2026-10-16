@@ -1,5 +1,5 @@
 /* Cache the static emergency guide; never store authenticated portal pages or live readings. */
-const CACHE_NAME = 'daguitan-flood-monitor-v8';
+const CACHE_NAME = 'daguitan-flood-monitor-v9';
 const PRECACHE = [
   './manifest.webmanifest',
   './assets/css/landing.css',

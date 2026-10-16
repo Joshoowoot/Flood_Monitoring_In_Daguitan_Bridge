@@ -7,7 +7,12 @@
   const clearButton = document.getElementById("familyPlanClear");
   const printButton = document.getElementById("familyPlanPrint");
   const downloadButton = document.getElementById("familyPlanDownload");
-  if (!form || !status || !review || !clearButton || !printButton || !downloadButton) return;
+  const shareButton = document.getElementById("familyPlanShare");
+  const revokeButton = document.getElementById("familyPlanRevoke");
+  const consent = document.getElementById("familyPlanConsent");
+  const shareStatus = document.getElementById("familyPlanShareStatus");
+  if (!form || !status || !review || !clearButton || !printButton || !downloadButton
+    || !shareButton || !revokeButton || !consent || !shareStatus) return;
 
   const storageKey = "daguitanFamilyEvacuationPlan";
   const reviewIntervalMs = 90 * 24 * 60 * 60 * 1000;
@@ -66,6 +71,53 @@
     return plan;
   };
 
+  const request = async (url, values) => {
+    const body = new URLSearchParams();
+    body.set("family_plan_token", form.dataset.shareToken || "");
+    Object.entries(values).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => body.append(`${key}[]`, item));
+      } else {
+        body.set(key, value);
+      }
+    });
+    const response = await fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString(),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error || "The request could not be completed.");
+    }
+    return result;
+  };
+
+  const refreshShareStatus = async () => {
+    try {
+      const response = await fetch(form.dataset.statusUrl, { credentials: "same-origin" });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error("Could not check plan-sharing status.");
+      revokeButton.hidden = !result.shared;
+      if (result.shared) {
+        const sharedDate = result.shared_at ? formatDate(new Date(result.shared_at.replace(" ", "T"))) : "";
+        shareStatus.textContent = `A copy is currently shared with MDRRMO${sharedDate ? ` (shared ${sharedDate})` : ""}. Sharing remains active until you revoke it.`;
+      } else {
+        shareStatus.textContent = "No plan copy is currently shared with MDRRMO.";
+      }
+    } catch (error) {
+      shareStatus.textContent = "Could not check sharing status. Refresh the page and try again.";
+    }
+  };
+
+  const markPlanEdited = () => {
+    status.textContent = "You have unsaved changes to this plan.";
+    if (!revokeButton.hidden) {
+      shareStatus.textContent = "Your shared copy has not changed. Select the consent box and share again to send these edits to MDRRMO.";
+    }
+  };
+
   try {
     const savedPlan = window.localStorage.getItem(storageKey);
     if (savedPlan !== null) {
@@ -80,11 +132,11 @@
     status.textContent = "Could not load the saved family plan. Browser storage may be unavailable or the saved data may be damaged.";
   }
 
-  form.addEventListener("input", () => {
-    status.textContent = "You have unsaved changes to this plan.";
+  form.addEventListener("input", (event) => {
+    if (event.target !== consent) markPlanEdited();
   });
-  form.addEventListener("change", () => {
-    status.textContent = "You have unsaved changes to this plan.";
+  form.addEventListener("change", (event) => {
+    if (event.target !== consent) markPlanEdited();
   });
 
   form.addEventListener("submit", (event) => {
@@ -97,9 +149,62 @@
       lastReviewedAt = reviewedAt;
       renderReviewReminder();
       status.textContent = "Family plan saved in this browser on this device.";
+      if (!revokeButton.hidden) {
+        shareStatus.textContent = "Your shared copy has not changed. Select the consent box and share again to send these edits to MDRRMO.";
+      }
     } catch (error) {
       renderReviewReminder();
       status.textContent = "Could not save the family plan. Browser storage may be unavailable or full.";
+    }
+  });
+
+  shareButton.addEventListener("click", async () => {
+    if (!consent.checked) {
+      shareStatus.textContent = "Check the sharing consent box before sharing your plan.";
+      consent.focus();
+      return;
+    }
+    shareButton.disabled = true;
+    shareStatus.textContent = "Sharing your plan securely with MDRRMO…";
+    try {
+      const plan = readPlan();
+      const result = await request(form.dataset.shareUrl, {
+        consent: "1",
+        meetingPoint: plan.meetingPoint,
+        evacuationPlace: plan.evacuationPlace,
+        contactName: plan.contactName,
+        contactPhone: plan.contactPhone,
+        supportNeeds: plan.supportNeeds,
+        lastReviewedAt: plan.lastReviewedAt,
+      });
+      revokeButton.hidden = false;
+      shareStatus.textContent = `Your plan was shared with MDRRMO on ${formatDate(new Date(result.shared_at.replace(" ", "T")))}. You can revoke sharing at any time.`;
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(plan));
+        status.textContent = "Family plan shared with MDRRMO and saved in this browser on this device.";
+      } catch (storageError) {
+        status.textContent = "Your plan was shared with MDRRMO, but could not be saved in this browser. Browser storage may be unavailable or full.";
+      }
+    } catch (error) {
+      shareStatus.textContent = error.message || "The plan could not be shared. Please try again.";
+    } finally {
+      shareButton.disabled = false;
+    }
+  });
+
+  revokeButton.addEventListener("click", async () => {
+    if (!window.confirm("Remove the copy shared with MDRRMO? Your browser-saved plan will remain on this device.")) return;
+    revokeButton.disabled = true;
+    shareStatus.textContent = "Removing the shared copy…";
+    try {
+      await request(form.dataset.revokeUrl, {});
+      revokeButton.hidden = true;
+      consent.checked = false;
+      shareStatus.textContent = "The shared copy was removed from MDRRMO access. Your browser-saved plan remains on this device.";
+    } catch (error) {
+      shareStatus.textContent = error.message || "The shared copy could not be removed. Please try again.";
+    } finally {
+      revokeButton.disabled = false;
     }
   });
 
@@ -109,7 +214,9 @@
       window.localStorage.removeItem(storageKey);
       lastReviewedAt = "";
       renderReviewReminder();
-      status.textContent = "Saved family plan cleared from this browser.";
+      status.textContent = !revokeButton.hidden
+        ? "Saved family plan cleared from this browser. The shared MDRRMO copy remains until you revoke sharing."
+        : "Saved family plan cleared from this browser.";
     } catch (error) {
       status.textContent = "The form was cleared, but browser storage could not remove the saved plan.";
     }
@@ -151,4 +258,5 @@
   });
 
   printButton.addEventListener("click", () => window.print());
+  refreshShareStatus();
 })();

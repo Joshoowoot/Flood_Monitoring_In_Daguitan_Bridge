@@ -153,11 +153,13 @@ class Community_report_model extends CI_Model {
 		{
 			return array('ok' => FALSE, 'error' => 'The follow-up note must be 1,000 characters or fewer.');
 		}
-		if ( ! $this->find($id))
+		$existing = $this->find($id);
+		if ( ! $existing)
 		{
 			return array('ok' => FALSE, 'error' => 'This report no longer exists.');
 		}
 
+		$changed = $existing['status'] !== $status || (string) $existing['admin_note'] !== ($admin_note !== '' ? $admin_note : '');
 		$updated = $this->db->where('id', (int) $id)->update('community_reports', array(
 			'status' => $status,
 			'admin_note' => $admin_note !== '' ? $admin_note : NULL,
@@ -165,7 +167,7 @@ class Community_report_model extends CI_Model {
 			'updated_at' => date('Y-m-d H:i:s'),
 		));
 		return $updated
-			? array('ok' => TRUE)
+			? array('ok' => TRUE, 'changed' => $changed, 'report' => $existing, 'status' => $status, 'admin_note' => $admin_note)
 			: array('ok' => FALSE, 'error' => 'The report update could not be saved.');
 	}
 

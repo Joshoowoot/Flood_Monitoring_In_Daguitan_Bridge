@@ -11,7 +11,7 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261014-hazard-popup1">
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
@@ -79,33 +79,29 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 			<div class="hero__copy reveal">
 				<p class="eyebrow">Resident safety · Dulag, Leyte</p>
 				<h1>Evacuation Centers</h1>
-				<p class="lede">Find the nearest listed center, get directions, and call MDRRMO before traveling. Follow the evacuation center assigned by barangay officials if it differs.</p>
-				<div class="hero__actions">
-					<a class="btn btn--primary" href="<?php echo html_escape($portal_url); ?>">Back to resident portal</a>
-				</div>
+				<p class="lede">Browse listed centers, get directions, and call the listed contact before traveling. Follow the evacuation center assigned by barangay officials.</p>
 			</div>
-			<?php if ( ! empty($centers)): $nearest = $centers[0]; ?>
-			<article class="glass-card announce-card announce-card--yellow reveal" aria-labelledby="nearestCenterTitle">
+			<?php if ( ! empty($centers)): $featured_center = $centers[0]; ?>
+			<article class="glass-card announce-card announce-card--yellow reveal" aria-labelledby="featuredCenterTitle">
 				<div class="announce-card__head">
 					<div>
-						<p class="card-kicker">Nearest listed center</p>
-						<h2 id="nearestCenterTitle"><?php echo html_escape($nearest['name']); ?></h2>
-						<p class="issuer">Barangay <?php echo html_escape($nearest['barangay']); ?></p>
+						<p class="card-kicker">Featured listed center</p>
+						<h2 id="featuredCenterTitle"><?php echo html_escape($featured_center['name']); ?></h2>
+						<p class="issuer">Barangay <?php echo html_escape($featured_center['barangay']); ?></p>
 					</div>
-					<span class="pill">Ready</span>
+					<span class="pill">Availability not live</span>
 				</div>
-				<p class="announce-card__empty"><?php echo html_escape($nearest['distance']); ?></p>
-				<p><?php echo html_escape($nearest['address']); ?></p>
-				<p class="issuer">Confirm capacity with MDRRMO before traveling.</p>
+				<p><?php echo html_escape($featured_center['address']); ?></p>
+				<p class="issuer">Availability is not updated live. Call the listed contact and follow the center assigned by barangay officials.</p>
 			</article>
 			<?php endif; ?>
 		</section>
 
-		<section class="section section--tight" aria-labelledby="evacuationMapTitle">
+		<section class="section section--tight evacuation-page__map-section" id="locationMap" aria-labelledby="evacuationMapTitle">
 			<div class="glass-card evacuation-map">
 				<div class="evacuation-map__head">
 					<h2 id="evacuationMapTitle">Hazards &amp; evacuation centers</h2>
-					<p>Official evacuation pins and colored known-hazard locations maintained by MDRRMO Dulag.</p>
+					<p>Use the map to see official evacuation centers and reported hazards across Dulag. Choose Street map, Satellite, or Terrain from the map selector.</p>
 				</div>
 				<div class="hazard-legend" aria-label="Hazard map color legend">
 					<?php foreach ((isset($hazard_types) && is_array($hazard_types)) ? $hazard_types : array() as $type): ?>
@@ -114,38 +110,52 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 					<span class="hazard-legend__evacuation"><i></i>Evacuation center</span>
 				</div>
 				<p class="evacuation-map__status" id="evacuationMapStatus" role="status" aria-live="polite">Map is optional. Search and choose a location from the list below if map tiles are slow or unavailable.</p>
+				<div class="map-style-switcher" id="evacuationMapStylePicker"></div>
 				<div id="evacuationMap" class="evacuation-map__canvas" role="region" tabindex="0" aria-label="Map of hazards and evacuation centers"></div>
 			</div>
 		</section>
 
-		<section class="section section--tight evacuation-page__centers" aria-labelledby="centerListTitle">
+		<section class="section section--tight evacuation-page__centers" id="centerLocations" aria-labelledby="centerListTitle">
 			<div class="section__head">
-				<h2 id="centerListTitle">Available locations</h2>
-				<p>Center capacity can change during an active emergency. Confirm availability before you leave.</p>
+				<div>
+					<p class="card-kicker">MDRRMO directory</p>
+					<h2 id="centerListTitle">Evacuation center locations</h2>
+				</div>
+				<p>Availability and capacity are not updated live. Confirm with the listed contact and follow your barangay’s assigned center.</p>
 			</div>
-			<label class="evacuation-search" for="centerSearch">Find a center
+			<label class="evacuation-search" for="centerSearch"><span>Search locations</span>
 				<input id="centerSearch" type="search" inputmode="search" autocomplete="off" placeholder="Search by center, barangay, or address">
 			</label>
-			<p class="evacuation-search__status" id="centerSearchStatus" role="status" aria-live="polite"><?php echo count($centers); ?> locations listed</p>
-			<div class="evacuation-grid">
+			<div class="evacuation-distance-tools">
+				<button class="btn btn--ghost btn--compact" id="showCenterDistances" type="button">Show distances from my location</button>
+				<p id="centerDistanceStatus" role="status" aria-live="polite">Location is requested only if you choose the button. Distances are approximate and straight-line, not travel routes.</p>
+			</div>
+			<p class="evacuation-search__status" id="centerSearchStatus" role="status" aria-live="polite"><?php echo count($centers); ?> <?php echo count($centers) === 1 ? 'location' : 'locations'; ?> listed</p>
+			<div class="evacuation-grid" id="evacuationCenterList">
 				<?php foreach ($centers as $index => $center): ?>
-				<article class="glass-card evacuation-card<?php echo $index === 0 ? ' evacuation-card--nearest' : ''; ?>" data-center-search="<?php echo html_escape($center['name'] . ' ' . $center['barangay'] . ' ' . $center['address']); ?>">
-					<?php if ($index === 0): ?><p class="card-kicker">Nearest listed center</p><?php endif; ?>
-					<h3><?php echo html_escape($center['name']); ?></h3>
-					<p class="card-kicker">Barangay <?php echo html_escape($center['barangay']); ?></p>
+				<article class="glass-card evacuation-card<?php echo $index === 0 ? ' evacuation-card--featured' : ''; ?>" data-center-lat="<?php echo html_escape((string) (float) $center['latitude']); ?>" data-center-lng="<?php echo html_escape((string) (float) $center['longitude']); ?>" data-center-search="<?php echo html_escape($center['name'] . ' ' . $center['barangay'] . ' ' . $center['address']); ?>">
+					<div class="evacuation-card__heading">
+						<div>
+							<p class="card-kicker evacuation-card__rank"<?php echo $index === 0 ? '' : ' hidden'; ?>><?php echo $index === 0 ? 'Featured listed center' : ''; ?></p>
+							<h3><?php echo html_escape($center['name']); ?></h3>
+							<p class="evacuation-card__barangay">Barangay <?php echo html_escape($center['barangay']); ?></p>
+						</div>
+						<span class="evacuation-card__marker" aria-hidden="true"><?php echo sprintf('%02d', $index + 1); ?></span>
+					</div>
 					<dl class="evacuation-card__details">
 						<div><dt>Address</dt><dd><?php echo html_escape($center['address']); ?></dd></div>
-						<div><dt>Distance</dt><dd><?php echo html_escape($center['distance']); ?></dd></div>
+						<div class="evacuation-card__distance" hidden><dt>Approx. straight-line distance</dt><dd></dd></div>
 						<div><dt>Capacity</dt><dd><?php echo html_escape($center['capacity']); ?></dd></div>
 					</dl>
 					<div class="evacuation-card__actions">
 						<a class="btn btn--primary btn--compact" href="<?php echo html_escape($center['maps']); ?>" target="_blank" rel="noopener" data-current-location-directions>Directions</a>
-						<a class="btn btn--ghost btn--compact" href="<?php echo html_escape($center['phone_link']); ?>">Call MDRRMO</a>
+						<?php if ( ! empty($center['phone_link'])): ?><a class="btn btn--ghost btn--compact" href="<?php echo html_escape($center['phone_link']); ?>">Call listed contact</a><?php endif; ?>
 					</div>
 					<p class="evacuation-card__directions-status" hidden role="status" aria-live="polite"></p>
 				</article>
 			<?php endforeach; ?>
 			</div>
+			<p class="evacuation-empty" id="evacuationSearchEmpty" hidden>No evacuation centers match that search. Try another center name, barangay, or address.</p>
 		</section>
 		</div>
 	</main>
@@ -166,15 +176,17 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 		</div>
 	</footer>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-profile.js?v=1"></script>
-	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261012-evacuation-nav-removed1"></script>
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/resident-map-layers.js?v=20261012-map-layout2"></script>
 	<script>
 		(function () {
 			var centers = <?php echo json_encode($centers, JSON_UNESCAPED_SLASHES); ?>;
 			var hazards = <?php echo json_encode(isset($hazards) ? $hazards : array(), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
+			var hazardImageBase = <?php echo json_encode(site_url('hazard-image/'), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
 			var directionLinks = document.querySelectorAll('[data-current-location-directions]');
 			Array.prototype.forEach.call(directionLinks, function (link) {
 				var card = link.closest('.evacuation-card');
@@ -217,15 +229,85 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				});
 			});
 
+			var distanceButton = document.getElementById('showCenterDistances');
+			var distanceStatus = document.getElementById('centerDistanceStatus');
+			var centerList = document.getElementById('evacuationCenterList');
+			if (distanceButton && distanceStatus && centerList) {
+				distanceButton.addEventListener('click', function () {
+					if (!navigator.geolocation) {
+						distanceStatus.textContent = 'Location access is unavailable in this browser. You can still browse and search the center list.';
+						return;
+					}
+					distanceButton.disabled = true;
+					distanceStatus.textContent = 'Waiting for your location permission to estimate distances...';
+					navigator.geolocation.getCurrentPosition(function (position) {
+						var latitude = position.coords.latitude;
+						var longitude = position.coords.longitude;
+						var cards = Array.prototype.slice.call(centerList.querySelectorAll('.evacuation-card'));
+						var locatedCards = cards.map(function (card) {
+							var centerLatitude = Number(card.getAttribute('data-center-lat'));
+							var centerLongitude = Number(card.getAttribute('data-center-lng'));
+							if (!Number.isFinite(centerLatitude) || !Number.isFinite(centerLongitude)) return null;
+							var radians = Math.PI / 180;
+							var latDiff = (centerLatitude - latitude) * radians;
+							var lngDiff = (centerLongitude - longitude) * radians;
+							var a = Math.sin(latDiff / 2) * Math.sin(latDiff / 2)
+								+ Math.cos(latitude * radians) * Math.cos(centerLatitude * radians)
+								* Math.sin(lngDiff / 2) * Math.sin(lngDiff / 2);
+							var distance = 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+							return { card: card, distance: distance };
+						});
+						var missingCoordinates = locatedCards.filter(function (item) { return item === null; }).length;
+						locatedCards = locatedCards.filter(function (item) { return item !== null; });
+						locatedCards.sort(function (a, b) { return a.distance - b.distance; });
+						locatedCards.forEach(function (item, index) {
+							var distanceRow = item.card.querySelector('.evacuation-card__distance');
+							var distanceValue = distanceRow ? distanceRow.querySelector('dd') : null;
+							if (distanceValue) {
+								distanceValue.textContent = item.distance < 1
+									? Math.round(item.distance * 1000 / 50) * 50 + ' m'
+									: item.distance.toFixed(1) + ' km';
+								distanceRow.hidden = false;
+							}
+							var rank = item.card.querySelector('.evacuation-card__rank');
+							if (rank) {
+								rank.textContent = index === 0 ? 'Nearest by straight-line distance' : '';
+								rank.hidden = index !== 0;
+							}
+							item.card.classList.toggle('evacuation-card--featured', index === 0);
+							var marker = item.card.querySelector('.evacuation-card__marker');
+							if (marker) marker.textContent = String(index + 1).padStart(2, '0');
+							centerList.appendChild(item.card);
+						});
+						distanceStatus.textContent = locatedCards.length
+							? 'Centers are sorted nearest to farthest by approximate straight-line distance. Your location is used only in this browser and is not saved. Follow the center assigned by barangay officials.'
+							: 'No evacuation centers have usable coordinates for distance estimates.';
+						if (missingCoordinates) {
+							distanceStatus.textContent += ' ' + missingCoordinates + ' center(s) without coordinates remain unsorted.';
+						}
+						distanceButton.textContent = 'Update distances from my location';
+						distanceButton.disabled = false;
+					}, function (error) {
+						var message = error.code === error.PERMISSION_DENIED
+							? 'Location permission was denied. You can still browse and search the center list.'
+							: (error.code === error.TIMEOUT
+								? 'The location request timed out. Try again or browse the center list.'
+								: 'Your location could not be determined. Try again or browse the center list.');
+						distanceStatus.textContent = message;
+						distanceButton.disabled = false;
+					}, { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 });
+				});
+			}
+
 			var mapElement = document.getElementById('evacuationMap');
 			if (!mapElement || !window.L) return;
 			var map = L.map(mapElement).setView([10.9525, 125.0322], 13);
-			L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-				attribution: '&copy; OpenStreetMap contributors',
-				maxZoom: 19
-			}).addTo(map).on('tileerror', function () {
+			var mapLayers = window.DaguitanMapLayers.add(map, document.getElementById('evacuationMapStylePicker'));
+			mapLayers.forEach(function (layer) {
+				layer.on('tileerror', function () {
 				var status = document.getElementById('evacuationMapStatus');
 				if (status) status.textContent = 'Map tiles could not be loaded. Use the searchable evacuation-center list below for directions and contact details.';
+				});
 			});
 			var bounds = [];
 			centers.forEach(function (center) {
@@ -237,6 +319,15 @@ $centers = (isset($centers) && is_array($centers)) ? $centers : array();
 				var point = [Number(hazard.latitude), Number(hazard.longitude)];
 				bounds.push(point);
 				var popup = document.createElement('div');
+				popup.className = 'hazard-pin-popup';
+				if (typeof hazard.image === 'string' && /^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/.test(hazard.image)) {
+					var photo = document.createElement('img');
+					photo.className = 'hazard-pin-popup__image';
+					photo.src = hazardImageBase + hazard.image;
+					photo.alt = 'Photo of ' + hazard.name;
+					photo.loading = 'lazy';
+					popup.appendChild(photo);
+				}
 				var name = document.createElement('strong');
 				name.textContent = hazard.name;
 				var detail = document.createElement('div');

@@ -347,7 +347,7 @@ Do not disconnect the ESP32 from the local server and then claim the server rece
 
 ### “Which SMS provider do you use?”
 
-> We will name the provider only after one is selected, configured, and tested. SMS is an additional channel; we will not claim successful delivery based only on code or an interface.
+> The admin broadcast is integrated with iProg. The server must have its API token configured, and we will verify the provider response before demonstrating it. Gateway acceptance is not proof that every handset received the message.
 
 ### “What are the next steps before deployment?”
 
@@ -366,6 +366,7 @@ Do not disconnect the ESP32 from the local server and then claim the server rece
 - [ ] ESP32 LAN address/ingest path is reachable.
 - [ ] API acknowledgement and matching local history entry are verified.
 - [ ] Admin and resident accounts both load the correct screens.
+- [ ] iProg's replacement API token is configured in Apache, and SMS was tested with an intended recipient.
 - [ ] Demo warning thresholds are identified as prototype values if not formally approved.
 - [ ] Cloud target is described accurately as local development or hosted, as applicable.
 - [ ] Offline simulation has been rehearsed and can be rolled back.

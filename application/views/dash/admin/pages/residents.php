@@ -77,7 +77,7 @@
 	<?php if (empty($residents)): ?>
 		<p>No residents match your search. Residents appear after they <a href="<?php echo site_url('signup'); ?>">sign up</a> on the public site.</p>
 	<?php else: ?>
-	<div class="admin-table-scroll">
+	<div class="admin-table-scroll admin-residents-directory-scroll" role="region" aria-label="Registered residents. Scroll to see more residents." tabindex="0">
 		<table class="dash-table">
 			<thead>
 				<tr>
@@ -137,7 +137,7 @@
 			</select>
 		</div>
 	</header>
-	<div class="admin-table-scroll">
+	<div class="admin-table-scroll admin-residents-activity-scroll" role="region" aria-label="Recent sign-in activity. Scroll to see more sign-ins." tabindex="0">
 		<table class="dash-table">
 			<thead>
 				<tr>

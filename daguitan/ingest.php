@@ -1,11 +1,11 @@
 <?php
 /**
  * Space-free proxy so the ESP32 can POST without encoding the project folder name.
- * Arduino URL: http://PC_LAN_IP/ONE%20DULAG_MDRRMO/daguitan/ingest.php
+ * Arduino URL: http://PC_LAN_IP/Flood_Monitoring_In_Daguitan_Bridge/daguitan/ingest.php
  * Also copy this file to C:\xampp\htdocs\daguitan\ingest.php for:
  *   http://PC_LAN_IP/daguitan/ingest.php
  */
-$dest = 'http://127.0.0.1/ONE%20DULAG_MDRRMO/index.php/api/ingest';
+$dest = 'http://127.0.0.1/Flood_Monitoring_In_Daguitan_Bridge/index.php/api/ingest';
 $body = file_get_contents('php://input');
 if ($body === FALSE || $body === '')
 {

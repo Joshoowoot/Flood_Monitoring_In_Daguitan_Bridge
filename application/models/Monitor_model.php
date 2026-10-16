@@ -436,6 +436,7 @@ class Monitor_model extends CI_Model {
 			'title'  => $row['title'],
 			'body'   => $row['body'],
 			'barangay' => isset($row['barangay']) ? $row['barangay'] : NULL,
+			'images' => isset($row['images']) ? $row['images'] : array(),
 			'issuer' => 'MDRRMO Dulag',
 		);
 	}
@@ -482,7 +483,48 @@ class Monitor_model extends CI_Model {
 			);
 		});
 
+		$this->attach_announcement_images($rows);
 		return $rows;
+	}
+
+	protected function attach_announcement_images(&$rows)
+	{
+		if (empty($rows) || ! $this->db->table_exists('announcement_images'))
+		{
+			foreach ($rows as &$row)
+			{
+				$row['images'] = array();
+			}
+			unset($row);
+			return;
+		}
+
+		$ids = array();
+		foreach ($rows as $row)
+		{
+			$ids[] = (int) $row['id'];
+		}
+		$image_rows = $this->db
+			->where_in('announcement_id', $ids)
+			->order_by('position', 'ASC')
+			->order_by('id', 'ASC')
+			->get('announcement_images')
+			->result_array();
+		$images = array();
+		foreach ($image_rows as $image)
+		{
+			$id = (int) $image['announcement_id'];
+			if ( ! isset($images[$id]))
+			{
+				$images[$id] = array();
+			}
+			$images[$id][] = $image['image_name'];
+		}
+		foreach ($rows as &$row)
+		{
+			$row['images'] = isset($images[(int) $row['id']]) ? $images[(int) $row['id']] : array();
+		}
+		unset($row);
 	}
 
 	public function ingest($input)

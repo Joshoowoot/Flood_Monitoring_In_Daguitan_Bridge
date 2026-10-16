@@ -107,14 +107,16 @@
 			var btn = document.getElementById('togglePassword');
 			var input = document.getElementById('password');
 			if (!btn || !input) return;
+			btn.querySelector('.auth-eye__show').toggleAttribute('hidden', input.type !== 'text');
+			btn.querySelector('.auth-eye__hide').toggleAttribute('hidden', input.type === 'text');
 			btn.addEventListener('click', function () {
 				var show = input.type === 'password';
 				input.type = show ? 'text' : 'password';
 				btn.setAttribute('aria-pressed', show ? 'true' : 'false');
 				btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
 				btn.classList.toggle('is-visible', show);
-				btn.querySelector('.auth-eye__show').hidden = !show;
-				btn.querySelector('.auth-eye__hide').hidden = show;
+				btn.querySelector('.auth-eye__show').toggleAttribute('hidden', !show);
+				btn.querySelector('.auth-eye__hide').toggleAttribute('hidden', show);
 			});
 		})();
 		(function () {

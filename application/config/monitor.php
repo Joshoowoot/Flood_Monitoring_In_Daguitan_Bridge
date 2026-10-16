@@ -6,7 +6,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | Keep this key the same as API_KEY in arduino/daguitan_flood_monitor.ino
 |
 | Preferred ESP32 URL (no spaces):
-|   http://YOUR_PC_LAN_IP/daguitan/ingest.php
+|   http://YOUR_PC_LAN_IP/Flood_Monitoring_In_Daguitan_Bridge/daguitan/ingest.php
 */
 $config['monitor_api_key'] = 'daguitan-esp32-key';
 

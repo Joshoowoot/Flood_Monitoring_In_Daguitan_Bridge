@@ -8,6 +8,22 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
+  const backToTop = document.getElementById("backToTop");
+  if (backToTop) {
+    const updateBackToTop = () => {
+      backToTop.hidden = window.scrollY < 400;
+    };
+    const scrollToTop = () => {
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      });
+    };
+    window.addEventListener("scroll", updateBackToTop, { passive: true });
+    backToTop.addEventListener("click", scrollToTop);
+    updateBackToTop();
+  }
+
   const facebookFrame = document.querySelector('.fb-page-shell__embed iframe[data-responsive-width="true"]');
   if (facebookFrame) {
     let appliedWidth = 0;
@@ -120,6 +136,13 @@
     if (!container) return;
     const expanded = container.classList.toggle("is-expanded");
     toggle.setAttribute("aria-expanded", String(expanded));
+    if (toggle.classList.contains("announce-item__trigger")) {
+      const details = document.getElementById(toggle.getAttribute("aria-controls"));
+      const action = toggle.querySelector(".announce-item__action");
+      if (details) details.hidden = !expanded;
+      if (action) action.textContent = expanded ? "Close notice" : "Open notice";
+      return;
+    }
     toggle.textContent = expanded
       ? "Show less"
       : toggle.classList.contains("announce-item__toggle")
@@ -128,9 +151,106 @@
   });
 
   document.querySelectorAll("[data-toggle-announcement]").forEach((toggle) => {
+    if (toggle.classList.contains("announce-item__trigger")) return;
     const copy = document.getElementById(toggle.getAttribute("aria-controls"));
     if (copy) toggle.hidden = copy.textContent.trim().length <= 220;
   });
+
+  const announcementList = document.querySelector("#notices .announce-list");
+  const announcementSearch = document.getElementById("announcementSearch");
+  const announcementSort = document.getElementById("announcementSort");
+  const announcementResults = document.getElementById("announcementResults");
+  const announcementNoResults = document.getElementById("announcementNoResults");
+  const announcementPagination = document.getElementById("announcementPagination");
+  const announcementPageLabel = document.getElementById("announcementPageLabel");
+  const announcementPageSize = 6;
+
+  if (
+    announcementList &&
+    announcementSearch &&
+    announcementSort &&
+    announcementResults &&
+    announcementNoResults &&
+    announcementPagination &&
+    announcementPageLabel
+  ) {
+    const announcementCards = Array.from(announcementList.querySelectorAll(".announce-item"));
+    const pageButtons = announcementPagination.querySelectorAll("[data-notice-page]");
+    const filterButtons = document.querySelectorAll("[data-notice-filter]");
+    let activeFilter = "all";
+    let activePage = 1;
+
+    const announcementTimestamp = (card) => {
+      const value = card.dataset.announcementDate || "";
+      const parsed = Date.parse(value.includes(" ") ? value.replace(" ", "T") : value);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    const renderAnnouncements = () => {
+      const query = announcementSearch.value.trim().toLocaleLowerCase();
+      const direction = announcementSort.value === "oldest" ? 1 : -1;
+      const matches = announcementCards
+        .filter((card) => {
+          const matchesFilter = activeFilter === "all" || card.dataset.announcementLevel === activeFilter;
+          const matchesSearch = !query || card.textContent.toLocaleLowerCase().includes(query);
+          return matchesFilter && matchesSearch;
+        })
+        .sort((left, right) => direction * (announcementTimestamp(left) - announcementTimestamp(right)));
+      const pageCount = Math.ceil(matches.length / announcementPageSize);
+      activePage = Math.min(Math.max(activePage, 1), Math.max(pageCount, 1));
+      const firstIndex = (activePage - 1) * announcementPageSize;
+      const visibleCards = new Set(matches.slice(firstIndex, firstIndex + announcementPageSize));
+
+      announcementCards.forEach((card) => {
+        card.hidden = !visibleCards.has(card);
+      });
+      matches.forEach((card) => announcementList.appendChild(card));
+      announcementList.scrollTop = 0;
+
+      announcementNoResults.hidden = matches.length > 0;
+      announcementResults.textContent = matches.length
+        ? `Showing ${firstIndex + 1}-${Math.min(firstIndex + announcementPageSize, matches.length)} of ${matches.length} notices`
+        : "No notices match your search or filters. Try changing them.";
+      announcementPagination.hidden = pageCount <= 1;
+      announcementPageLabel.textContent = pageCount ? `Page ${activePage} of ${pageCount}` : "";
+      pageButtons.forEach((button) => {
+        button.disabled =
+          button.dataset.noticePage === "previous"
+            ? activePage <= 1
+            : activePage >= pageCount;
+      });
+    };
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.noticeFilter || "all";
+        activePage = 1;
+        filterButtons.forEach((filterButton) => {
+          const selected = filterButton === button;
+          filterButton.classList.toggle("is-active", selected);
+          filterButton.setAttribute("aria-pressed", String(selected));
+        });
+        renderAnnouncements();
+      });
+    });
+
+    announcementSearch.addEventListener("input", () => {
+      activePage = 1;
+      renderAnnouncements();
+    });
+    announcementSort.addEventListener("change", () => {
+      activePage = 1;
+      renderAnnouncements();
+    });
+    pageButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activePage += button.dataset.noticePage === "previous" ? -1 : 1;
+        renderAnnouncements();
+      });
+    });
+
+    renderAnnouncements();
+  }
 
   const setText = (id, value) => {
     const el = document.getElementById(id);
@@ -268,7 +388,53 @@
   const connectionText = document.getElementById("portalConnectionText");
   let connectionState = navigator.onLine ? "connected" : "offline";
   let lastMonitor = data.monitor || null;
+  const updateMonitorAlertSound = (monitor, requestFailed = false) => {
+    const current = !requestFailed
+      && connectionState === "connected"
+      && monitor?.sensor_status === "online"
+      && monitor?.source !== "none";
+    window.DaguitanAlertSound?.update(monitor, current);
+  };
+
+  const renderStatusReliability = (monitor, requestFailed = false) => {
+    const current = monitor?.sensor_status === "online" && connectionState === "connected" && !requestFailed;
+    const badge = document.getElementById("heroStatusBadge");
+    const label = current ? String(monitor.warning_label || "").toUpperCase() : "STATUS UNAVAILABLE";
+    if (badge) {
+      badge.className = `status-badge status-badge--${current ? monitor.warning_level : "unavailable"}`;
+      badge.dataset.warningDetails = monitor?.warning_level || "";
+      badge.disabled = !current;
+      badge.title = current ? "View impacts and safety guidance for this level" : "A current reading is unavailable";
+    }
+    const gauge = document.getElementById("heroGauge");
+    if (gauge) gauge.className = `gauge gauge--${current ? monitor.warning_level : "unavailable"}`;
+    setText("heroStatusLabel", label);
+    setText("heroStatusSr", current
+      ? `Warning level: ${monitor.warning_label}`
+      : "Current warning level unavailable because live station data cannot be confirmed.");
+    setText("heroGuidance", current
+      ? (data.actions?.[monitor.warning_level] || data.actions?.green || [])[0] || "Follow official MDRRMO and barangay guidance."
+      : "The last reading may be out of date. Do not use it to decide whether it is safe; follow current MDRRMO and barangay instructions.");
+    const hasReading = monitor?.source !== "none";
+    const readingLabel = hasReading && !current ? "Last Water Level" : "Water Level";
+    setText("heroWaterLabel", readingLabel);
+    setText("cardWaterLabel", readingLabel);
+    setText("heroTrendLabel", hasReading && !current ? "Last Trend" : "Trend");
+    setText("cardTrendLabel", hasReading && !current ? "Last Water Trend" : "Water Trend");
+    setText("cardRateLabel", hasReading && !current ? "Last Rate of Rise" : "Rate of Rise");
+    setText("phoneStatus", label);
+    const thresholdNote = document.getElementById("portalThresholdNote");
+    if (thresholdNote) {
+      const yellow = Number(monitor?.threshold_yellow_m ?? data.thresholds?.yellow);
+      const red = Number(monitor?.threshold_red_m ?? data.thresholds?.red);
+      if (Number.isFinite(yellow) && Number.isFinite(red)) {
+        thresholdNote.textContent = `Advisory threshold: ${yellow.toFixed(2)} m · Critical threshold: ${red.toFixed(2)} m. These readings do not replace official evacuation orders.`;
+      }
+    }
+  };
   const renderConnection = (monitor, requestFailed = false) => {
+    updateMonitorAlertSound(monitor, requestFailed);
+    renderStatusReliability(monitor, requestFailed);
     const connection = document.getElementById("portalConnection");
     if (!connection || !connectionText) return;
     const sensorOffline = monitor?.sensor_status === "offline" || monitor?.sensor_status === "waiting";
@@ -293,20 +459,13 @@
 
     const arrow = arrows[m.trend] || "→";
     const ratePrefix = m.rate_cm_min > 0 ? "+" : "";
+    const hasReading = m.source !== "none";
     lastMonitor = m;
     renderConnection(m);
     updateWarningDetails(m);
 
-    const badge = document.getElementById("heroStatusBadge");
-    if (badge) {
-      badge.className = `status-badge status-badge--${m.warning_level}`;
-      badge.dataset.warningDetails = m.warning_level;
-    }
-    setText("heroStatusLabel", String(m.warning_label || "").toUpperCase());
-    setText("heroStatusSr", `Warning level: ${m.warning_label}`);
-    setText("heroWaterLevel", fmtLevel(m.water_level_m));
-    setText("heroTrend", `${arrow} ${m.trend_label}`);
-    setText("heroGuidance", (data.actions?.[m.warning_level] || data.actions?.green || [])[0] || "Follow official MDRRMO and barangay guidance.");
+    setText("heroWaterLevel", hasReading ? fmtLevel(m.water_level_m) : "No reading");
+    setText("heroTrend", hasReading ? `${arrow} ${m.trend_label}` : "—");
     const updated = document.getElementById("heroUpdated");
     if (updated) {
       if (m.last_updated_iso) updated.dateTime = m.last_updated_iso;
@@ -316,12 +475,11 @@
 
     const gauge = document.getElementById("heroGauge");
     const fill = document.getElementById("heroGaugeFill");
-    if (gauge) gauge.className = `gauge gauge--${m.warning_level}`;
     if (fill) fill.style.setProperty("--level", `${m.gauge_pct || 8}%`);
 
-    setText("cardWater", fmtLevel(m.water_level_m));
-    setText("cardTrend", `${arrow} ${m.trend_label}`);
-    setText("cardRate", fmtRate(m.rate_cm_min));
+    setText("cardWater", hasReading ? fmtLevel(m.water_level_m) : "No reading");
+    setText("cardTrend", hasReading ? `${arrow} ${m.trend_label}` : "—");
+    setText("cardRate", hasReading ? fmtRate(m.rate_cm_min) : "—");
 
     setText("cardEtt", m.ett_label || "—");
 
@@ -329,11 +487,10 @@
       item.classList.toggle("is-active", item.dataset.level === m.warning_level);
     });
 
-    setText("phoneStatus", String(m.warning_label || "").toUpperCase());
-    setText("phoneMeta", `${Number(m.water_level_m).toFixed(2)} m · ${m.trend_label}`);
-    setText("phoneWater", fmtLevel(m.water_level_m));
-    setText("phoneTrend", `${arrow} ${m.trend_label}`);
-    setText("phoneRate", `${ratePrefix}${Number(m.rate_cm_min).toFixed(2)}`);
+    setText("phoneMeta", hasReading ? `${Number(m.water_level_m).toFixed(2)} m · ${m.trend_label}` : "No sensor reading");
+    setText("phoneWater", hasReading ? fmtLevel(m.water_level_m) : "No reading");
+    setText("phoneTrend", hasReading ? `${arrow} ${m.trend_label}` : "—");
+    setText("phoneRate", hasReading ? `${ratePrefix}${Number(m.rate_cm_min).toFixed(2)}` : "—");
     setText("phoneEtt", m.ett_label || "—");
 
     if (payload.weather && window.DaguitanWeather) {
@@ -342,13 +499,16 @@
 
     if (a) {
       setText("announcePill", a.active ? "Active" : "Quiet");
-      setText("announceScope", a.barangay ? `For Barangay ${a.barangay}` : "Municipality-wide notice");
       const body = document.getElementById("announceBody");
       if (body) {
         const expanded = body.classList.contains("is-expanded");
-        const title = document.createElement(a.active ? "p" : "p");
+        const title = document.createElement("p");
         title.className = a.active ? `status-badge status-badge--${a.level || "yellow"}` : "announce-card__empty";
         title.textContent = a.title;
+        const scope = document.createElement("p");
+        scope.id = "announceScope";
+        scope.className = "announce-live-scope";
+        scope.textContent = a.barangay ? `For Barangay ${a.barangay}` : "Municipality-wide notice";
         const copy = document.createElement("p");
         copy.id = "announceCopy";
         copy.className = "live-advisory__copy";
@@ -361,8 +521,10 @@
         toggle.setAttribute("aria-expanded", String(expanded));
         toggle.textContent = expanded ? "Show less" : "Read full advisory";
         toggle.hidden = copy.textContent.trim().length <= 220;
-        body.replaceChildren(title, copy, toggle);
+        body.replaceChildren(title, scope, copy, toggle);
       }
+      const publicEmergency = document.querySelector(".public-live-advisory");
+      if (publicEmergency) publicEmergency.hidden = !(a.active && a.level === "red");
     }
 
     const actionRoot = document.getElementById("portalActions");

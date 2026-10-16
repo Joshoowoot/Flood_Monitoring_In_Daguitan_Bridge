@@ -108,31 +108,47 @@ else
 		<div>
 			<p class="admin-kicker">Live telemetry</p>
 			<h2>Real-time water level</h2>
+			<p class="admin-chart-card__description">Water level over the past 60 minutes, measured against flood warning thresholds.</p>
 		</div>
 		<p class="admin-chart-refresh"><span aria-hidden="true"></span> Updates every 5 seconds</p>
 	</div>
 	<div class="admin-chart-layout">
-		<aside class="admin-threshold-meter" aria-label="Flood threshold levels">
-			<p class="admin-kicker">Current warning</p>
-			<strong class="admin-threshold-meter__current"><?php echo html_escape($m['warning_label']); ?></strong>
-			<span class="admin-threshold-meter__reading"><?php echo number_format($m['water_level_m'], 2); ?> m water level</span>
+		<div class="admin-chart-wrap">
+			<canvas id="adminWaterChart" height="240" aria-label="Water level during the past 60 minutes"></canvas>
+			<div class="admin-chart-empty" id="admChartEmpty" hidden>
+				<span class="admin-chart-empty__icon" aria-hidden="true">
+					<svg viewBox="0 0 48 48" fill="none">
+						<path d="M7 35h34M10 29l8-8 7 6 12-13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+						<path d="M31 14h6v6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+					</svg>
+				</span>
+				<strong>No recent readings</strong>
+				<p>No sensor readings were received in the past 60 minutes. The chart will update when fresh telemetry arrives.</p>
+			</div>
+		</div>
+		<aside class="admin-threshold-meter" aria-label="Current water level and flood warning thresholds">
+			<div class="admin-threshold-meter__summary">
+				<p class="admin-kicker">Current warning</p>
+				<strong class="admin-threshold-meter__current admin-threshold-meter__current--<?php echo $wl; ?>"><?php echo html_escape($m['warning_label']); ?></strong>
+				<span class="admin-threshold-meter__reading"><?php echo number_format($m['water_level_m'], 2); ?> m water level</span>
+			</div>
 			<div class="admin-threshold-meter__scale">
 				<div class="admin-threshold-meter__level<?php echo $wl === 'red' ? ' is-active' : ''; ?> admin-threshold-meter__level--red"><span>RED <b>Critical</b></span><small>&ge; <?php echo number_format($thresholds['red'], 2); ?> m</small></div>
 				<div class="admin-threshold-meter__level<?php echo $wl === 'yellow' ? ' is-active' : ''; ?> admin-threshold-meter__level--yellow"><span>YELLOW <b>Monitor</b></span><small><?php echo number_format($thresholds['yellow'], 2); ?>–<?php echo number_format($thresholds['red'], 2); ?> m</small></div>
 				<div class="admin-threshold-meter__level<?php echo $wl === 'green' ? ' is-active' : ''; ?> admin-threshold-meter__level--green"><span>GREEN <b>Safe</b></span><small>&lt; <?php echo number_format($thresholds['yellow'], 2); ?> m</small></div>
 			</div>
 		</aside>
-		<div class="admin-chart-wrap">
-			<canvas id="adminWaterChart" height="190" aria-label="Water level chart"></canvas>
-			<p class="admin-chart-empty" id="admChartEmpty" hidden>No recent telemetry is available to plot.</p>
-		</div>
 	</div>
 </section>
 
-<section class="glass-card dash-table-wrap">
+<div class="admin-dashboard-activity">
+	<section class="glass-card dash-table-wrap admin-dashboard-readings">
 		<header class="admin-dashboard-panel-head">
+			<div>
 			<p class="admin-kicker">Monitoring data</p>
 			<h2>Latest readings</h2>
+			</div>
+			<a class="btn btn--ghost btn--compact admin-dashboard-action" href="<?php echo site_url('admin/history'); ?>">View history <span aria-hidden="true">→</span></a>
 		</header>
 		<div class="admin-table-scroll">
 		<table class="dash-table">
@@ -149,7 +165,6 @@ else
 			</tbody>
 		</table>
 		</div>
-		<p class="admin-muted"><a href="<?php echo site_url('admin/history'); ?>">View full history →</a></p>
 	</section>
 
 <?php if (! empty($recent_logins)): ?>
@@ -157,9 +172,9 @@ else
 	<div class="admin-recent-logins__head">
 		<div>
 			<p class="admin-kicker">Access activity</p>
-			<h2>Recent resident sign-ins</h2>
+			<h2>Recent sign-ins</h2>
 		</div>
-		<a class="admin-recent-logins__link" href="<?php echo site_url('admin/residents'); ?>">Manage residents <span aria-hidden="true">→</span></a>
+		<a class="btn btn--ghost btn--compact admin-dashboard-action" href="<?php echo site_url('admin/residents'); ?>">Manage residents <span aria-hidden="true">→</span></a>
 	</div>
 	<div class="admin-recent-logins__table-wrap">
 		<table class="admin-recent-logins__table">
@@ -182,4 +197,5 @@ else
 	</div>
 </section>
 <?php endif; ?>
+</div>
 </div>

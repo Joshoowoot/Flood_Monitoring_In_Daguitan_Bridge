@@ -18,7 +18,7 @@ $level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 
 				<p class="admin-muted">Write a clear advisory, choose who should receive it, and decide whether to publish now or save it as a draft.</p>
 			</div>
 		</div>
-		<form method="post" action="<?php echo site_url('admin/announcements'); ?>" class="admin-form">
+		<form method="post" action="<?php echo site_url('admin/announcements'); ?>" class="admin-form" enctype="multipart/form-data">
 			<input type="hidden" name="id" value="<?php echo $edit ? (int) $edit['id'] : 0; ?>">
 			<div class="admin-announcement-field admin-announcement-field--title">
 				<label for="announcementTitle">Title</label>
@@ -29,6 +29,22 @@ $level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 
 				<label for="announcementBody">Message</label>
 				<textarea id="announcementBody" name="body" rows="6" required placeholder="Explain what is happening, who is affected, and what residents should do."><?php echo $edit ? html_escape($edit['body']) : ''; ?></textarea>
 				<p class="admin-announcement-help">Include the affected area, safety guidance, and any useful timing information.</p>
+			</div>
+			<div class="admin-announcement-field admin-announcement-field--images">
+				<label for="announcementImages">Photos</label>
+				<input id="announcementImages" type="file" name="announcement_images[]" accept="image/jpeg,image/png,image/webp" multiple data-existing-count="<?php echo $edit && isset($edit['images']) ? count($edit['images']) : 0; ?>">
+				<p class="admin-announcement-help" id="announcementImageHelp">Add up to 5 photos. JPG, PNG, or WebP; max 3 MB per image.</p>
+				<?php if ($edit && ! empty($edit['images'])): ?>
+					<div class="admin-announcement-image-grid" aria-label="Photos already attached">
+						<?php foreach ($edit['images'] as $index => $image_name):
+							if ( ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image_name)) continue;
+						?>
+							<img src="<?php echo html_escape(site_url('announcement-image/' . $image_name)); ?>" alt="Attached photo <?php echo (int) $index + 1; ?>">
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+				<div class="admin-announcement-image-grid" id="announcementImagePreview" aria-live="polite"></div>
+				<p class="admin-announcement-image-count" id="announcementImageCount" role="status"></p>
 			</div>
 			<div class="admin-announcement-settings">
 				<div class="admin-announcement-field">
@@ -88,7 +104,7 @@ $level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 
 				<p>Create an announcement to share official updates with residents.</p>
 			</div>
 		<?php else: ?>
-			<ul class="admin-announce-list" id="adminAnnouncementList">
+			<ul class="admin-announce-list" id="adminAnnouncementList" tabindex="0" aria-label="Announcement list">
 				<?php foreach ($announcements as $ann): ?>
 					<li class="glass-card admin-announce-item">
 						<?php
@@ -104,6 +120,15 @@ $level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 
 							<h3><?php echo html_escape($ann['title']); ?></h3>
 							<p class="admin-announcement-body is-collapsed"><?php echo nl2br(html_escape($ann['body'])); ?></p>
 							<button class="admin-announcement-toggle" type="button" aria-expanded="false">See more</button>
+							<?php if ( ! empty($ann['images'])): ?>
+								<div class="admin-announcement-image-grid admin-announcement-image-grid--library" aria-label="Announcement photos">
+									<?php foreach ($ann['images'] as $index => $image_name):
+										if ( ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image_name)) continue;
+									?>
+										<img src="<?php echo html_escape(site_url('announcement-image/' . $image_name)); ?>" alt="Photo <?php echo (int) $index + 1; ?> attached to <?php echo html_escape($ann['title']); ?>" loading="lazy">
+									<?php endforeach; ?>
+								</div>
+							<?php endif; ?>
 							<div class="admin-announcement-meta">
 								<span><?php echo empty($ann['barangay']) ? 'Municipality-wide audience' : 'Barangay ' . html_escape($ann['barangay']); ?></span>
 								<span>Updated <?php echo html_escape($ann['updated_at']); ?></span>
@@ -146,6 +171,34 @@ $level_labels = array('info' => 'Information', 'yellow' => 'Advisory', 'red' => 
 	var search = document.getElementById('adminAnnouncementSearch');
 	var list = document.getElementById('adminAnnouncementList');
 	var empty = document.getElementById('adminAnnouncementSearchEmpty');
+	var imageInput = document.getElementById('announcementImages');
+	var imagePreview = document.getElementById('announcementImagePreview');
+	var imageCount = document.getElementById('announcementImageCount');
+	if (imageInput && imagePreview && imageCount) {
+		var previewUrls = [];
+		var existingCount = Number(imageInput.getAttribute('data-existing-count')) || 0;
+		if (existingCount) imageCount.textContent = existingCount + ' of 5 photos already attached';
+		imageInput.addEventListener('change', function () {
+			previewUrls.forEach(function (url) { URL.revokeObjectURL(url); });
+			previewUrls = [];
+			imagePreview.textContent = '';
+			existingCount = Number(imageInput.getAttribute('data-existing-count')) || 0;
+			var total = existingCount + imageInput.files.length;
+			imageCount.textContent = total > 5
+				? 'You can attach up to 5 images in total. Remove some selected photos and try again.'
+				: total + ' of 5 photos selected' + (existingCount ? ' (' + existingCount + ' already attached)' : '');
+			imageCount.classList.toggle('is-error', total > 5);
+			Array.prototype.forEach.call(imageInput.files, function (file) {
+				if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return;
+				var url = URL.createObjectURL(file);
+				previewUrls.push(url);
+				var image = document.createElement('img');
+				image.src = url;
+				image.alt = 'Selected photo preview';
+				imagePreview.appendChild(image);
+			});
+		});
+	}
 	if (!form || !search || !list || !empty) return;
 
 	Array.prototype.forEach.call(list.querySelectorAll('.admin-announcement-body'), function (body) {

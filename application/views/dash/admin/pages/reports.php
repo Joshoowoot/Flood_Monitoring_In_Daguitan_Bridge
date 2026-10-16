@@ -71,7 +71,7 @@
 	<?php if (empty($history_rows)): ?>
 		<p class="admin-reports-empty">No readings are available for this report period.</p>
 	<?php else: ?>
-	<div class="admin-table-scroll">
+	<div class="admin-table-scroll admin-reports-readings-scroll" role="region" aria-label="Recent readings. Scroll to see more readings." tabindex="0">
 		<table class="dash-table">
 			<thead><tr><th>Time</th><th>Level</th><th>Warning</th><th>Rate</th><th>Est. TT</th></tr></thead>
 			<tbody>
@@ -109,8 +109,8 @@
 	<?php if (empty($alerts['all'])): ?>
 		<p class="admin-reports-empty">No alerts are available to display.</p>
 	<?php else: ?>
-	<div class="admin-table-scroll">
-		<table class="dash-table" data-sort-visible-limit="5">
+	<div class="admin-table-scroll admin-reports-alerts-scroll" role="region" aria-label="Recent alerts. Scroll to see more alerts." tabindex="0">
+		<table class="dash-table">
 			<thead><tr><th>When</th><th>Title</th><th>Status</th></tr></thead>
 			<tbody id="reportAlertRows">
 				<?php foreach ($alerts['all'] as $alert): ?>
@@ -123,7 +123,6 @@
 			</tbody>
 		</table>
 	</div>
-	<button class="admin-reports-show-more" type="button" data-sort-toggle aria-controls="reportAlertRows" aria-expanded="false" hidden></button>
 	<?php endif; ?>
 </section>
 </div>

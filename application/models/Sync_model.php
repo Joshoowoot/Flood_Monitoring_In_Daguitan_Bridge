@@ -358,6 +358,36 @@ class Sync_model extends CI_Model {
 			return NULL;
 		}
 
+		$cloud_cfg = $this->cloud_config();
+		if ( ! $this->is_local_development_cloud($cloud_cfg))
+		{
+			$required_columns = array(
+				'users' => array('record_uid', 'username', 'name', 'phone', 'barangay', 'role', 'password_hash'),
+				'water_readings' => array('record_uid', 'water_level_m', 'distance_cm', 'sensor_height_cm', 'received_at'),
+			);
+			foreach ($required_columns as $table => $columns)
+			{
+				if ( ! $cloud->table_exists($table))
+				{
+					log_message('error', 'Cloud sync schema check failed: required table "' . $table . '" is missing.');
+					$cloud->close();
+					return NULL;
+				}
+				foreach ($columns as $column)
+				{
+					if ( ! $cloud->field_exists($column, $table))
+					{
+						log_message('error', 'Cloud sync schema check failed: required column "' . $table . '.' . $column . '" is missing.');
+						$cloud->close();
+						return NULL;
+					}
+				}
+			}
+
+			$this->cloud = $cloud;
+			return $cloud;
+		}
+
 		$cloud->query("CREATE TABLE IF NOT EXISTS `users` (
 			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
 			`record_uid` CHAR(36) NOT NULL,
@@ -405,13 +435,22 @@ class Sync_model extends CI_Model {
 	protected function ensure_cloud_schema_exists()
 	{
 		$cloud_cfg = $this->cloud_config();
-		$host = isset($cloud_cfg['hostname']) ? strtolower((string) $cloud_cfg['hostname']) : 'localhost';
-		$schema = isset($cloud_cfg['database']) ? $cloud_cfg['database'] : 'MDRRMO_DULAG_CLOUD';
-		$local_hosts = array('localhost', '127.0.0.1', '::1');
-		if (in_array($host, $local_hosts, TRUE))
+		if ( ! $this->is_local_development_cloud($cloud_cfg))
 		{
-			$this->db->query('CREATE DATABASE IF NOT EXISTS `' . str_replace('`', '', $schema) . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+			return;
 		}
+
+		$schema = isset($cloud_cfg['database']) ? $cloud_cfg['database'] : 'MDRRMO_DULAG_CLOUD';
+		$this->db->query('CREATE DATABASE IF NOT EXISTS `' . str_replace('`', '', $schema) . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+	}
+
+	protected function is_local_development_cloud($cloud_cfg)
+	{
+		$host = isset($cloud_cfg['hostname']) ? strtolower((string) $cloud_cfg['hostname']) : 'localhost';
+		$local_hosts = array('localhost', '127.0.0.1', '::1');
+		$configured_host = getenv('FLOOD_CLOUD_DB_HOST');
+		$host_was_configured = $configured_host !== FALSE && trim($configured_host) !== '';
+		return in_array($host, $local_hosts, TRUE) && ! $host_was_configured;
 	}
 
 	protected function cloud_config()

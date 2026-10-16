@@ -43,6 +43,14 @@ Some links use `site_url()` which includes `index.php` depending on config.
 
 **Logout:** `/logout` → `Auth::logout()` → destroys session → redirect `/`.
 
+### SMS broadcast setup
+
+The admin SMS broadcast uses the iProg SMS API (`https://sms.iprogtech.com/api/v1/sms_messages`) with JSON requests and provider `2` for Philippine mobile-network coverage. Configure `IPROG_API_TOKEN` in the Windows system environment, then restart Apache so PHP can read it. `IPROG_SMS_API_TOKEN` is also supported for existing deployments. For XAMPP Apache services that run under `LocalSystem`, a local `application/config/sms_credentials.php` can provide the token instead; that file is Git-ignored and must never be committed.
+
+Because the previous implementation stored the token in source, revoke that token with iProg and configure a replacement before using SMS.
+
+The admin page can broadcast to all resident accounts with registered phone numbers or send the current message to one resident. The recipient list also lets an admin remove a phone number without deleting its resident account; that change is queued for cloud sync. Confirm the recipient and message before sending. The result shows the exact destination, iProg message reference, and submission outcome. A successful gateway response means iProg accepted/submitted the request; it does not prove delivery to each handset. Use the iProg dashboard's delivery reports to confirm final delivery.
+
 ---
 
 ## 3. Route map (all custom routes)

@@ -5,6 +5,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 class Admin_portal_model extends CI_Model {
 
 	protected $settings_file;
+	protected $announcement_upload_dir;
 
 	public function __construct()
 	{
@@ -12,6 +13,7 @@ class Admin_portal_model extends CI_Model {
 		$this->load->model('Monitor_model');
 		$this->load->model('Sync_model');
 		$this->settings_file = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'admin_settings.json';
+		$this->announcement_upload_dir = APPPATH . 'data' . DIRECTORY_SEPARATOR . 'announcement_uploads' . DIRECTORY_SEPARATOR;
 		$this->ensure_schema();
 	}
 
@@ -361,6 +363,12 @@ class Admin_portal_model extends CI_Model {
 			return NULL;
 		}
 		$row = $this->db->where('id', (int) $id)->get('announcements')->row_array();
+		if ($row)
+		{
+			$rows = array($row);
+			$this->attach_announcement_images($rows);
+			$row = $rows[0];
+		}
 		return $row ? $row : NULL;
 	}
 
@@ -480,10 +488,52 @@ class Admin_portal_model extends CI_Model {
 		{
 			return array();
 		}
-		return $this->db->order_by('updated_at', 'DESC')->get('announcements')->result_array();
+		$rows = $this->db->order_by('updated_at', 'DESC')->get('announcements')->result_array();
+		$this->attach_announcement_images($rows);
+		return $rows;
 	}
 
-	public function save_announcement($id, $data)
+	protected function attach_announcement_images(&$rows)
+	{
+		if (empty($rows) || ! $this->db->table_exists('announcement_images'))
+		{
+			foreach ($rows as &$row)
+			{
+				$row['images'] = array();
+			}
+			unset($row);
+			return;
+		}
+
+		$ids = array();
+		foreach ($rows as $row)
+		{
+			$ids[] = (int) $row['id'];
+		}
+		$image_rows = $this->db
+			->where_in('announcement_id', $ids)
+			->order_by('position', 'ASC')
+			->order_by('id', 'ASC')
+			->get('announcement_images')
+			->result_array();
+		$images = array();
+		foreach ($image_rows as $image)
+		{
+			$id = (int) $image['announcement_id'];
+			if ( ! isset($images[$id]))
+			{
+				$images[$id] = array();
+			}
+			$images[$id][] = $image['image_name'];
+		}
+		foreach ($rows as &$row)
+		{
+			$row['images'] = isset($images[(int) $row['id']]) ? $images[(int) $row['id']] : array();
+		}
+		unset($row);
+	}
+
+	public function save_announcement($id, $data, $image_names = array())
 	{
 		$barangay = isset($data['barangay']) ? trim((string) $data['barangay']) : '';
 		$this->load->model('Hazard_model');
@@ -495,7 +545,7 @@ class Admin_portal_model extends CI_Model {
 		$row = array(
 			'title'        => trim((string) $data['title']),
 			'body'         => trim((string) $data['body']),
-			'level'         => in_array($data['level'], array('info', 'yellow', 'red'), TRUE) ? $data['level'] : 'info',
+			'level'         => isset($data['level']) && in_array($data['level'], array('info', 'yellow', 'red'), TRUE) ? $data['level'] : 'info',
 			'barangay'      => $barangay !== '' ? $barangay : NULL,
 			'is_published' => ! empty($data['is_published']) ? 1 : 0,
 		);
@@ -503,32 +553,72 @@ class Admin_portal_model extends CI_Model {
 		{
 			return array('ok' => FALSE, 'error' => 'Title and message are required.');
 		}
+		$image_names = is_array($image_names) ? array_values($image_names) : array();
+		foreach ($image_names as $image_name)
+		{
+			if ( ! is_string($image_name) || ! preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image_name))
+			{
+				return array('ok' => FALSE, 'error' => 'An uploaded image did not pass file validation.');
+			}
+		}
+
+		$existing = (int) $id > 0 ? $this->get_announcement((int) $id) : NULL;
+		if ((int) $id > 0 && ! $existing)
+		{
+			return array('ok' => FALSE, 'error' => 'That announcement could not be found.');
+		}
+		$existing_images = $existing && isset($existing['images']) ? $existing['images'] : array();
+		if (count($existing_images) + count($image_names) > 5)
+		{
+			return array('ok' => FALSE, 'error' => 'An announcement can have up to 5 images in total.');
+		}
+
+		$this->db->trans_begin();
 		if ((int) $id > 0)
 		{
-			$this->db->where('id', (int) $id)->update('announcements', $row);
-			if ( ! empty($row['is_published']))
-			{
-				$saved = $this->get_announcement((int) $id);
-				if ($saved)
-				{
-					$this->load->model('Notification_model');
-					$this->Notification_model->on_announcement_published($saved, FALSE);
-				}
-			}
-			return array('ok' => TRUE, 'id' => (int) $id);
+			$saved_id = (int) $id;
+			$ok = $this->db->where('id', $saved_id)->update('announcements', $row);
 		}
-		$this->db->insert('announcements', $row);
-		$new_id = (int) $this->db->insert_id();
-		if ($new_id > 0 && ! empty($row['is_published']))
+		else
 		{
-			$saved = $this->get_announcement($new_id);
+			$ok = $this->db->insert('announcements', $row);
+			$saved_id = (int) $this->db->insert_id();
+		}
+		if ( ! $ok || $saved_id < 1)
+		{
+			$this->db->trans_rollback();
+			return array('ok' => FALSE, 'error' => 'The announcement could not be saved.');
+		}
+		foreach ($image_names as $position => $image_name)
+		{
+			$inserted = $this->db->insert('announcement_images', array(
+				'announcement_id' => $saved_id,
+				'image_name' => $image_name,
+				'position' => count($existing_images) + $position,
+			));
+			if ( ! $inserted)
+			{
+				$this->db->trans_rollback();
+				return array('ok' => FALSE, 'error' => 'The announcement images could not be saved.');
+			}
+		}
+		if ( ! $this->db->trans_status())
+		{
+			$this->db->trans_rollback();
+			return array('ok' => FALSE, 'error' => 'The announcement could not be saved.');
+		}
+		$this->db->trans_commit();
+
+		if ( ! empty($row['is_published']))
+		{
+			$saved = $this->get_announcement($saved_id);
 			if ($saved)
 			{
 				$this->load->model('Notification_model');
 				$this->Notification_model->on_announcement_published($saved, FALSE);
 			}
 		}
-		return array('ok' => TRUE, 'id' => $new_id);
+		return array('ok' => TRUE, 'id' => $saved_id);
 	}
 
 	public function delete_announcement($id)
@@ -537,7 +627,33 @@ class Admin_portal_model extends CI_Model {
 		{
 			return FALSE;
 		}
-		return $this->db->where('id', (int) $id)->delete('announcements');
+		$images = $this->get_announcement((int) $id);
+		if ( ! $images)
+		{
+			return FALSE;
+		}
+		$image_names = isset($images['images']) ? $images['images'] : array();
+		$this->db->trans_begin();
+		$this->db->where('announcement_id', (int) $id)->delete('announcement_images');
+		$deleted = $this->db->where('id', (int) $id)->delete('announcements');
+		if ( ! $deleted || ! $this->db->trans_status())
+		{
+			$this->db->trans_rollback();
+			return FALSE;
+		}
+		$this->db->trans_commit();
+		foreach ($image_names as $image_name)
+		{
+			if (preg_match('/^[a-f0-9]{32}\.(jpg|jpeg|png|webp)$/', $image_name))
+			{
+				$path = $this->announcement_upload_dir . $image_name;
+				if (is_file($path) && ! unlink($path))
+				{
+					log_message('error', 'Could not remove deleted announcement image ' . $image_name . '.');
+				}
+			}
+		}
+		return TRUE;
 	}
 
 	public function toggle_announcement_publish($id, $publish, $send_push = FALSE)
@@ -738,6 +854,10 @@ class Admin_portal_model extends CI_Model {
 		{
 			$this->db->where('recipient_user_id', $id)->delete('notifications');
 		}
+		if ($this->db->table_exists('family_evacuation_plans'))
+		{
+			$this->db->where('user_id', $id)->delete('family_evacuation_plans');
+		}
 		$this->db->where('id', $id)->where('role', 'user')->delete('users');
 		$deleted = $this->db->affected_rows() > 0;
 		$transaction_ok = $this->db->trans_status();
@@ -758,6 +878,49 @@ class Admin_portal_model extends CI_Model {
 			log_message('error', 'Could not commit deletion of resident account ID ' . $id . '.');
 		}
 		return $committed;
+	}
+
+	public function get_sms_recipient($id)
+	{
+		$id = (int) $id;
+		if ($id <= 0 || ! $this->db->table_exists('users') || ! $this->db->field_exists('phone', 'users'))
+		{
+			return NULL;
+		}
+
+		$recipient = $this->db
+			->select('id, name, phone')
+			->where('id', $id)
+			->where('role', 'user')
+			->get('users')
+			->row_array();
+		return $recipient ? $recipient : NULL;
+	}
+
+	public function clear_resident_phone($id)
+	{
+		$id = (int) $id;
+		if ($id <= 0 || ! $this->db->table_exists('users') || ! $this->db->field_exists('phone', 'users'))
+		{
+			return FALSE;
+		}
+
+		$this->db->where('id', $id)->where('role', 'user');
+		$update = array('phone' => NULL);
+		if ($this->db->field_exists('sync_status', 'users'))
+		{
+			$update['sync_status'] = 'pending';
+			if ($this->db->field_exists('synced_at', 'users'))
+			{
+				$update['synced_at'] = NULL;
+			}
+		}
+		if ( ! $this->db->update('users', $update))
+		{
+			log_message('error', 'Could not remove mobile number for resident account ID ' . $id . '.');
+			return FALSE;
+		}
+		return $this->db->affected_rows() > 0;
 	}
 
 	public function dashboard_snapshot()
@@ -912,6 +1075,18 @@ class Admin_portal_model extends CI_Model {
 				`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 				`updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 				PRIMARY KEY (`id`)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+		}
+		if ($this->db->table_exists('announcements') && ! $this->db->table_exists('announcement_images'))
+		{
+			$this->db->query("CREATE TABLE IF NOT EXISTS `announcement_images` (
+				`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+				`announcement_id` INT UNSIGNED NOT NULL,
+				`image_name` VARCHAR(64) NOT NULL,
+				`position` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+				PRIMARY KEY (`id`),
+				UNIQUE KEY `uq_announcement_images_name` (`image_name`),
+				KEY `idx_announcement_images_parent` (`announcement_id`, `position`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 		}
 	}

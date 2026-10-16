@@ -9,6 +9,8 @@ class Auth extends CI_Controller {
 		parent::__construct();
 		$this->load->model('Auth_model');
 		$this->load->helper(array('url', 'form'));
+		$this->load->helper('auth_session');
+		maintain_admin_session($this);
 	}
 
 	public function login($role = 'user')

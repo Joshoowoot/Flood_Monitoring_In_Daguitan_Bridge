@@ -1,13 +1,13 @@
 (function () {
-	function syncEyeIcons(btn, showPlain) {
+	function syncEyeIcons(btn, passwordVisible) {
 		var showIcon = btn.querySelector('.auth-eye__show');
 		var hideIcon = btn.querySelector('.auth-eye__hide');
 		if (showIcon && hideIcon) {
-			showIcon.hidden = !showPlain;
-			hideIcon.hidden = showPlain;
+			showIcon.toggleAttribute('hidden', passwordVisible);
+			hideIcon.toggleAttribute('hidden', !passwordVisible);
 			return;
 		}
-		btn.textContent = showPlain ? 'Show' : 'Hide';
+		btn.textContent = passwordVisible ? 'Hide' : 'Show';
 	}
 
 	function syncFieldState(input) {
@@ -22,6 +22,7 @@
 		if (!targetId) return;
 		var input = document.getElementById(targetId);
 		if (!input) return;
+		syncEyeIcons(btn, input.type === 'text');
 
 		btn.addEventListener('click', function () {
 			var revealing = input.type === 'password';
@@ -85,6 +86,17 @@
 		});
 	}
 
+	function markSubmitting(form, label) {
+		if (!form || form.dataset.submitting === 'true') return;
+		var submit = form.querySelector('button[type="submit"]');
+		if (!submit) return;
+		form.dataset.submitting = 'true';
+		submit.disabled = true;
+		submit.classList.add('is-loading');
+		submit.setAttribute('aria-busy', 'true');
+		submit.textContent = label;
+	}
+
 	function syncIntro(signup) {
 		var kicker = document.querySelector('.auth-intro [data-auth-kicker-signin]');
 		var copy = document.querySelector('.auth-intro [data-auth-copy-signin]');
@@ -131,7 +143,9 @@
 		}
 
 		var focusForm = signup ? signupForm : signinForm;
-		var first = focusForm && focusForm.querySelector('input:not([disabled])');
+		var first = signup && focusForm
+			? focusForm.querySelector('[data-signup-step]:not([hidden]) input:not([disabled]), [data-signup-step]:not([hidden]) select:not([disabled])')
+			: focusForm && focusForm.querySelector('input:not([disabled])');
 		if (first && push) first.focus();
 	}
 
@@ -165,13 +179,17 @@
 		var submitSignup = signupWizard.querySelector('.signup-navigation__submit');
 
 		function setSignupStep(step) {
+			signupWizard.dataset.currentStep = String(step);
+			signupProgress.forEach(function (indicator) {
+				var active = Number(indicator.getAttribute('data-signup-progress')) === step;
+				indicator.classList.toggle('is-active', active);
+				if (active) indicator.setAttribute('aria-current', 'step');
+				else indicator.removeAttribute('aria-current');
+			});
 			signupSteps.forEach(function (panel) {
 				var active = Number(panel.getAttribute('data-signup-step')) === step;
 				panel.hidden = !active;
 				panel.classList.toggle('is-active', active);
-			});
-			signupProgress.forEach(function (indicator) {
-				indicator.classList.toggle('is-active', Number(indicator.getAttribute('data-signup-progress')) === step);
 			});
 			nextSignupStep.hidden = step !== 1;
 			backSignupStep.hidden = step !== 2;
@@ -184,11 +202,19 @@
 				if (!personalFields[i].reportValidity()) return;
 			}
 			setSignupStep(2);
+			var firstSecurityField = signupSteps[1].querySelector('input:not([disabled]), select:not([disabled])');
+			if (firstSecurityField) firstSecurityField.focus();
 		});
 		backSignupStep.addEventListener('click', function () {
 			var initialError = document.getElementById('authError');
 			var errorField = initialError && document.getElementById(initialError.getAttribute('data-error-field'));
-			setSignupStep(errorField && errorField.closest('[data-signup-step="2"]') ? 2 : 1);
+			var step = errorField && errorField.closest('[data-signup-step="2"]') ? 2 : 1;
+			setSignupStep(step);
+			var activeStep = signupSteps[step - 1];
+			var focusTarget = errorField && errorField.closest('[data-signup-step]') === activeStep
+				? errorField
+				: activeStep.querySelector('input:not([disabled]), select:not([disabled])');
+			if (focusTarget) focusTarget.focus();
 		});
 		setSignupStep(1);
 	}
@@ -208,7 +234,15 @@
 				event.preventDefault();
 				checkMatch();
 				confirm.focus();
+				return;
 			}
+			markSubmitting(signupForm, 'Creating account...');
+		});
+	}
+
+	if (signinForm) {
+		signinForm.addEventListener('submit', function () {
+			markSubmitting(signinForm, 'Signing in...');
 		});
 	}
 

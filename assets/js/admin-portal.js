@@ -1,7 +1,17 @@
 (function () {
   var cfg = window.DAGUITAN_ADMIN || {};
+  var loginNotice = document.querySelector('.admin-notice--login');
   var canvas = document.getElementById('adminWaterChart');
   var historyCanvas = document.getElementById('adminHistoryChart');
+
+  if (loginNotice) {
+    window.setTimeout(function () {
+      loginNotice.classList.add('is-dismissing');
+      window.setTimeout(function () {
+        loginNotice.remove();
+      }, 300);
+    }, 2700);
+  }
 
   function drawChart() {
     if (!canvas || !cfg.chart || !cfg.chart.points) return;
@@ -353,10 +363,19 @@
   function poll() {
     if (!cfg.statusUrl) return;
     fetch(cfg.statusUrl, { credentials: 'same-origin' })
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error('Monitor service returned HTTP ' + r.status);
+        return r.json();
+      })
       .then(function (data) {
-        if (!data || !data.monitor) return;
+        if (!data || !data.monitor) {
+          if (window.DaguitanAlertSound) window.DaguitanAlertSound.update(null, false);
+          return;
+        }
         var m = data.monitor;
+        if (window.DaguitanAlertSound) {
+          window.DaguitanAlertSound.update(m, navigator.onLine && m.sensor_status === 'online');
+        }
         updateFreshness(m);
         updateThreshold(m);
         var waterEl = document.getElementById('admWater');
@@ -376,7 +395,6 @@
         setText('admSensorLabel', m.sensor_label);
         if (data.sync && data.sync.internet_label) {
           setText('admInternet', data.sync.internet_label);
-          setText('admCloudSync', data.sync.internet_label);
           var internetPill = document.getElementById('admInternetPill');
           if (internetPill) {
             var internetOnline = Boolean(data.sync.internet);
@@ -391,6 +409,9 @@
         if (data.sync && data.sync.pending_total != null) {
           setText('admPendingSync', String(data.sync.pending_total));
           setText('admWaitingCopy', String(data.sync.pending_total) + ' row(s)');
+          setText('admCloudSync', Number(data.sync.pending_total) > 0
+            ? String(data.sync.pending_total) + ' pending'
+            : 'Queue clear');
         }
         if (data.sync) {
           if (data.sync.cloud_target) setText('admCloudTarget', data.sync.cloud_target);
@@ -460,7 +481,8 @@
         }
         appendReading(m);
       })
-      .catch(function () {
+      .catch(function (error) {
+        if (window.DaguitanAlertSound) window.DaguitanAlertSound.update(null, false);
         var hero = document.querySelector('.admin-live-hero');
         var freshness = document.getElementById('admFreshness');
         var readingLabel = document.getElementById('admReadingLabel');
@@ -470,6 +492,7 @@
           freshness.className = 'admin-freshness admin-freshness--stale';
           freshness.textContent = 'Station API unavailable · showing last received data';
         }
+        console.warn('Admin monitor status could not be refreshed.', error);
       });
   }
 

@@ -13,7 +13,7 @@ $base_url = isset($base_url) ? $base_url : base_url();
 	<title><?php echo html_escape($page_title); ?> · Daguitan Flood Monitor</title>
 	<link rel="icon" type="image/png" href="<?php echo html_escape($asset_url); ?>img/dulag-logo.png">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/landing.css?v=20261007-responsive4">
-	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261007-webpush1">
+	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/app.css?v=20261014-family-plan-sharing1">
 	<link rel="stylesheet" href="<?php echo html_escape($asset_url); ?>css/typography.css?v=20261006-inter">
 </head>
 <body class="portal-page resident-portal go-bag-page">
@@ -64,7 +64,7 @@ $base_url = isset($base_url) ? $base_url : base_url();
 				<a class="btn btn--primary" href="<?php echo html_escape(rtrim($base_url, '/') . '/offline-guide.html'); ?>">Open offline emergency guide <span aria-hidden="true">→</span></a>
 				<p id="offlineGuideStatus" class="go-bag-offline-callout__status" role="status" aria-live="polite">Offline guide availability will be checked on this device.</p>
 			</section>
-			<section class="section section--tight go-bag-page__checklist" aria-labelledby="goBagChecklistTitle">
+			<section class="section section--tight go-bag-page__checklist" id="goBagChecklist" aria-labelledby="goBagChecklistTitle">
 				<header class="section__head">
 					<h2 id="goBagChecklistTitle">Household readiness checklist</h2>
 					<p>Open a category and check off the supplies you have ready.</p>
@@ -139,16 +139,20 @@ $base_url = isset($base_url) ? $base_url : base_url();
 					</article>
 				</div>
 			</section>
-			<section class="section go-bag-family-plan" aria-labelledby="familyPlanTitle">
+			<section class="section go-bag-family-plan" id="familyPlan" aria-labelledby="familyPlanTitle">
 				<header class="family-plan__head">
 					<div><p class="card-kicker">Plan together</p><h2 id="familyPlanTitle">Family evacuation plan</h2></div>
 					<p>Agree on the details before an alert, so everyone knows where to go and how to reconnect.</p>
 				</header>
 				<div class="family-plan__notice">
-					<strong>Saved only in this browser</strong>
-					<span>This plan is not sent to MDRRMO or your barangay. Avoid entering details you do not want stored on this device. Downloaded or printed copies may be seen by others; clear saved data on shared devices.</span>
+					<strong>Private unless you choose to share</strong>
+					<span>Your plan is saved only in this browser unless you actively share it below. A shared copy can be viewed by authorized MDRRMO administrators for evacuation coordination, and you can revoke access at any time. Avoid entering details you do not want stored on this device. Downloaded or printed copies may be seen by others.</span>
 				</div>
-				<form id="familyPlanForm" class="family-plan__form">
+				<form id="familyPlanForm" class="family-plan__form"
+					data-share-url="<?php echo html_escape($family_plan_share_url); ?>"
+					data-status-url="<?php echo html_escape($family_plan_status_url); ?>"
+					data-revoke-url="<?php echo html_escape($family_plan_revoke_url); ?>"
+					data-share-token="<?php echo html_escape($family_plan_share_token); ?>">
 					<div class="family-plan__fields">
 						<label class="family-plan__field" for="familyMeetingPoint">
 							<span>Family meeting point</span>
@@ -173,7 +177,7 @@ $base_url = isset($base_url) ? $base_url : base_url();
 					</div>
 					<fieldset class="family-plan__support">
 						<legend>Does anyone need extra help evacuating?</legend>
-						<p>Select only the support types you want to include in this private plan.</p>
+						<p>Select only the support types you want to include. These categories will be shared only if you opt in below.</p>
 						<div class="family-plan__support-options">
 							<label><input type="checkbox" name="supportNeeds" value="Young children or infants"> Young children or infants</label>
 							<label><input type="checkbox" name="supportNeeds" value="Older adults"> Older adults</label>
@@ -182,11 +186,24 @@ $base_url = isset($base_url) ? $base_url : base_url();
 							<label><input type="checkbox" name="supportNeeds" value="Pets or service animals"> Pets or service animals</label>
 						</div>
 					</fieldset>
+					<div class="family-plan__sharing">
+						<h3>Share a copy with MDRRMO</h3>
+						<p>Sharing is optional and separate from saving this plan on your device. Your evacuation destination is required so officials can use the plan for coordination. Clearing this device's saved plan does not remove a shared copy; use Revoke shared copy. This is not an emergency request or a replacement for official evacuation instructions.</p>
+						<label class="family-plan__consent">
+							<input id="familyPlanConsent" type="checkbox" value="1">
+							<span>I agree to share my name, barangay, and the plan details above with authorized MDRRMO administrators for evacuation coordination. I have permission to share any contact details I entered and understand I can revoke sharing later.</span>
+						</label>
+						<div class="family-plan__actions family-plan__sharing-actions">
+							<button class="btn btn--primary" id="familyPlanShare" type="button">Share plan with MDRRMO</button>
+							<button class="btn btn--ghost" id="familyPlanRevoke" type="button"<?php echo empty($family_plan_share_status['shared']) ? ' hidden' : ''; ?>>Revoke shared copy</button>
+						</div>
+						<p class="family-plan__share-status" id="familyPlanShareStatus" role="status" aria-live="polite"><?php if (empty($family_plan_share_status['ok'])): ?>Sharing status could not be loaded. Refresh this page to check whether a copy is shared.<?php elseif ( ! empty($family_plan_share_status['shared'])): ?>A copy is currently shared with MDRRMO. Shared <?php echo html_escape(date('M j, Y g:i A', strtotime($family_plan_share_status['shared_at']))); ?>.<?php else: ?>No plan copy is currently shared with MDRRMO.<?php endif; ?></p>
+					</div>
 					<div class="family-plan__actions">
 						<button class="btn btn--primary" type="submit">Save &amp; mark reviewed</button>
 						<button class="btn btn--ghost" id="familyPlanDownload" type="button">Download a copy</button>
 						<button class="btn btn--ghost" id="familyPlanPrint" type="button">Print plan</button>
-						<button class="family-plan__clear" id="familyPlanClear" type="button">Clear saved plan</button>
+						<button class="family-plan__clear" id="familyPlanClear" type="button">Clear this device's saved plan</button>
 					</div>
 					<p class="family-plan__review" id="familyPlanReview" role="status" aria-live="polite">Save your plan after reviewing it with your household to start the 90-day review reminder. Update it sooner whenever contacts, destinations, or support needs change.</p>
 					<p class="family-plan__status" id="familyPlanStatus" role="status" aria-live="polite">Plan details have not been saved on this device.</p>
@@ -202,8 +219,26 @@ $base_url = isset($base_url) ? $base_url : base_url();
 	</main>
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><div class="footer__grid"><div><p class="footer__brand"><img class="footer__logo" src="<?php echo html_escape($asset_url); ?>img/dulag-logo.png" alt="" width="36" height="36"><span>DAGUITAN FLOOD MONITOR</span></p><p>Resident readiness information for Dulag, Leyte.</p></div><nav aria-label="Footer"><a href="<?php echo html_escape($portal_url); ?>">Resident portal</a><a href="<?php echo html_escape($logout_url); ?>">Sign out</a></nav></div><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions.</p></div></footer>
+	<nav class="bottom-nav" aria-label="Go Bag quick navigation">
+		<a href="#main" class="is-active" aria-current="page">
+			<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M12 11v6M9 14h6"/></svg>
+			<span>Go Bag</span>
+		</a>
+		<a href="#goBagChecklist">
+			<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M9 5h10M9 12h10M9 19h10"/><path d="m3.5 5 1.5 1.5L7.5 4M3.5 12l1.5 1.5L7.5 11M3.5 19l1.5 1.5L7.5 18"/></svg>
+			<span>Checklist</span>
+		</a>
+		<a href="#familyPlan">
+			<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0M17 8a3 3 0 0 1 0 6M17 16a4.5 4.5 0 0 1 4 4"/></svg>
+			<span>Family plan</span>
+		</a>
+		<a href="<?php echo html_escape(site_url('portal/evacuation-centers')); ?>">
+			<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+			<span>Centers</span>
+		</a>
+	</nav>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script>
@@ -225,7 +260,7 @@ $base_url = isset($base_url) ? $base_url : base_url();
 			});
 		})();
 	</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/go-bag-plan.js?v=20261006b"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/go-bag-plan.js?v=20261014-sharing2"></script>
 	<script>
 		(function () {
 			var cards = document.querySelectorAll('[data-go-bag-card]');

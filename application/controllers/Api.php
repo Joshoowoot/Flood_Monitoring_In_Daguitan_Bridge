@@ -8,6 +8,8 @@ class Api extends CI_Controller {
 	{
 		parent::__construct();
 		$this->load->model('Monitor_model');
+		$this->load->helper('auth_session');
+		maintain_admin_session($this);
 		$this->output->set_header('Access-Control-Allow-Origin: *');
 		$this->output->set_header('Access-Control-Allow-Headers: Content-Type, X-Api-Key');
 		$this->output->set_header('Access-Control-Allow-Methods: GET, POST, OPTIONS');

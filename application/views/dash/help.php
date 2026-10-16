@@ -121,7 +121,7 @@ $status_url = isset($status_url) ? $status_url : site_url('api/status');
 	<div class="resident-sidebar-backdrop" id="residentSidebarBackdrop" hidden></div>
 	<footer class="footer portal-footer"><div class="portal-footer__inner"><p class="footer__note">In an emergency, follow MDRRMO and barangay instructions.</p></div></footer>
 	<script>window.DAGUITAN_NOTIFY = <?php echo json_encode($notify_config, JSON_UNESCAPED_SLASHES); ?>;</script>
-	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261011-alertsound1"></script>
+	<script src="<?php echo html_escape($asset_url); ?>js/notifications.js?v=20261016-timely1"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-sidebar.js?v=20261007-mobile-plus"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/resident-mobile.js?v=20261007-mobile-plus2"></script>
 	<script src="<?php echo html_escape($asset_url); ?>js/help-guide.js?v=20261006a"></script>

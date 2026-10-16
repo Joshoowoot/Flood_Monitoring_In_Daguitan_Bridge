@@ -60,29 +60,60 @@ $hidden_count = count($centers) - $visible_count;
 			<ul class="admin-announce-list admin-evacuation-list" id="evacuationCenterList">
 				<?php foreach ($centers as $center): ?>
 					<li class="glass-card admin-announce-item" data-evacuation-center>
-						<div class="admin-evacuation-center__details">
+						<button class="admin-evacuation-center__open" type="button" aria-haspopup="dialog" aria-controls="evacuationCenterDialog<?php echo (int) $center['id']; ?>">
+							<div class="admin-evacuation-center__details">
 							<div class="admin-evacuation-center__top">
 								<span class="admin-evacuation-center__visibility<?php echo ! empty($center['active']) ? ' is-visible' : ''; ?>"><?php echo ! empty($center['active']) ? 'Visible to residents' : 'Hidden from residents'; ?></span>
 								<span class="admin-evacuation-center__barangay"><?php echo html_escape($center['barangay']); ?></span>
 							</div>
-							<strong><?php echo html_escape($center['name']); ?></strong>
-							<p><?php echo html_escape($center['address']); ?></p>
-							<p class="admin-evacuation-coordinates-label"><span>Map coordinates</span> <code><?php echo html_escape($center['latitude']); ?>, <?php echo html_escape($center['longitude']); ?></code></p>
-							<?php if ( ! empty($center['capacity']) || ! empty($center['phone'])): ?>
-								<div class="admin-evacuation-center__contact">
-									<?php if ( ! empty($center['capacity'])): ?><span><strong>Capacity:</strong> <?php echo html_escape($center['capacity']); ?></span><?php endif; ?>
-									<?php if ( ! empty($center['phone'])): ?><span><strong>Contact:</strong> <?php echo html_escape($center['phone']); ?></span><?php endif; ?>
+								<strong><?php echo html_escape($center['name']); ?></strong>
+								<span class="admin-evacuation-center__address"><?php echo html_escape($center['address']); ?></span>
+								<span class="admin-evacuation-center__view">View center details <span aria-hidden="true">→</span></span>
+							</div>
+						</button>
+						<dialog class="admin-evacuation-center__dialog" id="evacuationCenterDialog<?php echo (int) $center['id']; ?>" aria-labelledby="evacuationCenterDialogTitle<?php echo (int) $center['id']; ?>">
+							<header class="admin-evacuation-center__dialog-head">
+								<div>
+									<p class="admin-kicker">Evacuation center</p>
+									<h3 id="evacuationCenterDialogTitle<?php echo (int) $center['id']; ?>"><?php echo html_escape($center['name']); ?></h3>
 								</div>
-							<?php endif; ?>
-						</div>
-						<div class="admin-announce-actions">
-							<a class="btn btn--ghost btn--compact" href="<?php echo site_url('admin/evacuation?edit=' . (int) $center['id']); ?>">Edit center</a>
-							<form method="post" action="<?php echo site_url('admin/evacuation'); ?>" onsubmit="return confirm('Delete this evacuation pin?');">
-								<input type="hidden" name="action" value="delete">
-								<input type="hidden" name="id" value="<?php echo (int) $center['id']; ?>">
-								<button class="btn btn--ghost btn--compact" type="submit">Delete</button>
-							</form>
-						</div>
+								<button class="admin-evacuation-center__close" type="button" aria-label="Close center details">&times;</button>
+							</header>
+							<div class="admin-evacuation-center__dialog-content">
+								<div class="admin-evacuation-center__top">
+									<span class="admin-evacuation-center__visibility<?php echo ! empty($center['active']) ? ' is-visible' : ''; ?>"><?php echo ! empty($center['active']) ? 'Visible to residents' : 'Hidden from residents'; ?></span>
+									<span class="admin-evacuation-center__barangay"><?php echo html_escape($center['barangay']); ?></span>
+								</div>
+								<div class="admin-evacuation-center__detail-row">
+									<strong>Address or landmark</strong>
+									<p><?php echo html_escape($center['address']); ?></p>
+								</div>
+								<div class="admin-evacuation-center__detail-row">
+									<strong>Map coordinates</strong>
+									<p><code><?php echo html_escape($center['latitude']); ?>, <?php echo html_escape($center['longitude']); ?></code></p>
+								</div>
+								<?php if ( ! empty($center['capacity'])): ?>
+								<div class="admin-evacuation-center__detail-row">
+									<strong>Capacity information</strong>
+									<p><?php echo html_escape($center['capacity']); ?></p>
+								</div>
+								<?php endif; ?>
+								<?php if ( ! empty($center['phone'])): ?>
+								<div class="admin-evacuation-center__detail-row">
+									<strong>Public contact number</strong>
+									<p><?php echo html_escape($center['phone']); ?></p>
+								</div>
+								<?php endif; ?>
+							</div>
+							<div class="admin-evacuation-center__actions">
+								<a class="btn btn--primary btn--compact" href="<?php echo site_url('admin/evacuation?edit=' . (int) $center['id']); ?>">Edit center</a>
+								<form method="post" action="<?php echo site_url('admin/evacuation'); ?>" onsubmit="return confirm('Delete this evacuation pin?');">
+									<input type="hidden" name="action" value="delete">
+									<input type="hidden" name="id" value="<?php echo (int) $center['id']; ?>">
+									<button class="btn btn--ghost btn--compact" type="submit">Delete center</button>
+								</form>
+							</div>
+						</dialog>
 					</li>
 				<?php endforeach; ?>
 			</ul>
@@ -114,6 +145,36 @@ $hidden_count = count($centers) - $visible_count;
 		empty.hidden = visibleCount !== 0;
 	}
 	search.addEventListener('input', filterCenters);
+
+	centers.forEach(function (center) {
+		var trigger = center.querySelector('.admin-evacuation-center__open');
+		var dialog = center.querySelector('.admin-evacuation-center__dialog');
+		var close = center.querySelector('.admin-evacuation-center__close');
+		if (!trigger || !dialog || typeof dialog.showModal !== 'function') return;
+
+		trigger.addEventListener('click', function () {
+			dialog.showModal();
+			if (close) close.focus();
+		});
+		if (close) close.addEventListener('click', function () { dialog.close(); });
+		dialog.addEventListener('cancel', function (event) {
+			event.preventDefault();
+			dialog.close();
+		});
+		dialog.addEventListener('click', function (event) {
+			if (event.target === dialog) dialog.close();
+		});
+	});
+	document.addEventListener('keydown', function (event) {
+		if (event.key !== 'Escape') return;
+		centers.forEach(function (center) {
+			var dialog = center.querySelector('.admin-evacuation-center__dialog');
+			if (dialog && dialog.open) {
+				event.preventDefault();
+				dialog.close();
+			}
+		});
+	}, true);
 })();
 </script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

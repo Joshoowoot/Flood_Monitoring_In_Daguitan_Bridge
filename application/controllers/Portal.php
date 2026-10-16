@@ -36,7 +36,7 @@ class Portal extends CI_Controller {
 			'green' => array(
 				'Keep drainage around your home clear.',
 				'Save this page or install the app for live updates.',
-				'Know your nearest evacuation center.',
+				'Know which evacuation center your barangay assigns.',
 			),
 			'yellow' => array(
 				'Stay alert and avoid the riverbank and low-lying roads.',
@@ -76,7 +76,7 @@ class Portal extends CI_Controller {
 				'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
 				'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
 				'serviceWorkerUrl' => $base . '/sw.js',
-				'pollMs'     => 30000,
+				'pollMs'     => 5000,
 			),
 			'actions_map'  => $actions,
 			'actions'      => isset($actions[$level]) ? $actions[$level] : $actions['green'],
@@ -115,15 +115,114 @@ class Portal extends CI_Controller {
 
 	public function go_bag()
 	{
+		$this->load->model('Family_evacuation_plan_model');
+		if ( ! $this->session->userdata('family_plan_share_token'))
+		{
+			$this->session->set_userdata('family_plan_share_token', bin2hex(random_bytes(32)));
+		}
+		$share_status = $this->Family_evacuation_plan_model->shared_status((int) $this->session->userdata('auth_id'));
 		$base = rtrim(base_url(), '/');
 		$this->load->view('dash/go_bag', array_merge(array(
 			'base_url'   => $base . '/',
 			'asset_url'  => $base . '/assets/',
 			'page_title' => 'Go Bag Checklist',
 			'auth_name'  => $this->session->userdata('auth_name'),
+			'family_plan_share_status' => $share_status,
+			'family_plan_share_token' => $this->session->userdata('family_plan_share_token'),
+			'family_plan_status_url' => site_url('portal/family-plan/status'),
+			'family_plan_share_url' => site_url('portal/family-plan/share'),
+			'family_plan_revoke_url' => site_url('portal/family-plan/revoke'),
 			'logout_url' => site_url('auth/logout'),
 			'portal_url' => site_url('portal'),
 		), $this->notification_view_data()));
+	}
+
+	public function family_plan_status()
+	{
+		$this->load->model('Family_evacuation_plan_model');
+		$result = $this->Family_evacuation_plan_model->shared_status((int) $this->session->userdata('auth_id'));
+		$this->family_plan_json($result, ! empty($result['ok']) ? 200 : 500);
+	}
+
+	public function family_plan_share()
+	{
+		if ($this->input->method(TRUE) !== 'POST')
+		{
+			$this->family_plan_json(array('ok' => FALSE, 'error' => 'Use the share form to submit your plan.'), 405);
+			return;
+		}
+		$posted_token = (string) $this->input->post('family_plan_token');
+		$session_token = (string) $this->session->userdata('family_plan_share_token');
+		if ($session_token === '' || ! hash_equals($session_token, $posted_token))
+		{
+			$this->family_plan_json(array('ok' => FALSE, 'error' => 'This form has expired. Refresh the page and try again.'), 403);
+			return;
+		}
+		if ((string) $this->input->post('consent') !== '1')
+		{
+			$this->family_plan_json(array('ok' => FALSE, 'error' => 'Confirm the sharing consent before sharing your plan.'), 400);
+			return;
+		}
+		$this->load->model('Family_evacuation_plan_model');
+		$result = $this->Family_evacuation_plan_model->share((int) $this->session->userdata('auth_id'), array(
+			'meetingPoint' => $this->input->post('meetingPoint', TRUE),
+			'evacuationPlace' => $this->input->post('evacuationPlace', TRUE),
+			'contactName' => $this->input->post('contactName', TRUE),
+			'contactPhone' => $this->input->post('contactPhone', TRUE),
+			'supportNeeds' => $this->input->post('supportNeeds'),
+			'lastReviewedAt' => $this->input->post('lastReviewedAt', TRUE),
+		));
+		if ( ! empty($result['ok']))
+		{
+			$this->load->model('Notification_model');
+			$this->Notification_model->on_family_plan_shared(
+				(int) $this->session->userdata('auth_id'),
+				(string) $this->session->userdata('auth_name'),
+				(string) $this->session->userdata('auth_barangay')
+			);
+		}
+		$this->family_plan_json($result, ! empty($result['ok']) ? 200 : 400);
+	}
+
+	public function family_plan_revoke()
+	{
+		if ($this->input->method(TRUE) !== 'POST')
+		{
+			$this->family_plan_json(array('ok' => FALSE, 'error' => 'Use the revoke button to remove your shared plan.'), 405);
+			return;
+		}
+		$posted_token = (string) $this->input->post('family_plan_token');
+		$session_token = (string) $this->session->userdata('family_plan_share_token');
+		if ($session_token === '' || ! hash_equals($session_token, $posted_token))
+		{
+			$this->family_plan_json(array('ok' => FALSE, 'error' => 'This form has expired. Refresh the page and try again.'), 403);
+			return;
+		}
+		$this->load->model('Family_evacuation_plan_model');
+		$user_id = (int) $this->session->userdata('auth_id');
+		$was_shared = $this->Family_evacuation_plan_model->shared_status($user_id);
+		$ok = $this->Family_evacuation_plan_model->revoke($user_id);
+		if ($ok && ! empty($was_shared['shared']))
+		{
+			$this->load->model('Notification_model');
+			$this->Notification_model->on_family_plan_revoked(
+				$user_id,
+				(string) $this->session->userdata('auth_name'),
+				(string) $this->session->userdata('auth_barangay')
+			);
+		}
+		$this->family_plan_json(
+			$ok ? array('ok' => TRUE) : array('ok' => FALSE, 'error' => 'The shared copy could not be removed right now. Please try again.'),
+			$ok ? 200 : 500
+		);
+	}
+
+	protected function family_plan_json($payload, $status)
+	{
+		$this->output
+			->set_status_header((int) $status)
+			->set_content_type('application/json', 'utf-8')
+			->set_output(json_encode($payload, JSON_UNESCAPED_SLASHES));
 	}
 
 	public function reports()
@@ -211,6 +310,15 @@ class Portal extends CI_Controller {
 					}
 					else
 					{
+						$report = $this->Community_report_model->find((int) $result['id']);
+						if ($report)
+						{
+							$this->load->model('Notification_model');
+							$this->Notification_model->on_community_report_submitted(
+								$report,
+								(string) $this->session->userdata('auth_name')
+							);
+						}
 						$this->session->set_flashdata('report_notice', 'Your report was submitted. Its status is now Received.');
 						redirect('portal/reports');
 						return;
@@ -415,10 +523,10 @@ class Portal extends CI_Controller {
 		foreach ($this->Evacuation_center_model->all() as $center)
 		{
 			if (empty($center['active'])) continue;
-			$center['phone_link'] = 'tel:' . preg_replace('/[^0-9+]/', '', $center['phone']);
+			$phone = isset($center['phone']) ? preg_replace('/[^0-9+]/', '', (string) $center['phone']) : '';
+			$center['phone_link'] = ($phone !== '') ? 'tel:' . $phone : '';
 			$center['maps'] = 'https://www.google.com/maps/dir/?api=1&destination='
 				. rawurlencode($center['latitude'] . ',' . $center['longitude']);
-			$center['distance'] = 'Pinned by MDRRMO · Barangay ' . $center['barangay'];
 			$centers[] = $center;
 		}
 
@@ -455,7 +563,7 @@ class Portal extends CI_Controller {
 				'pushStatusUrl' => $base . '/index.php/api/notifications/push_status',
 				'pushSubscriptionUrl' => $base . '/index.php/api/notifications/push_subscription',
 				'serviceWorkerUrl' => $base . '/sw.js',
-				'pollMs' => 30000,
+				'pollMs' => 5000,
 			),
 		);
 	}

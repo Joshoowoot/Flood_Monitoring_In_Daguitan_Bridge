@@ -110,6 +110,10 @@
     announcement:      { label: 'Advisory', tone: 'announce' },
     flood_alert:       { label: 'Flood alert', tone: 'critical' },
     admin_flood_alert: { label: 'Operations', tone: 'warning' },
+    community_report:  { label: 'Resident report', tone: 'warning' },
+    report_update:     { label: 'Report update', tone: 'info' },
+    family_plan:       { label: 'Family plan shared', tone: 'success' },
+    family_plan_revoked: { label: 'Family plan access', tone: 'info' },
   };
 
   function iconSvg(tone) {
@@ -213,7 +217,7 @@
     if (loading) return Promise.resolve();
     loading = true;
     if (showSkeleton) renderSkeleton();
-    return fetch(cfg.listUrl, { credentials: 'same-origin' })
+    return fetch(cfg.listUrl, { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) {
         if (!r.ok) throw new Error('Notification service returned HTTP ' + r.status);
         return r.json();
@@ -628,5 +632,14 @@
 
   if (soundButton) soundButton.addEventListener('pointerdown', unlockAlertAudio, { capture: true });
   fetchList(false);
-  setInterval(function () { fetchList(false); }, cfg.pollMs || 30000);
+  setInterval(function () {
+    if (!document.hidden && navigator.onLine) fetchList(false);
+  }, cfg.pollMs || 5000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && navigator.onLine) fetchList(false);
+  });
+  window.addEventListener('focus', function () {
+    if (navigator.onLine) fetchList(false);
+  });
+  window.addEventListener('online', function () { fetchList(false); });
 })();

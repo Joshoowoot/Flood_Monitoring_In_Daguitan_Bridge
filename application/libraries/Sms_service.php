@@ -2,7 +2,7 @@
 defined('BASEPATH') OR exit('No direct script access allowed');
 
 class Sms_service {
-	protected $api_url = 'https://www.iprogsms.com/api/v1/sms_messages';
+	protected $api_url = 'https://sms.iprogtech.com/api/v1/sms_messages';
 
 	public function send_broadcast($recipients, $message)
 	{
@@ -11,9 +11,19 @@ class Sms_service {
 		{
 			$api_token = trim((string) getenv('IPROG_SMS_API_TOKEN'));
 		}
+		if ($api_token === '' && function_exists('get_instance'))
+		{
+			$CI =& get_instance();
+			$CI->config->load('sms_credentials', TRUE);
+			$api_token = trim((string) $CI->config->item('api_token', 'sms_credentials'));
+		}
 		if ($api_token === '')
 		{
-			$api_token = 'a56ded39176f943077111894237b5e3578c557f8';
+			return array(
+				'ok' => FALSE,
+				'sent' => 0,
+				'error' => 'SMS cannot be sent because the iProg API token is not configured on the server.',
+			);
 		}
 		if ( ! function_exists('curl_init'))
 		{
@@ -22,14 +32,19 @@ class Sms_service {
 
 		$total = count($recipients);
 		$sent = 0;
-		$failures = array();
-		$gateway_error = '';
+		$results = array();
 		foreach ($recipients as $recipient)
 		{
 			$phone = $this->normalize_phone($recipient['phone'] ?? '');
 			if ($phone === '')
 			{
-				$failures[] = 'Missing phone number';
+				$results[] = array(
+					'name' => isset($recipient['name']) ? (string) $recipient['name'] : '',
+					'phone' => '',
+					'ok' => FALSE,
+					'message_id' => '',
+					'error' => 'Missing phone number.',
+				);
 				continue;
 			}
 
@@ -37,17 +52,18 @@ class Sms_service {
 				'api_token' => $api_token,
 				'phone_number' => $phone,
 				'message' => $message,
+				'sms_provider' => 2,
 			);
 
 			$ch = curl_init($this->api_url);
 			curl_setopt_array($ch, array(
 				CURLOPT_POST => TRUE,
-				CURLOPT_POSTFIELDS => http_build_query($payload),
+				CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
 				CURLOPT_RETURNTRANSFER => TRUE,
 				CURLOPT_TIMEOUT => 20,
 				CURLOPT_HTTPHEADER => array(
 					'Accept: application/json',
-					'Content-Type: application/x-www-form-urlencoded; charset=UTF-8',
+					'Content-Type: application/json; charset=UTF-8',
 				),
 			));
 			$response = curl_exec($ch);
@@ -55,50 +71,64 @@ class Sms_service {
 			$curl_error = curl_error($ch);
 			curl_close($ch);
 
-			$decoded = json_decode($response, TRUE);
-			$api_ok = $response !== FALSE && $http_code >= 200 && $http_code < 300;
-			if (is_array($decoded) && isset($decoded['status']))
+			$decoded = $response !== FALSE ? json_decode($response, TRUE) : NULL;
+			$api_status = is_array($decoded) && isset($decoded['status']) ? $decoded['status'] : NULL;
+			$api_ok = $response !== FALSE
+				&& $http_code >= 200
+				&& $http_code < 300
+				&& ((string) $api_status === '200' || strtolower((string) $api_status) === 'success');
+			$result_error = '';
+			if ($response === FALSE)
 			{
-				$api_ok = $api_ok && ((int) $decoded['status'] === 200 || (string) $decoded['status'] === '200');
+				$result_error = 'Could not connect to the iProg SMS gateway' . ($curl_error !== '' ? ': ' . $curl_error : '.');
 			}
+			elseif ($http_code < 200 || $http_code >= 300)
+			{
+				$result_error = 'iProg returned HTTP ' . $http_code . '.';
+			}
+			elseif ( ! $api_ok)
+			{
+				$provider_message = is_array($decoded) && isset($decoded['message']) && is_scalar($decoded['message'])
+					? trim((string) $decoded['message'])
+					: '';
+				$result_error = $provider_message !== ''
+					? $provider_message
+					: 'iProg did not confirm that the message was queued. Check the token, account credits, and recipient number.';
+			}
+
+			$results[] = array(
+				'name' => isset($recipient['name']) ? (string) $recipient['name'] : '',
+				'phone' => $phone,
+				'ok' => $api_ok,
+				'message_id' => $api_ok && is_array($decoded) && isset($decoded['message_id'])
+					? (string) $decoded['message_id']
+					: '',
+				'error' => $result_error,
+			);
 			if ($api_ok)
 			{
 				$sent++;
 			}
-			else
-			{
-				$failures[] = $phone;
-				if ($gateway_error === '')
-				{
-					if ($response === FALSE)
-					{
-						$gateway_error = 'Could not connect to the SMS gateway' . ($curl_error !== '' ? ': ' . $curl_error : '.') ;
-					}
-					elseif ($http_code < 200 || $http_code >= 300)
-					{
-						$gateway_error = 'The SMS gateway returned HTTP ' . $http_code . '. Check the API token and provider account.';
-					}
-					else
-					{
-						$gateway_error = 'The SMS gateway rejected the request. Check the API token, account balance, and recipient numbers.';
-					}
-				}
-			}
 		}
 
-		if ($sent === 0 && $total > 0)
+		$failed = $total - $sent;
+		if ($total === 0)
 		{
 			return array(
 				'ok' => FALSE,
-				'sent' => 0,
-				'error' => $gateway_error !== '' ? $gateway_error : 'The SMS gateway rejected the request. Check the API token and phone numbers, then try again.',
+				'sent' => $sent,
+				'total' => $total,
+				'results' => $results,
+				'error' => 'No recipients were provided.',
 			);
 		}
 
 		return array(
-			'ok' => $sent === $total,
+			'ok' => $sent === $total && $total > 0,
 			'sent' => $sent,
-			'error' => $sent . ' of ' . $total . ' SMS message(s) were accepted by the gateway.' . ($sent < $total ? ' Some recipients were rejected.' : ''),
+			'total' => $total,
+			'results' => $results,
+			'error' => $failed > 0 ? $sent . ' of ' . $total . ' messages queued by iProg; ' . $failed . ' failed.' : '',
 		);
 	}
 

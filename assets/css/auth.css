@@ -1972,3 +1972,126 @@
     filter: saturate(0.82) contrast(0.98);
   }
 }
+
+.auth-body--resident .auth-intro {
+  background:
+    linear-gradient(180deg, rgba(76, 10, 23, 0.7) 0%, rgba(47, 10, 18, 0.86) 58%, rgba(27, 10, 16, 0.97) 100%),
+    url("../img/DULAG.jpg") center / cover no-repeat;
+}
+
+.auth-body--resident .auth-intro::after {
+  content: "";
+  position: absolute;
+  right: -5.5rem;
+  bottom: 13%;
+  width: 17rem;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1.5rem rgba(255, 255, 255, 0.035),
+    0 0 0 3rem rgba(255, 255, 255, 0.025);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-body--resident .auth-card {
+  background: linear-gradient(155deg, #fff 0%, #fffdfd 70%, #fbf2f3 100%);
+}
+
+.auth-body--resident .auth-tabs {
+  margin-bottom: 1.15rem;
+  background: #f5e9eb;
+  border-color: rgba(155, 18, 36, 0.1);
+}
+
+.auth-body--resident .auth-tab {
+  min-height: 44px;
+}
+
+.auth-body--resident .auth-mode.is-active {
+  animation: auth-mode-enter 0.24s var(--auth-ease) both;
+}
+
+@keyframes auth-mode-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-body--resident .signup-progress {
+  gap: 0.4rem;
+  color: #76666a;
+}
+
+.auth-body--resident .signup-progress__step {
+  padding: 0.32rem 0.52rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.auth-body--resident .signup-progress__step.is-active {
+  color: var(--auth-red-deep);
+  background: rgba(155, 18, 36, 0.07);
+  border-color: rgba(155, 18, 36, 0.12);
+}
+
+.auth-body--resident .signup-progress__line {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-body--resident .signup-progress__line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--auth-red);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s var(--auth-ease);
+}
+
+.auth-body--resident #signupForm[data-current-step="2"] .signup-progress__line::after {
+  transform: scaleX(1);
+}
+
+.auth-body--resident .signup-step.is-active {
+  animation: auth-mode-enter 0.22s var(--auth-ease) both;
+}
+
+.auth-body--resident .auth-submit.is-loading {
+  cursor: wait;
+}
+
+.auth-body--resident .auth-submit.is-loading::after {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.42);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: auth-submit-spin 0.7s linear infinite;
+}
+
+@keyframes auth-submit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-body--resident .auth-mode.is-active,
+  .auth-body--resident .signup-step.is-active,
+  .auth-body--resident .auth-submit.is-loading::after {
+    animation: none;
+  }
+
+  .auth-body--resident .signup-progress__step,
+  .auth-body--resident .signup-progress__line::after {
+    transition: none;
+  }
+}

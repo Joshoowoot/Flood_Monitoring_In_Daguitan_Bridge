@@ -99,16 +99,30 @@ $db['default'] = array(
 | Cloud / remote copy. Used only when the internet probe succeeds.
 | Set FLOOD_CLOUD_DB_HOST, FLOOD_CLOUD_DB_PORT, FLOOD_CLOUD_DB_NAME,
 | FLOOD_CLOUD_DB_USERNAME, and FLOOD_CLOUD_DB_PASSWORD in the server
-| environment to use a hosted MySQL database. Defaults preserve local XAMPP.
+| environment to use a hosted MySQL database. Remote hosts use verified TLS;
+| defaults preserve the local XAMPP development copy.
 */
 $cloud_env = function ($name, $default) {
 	$value = getenv($name);
 	return ($value !== FALSE && $value !== '') ? $value : $default;
 };
 
+$cloud_host = $cloud_env('FLOOD_CLOUD_DB_HOST', 'localhost');
+$cloud_local_hosts = array('localhost', '127.0.0.1', '::1');
+$cloud_ssl = FALSE;
+if ( ! in_array(strtolower($cloud_host), $cloud_local_hosts, TRUE))
+{
+	$cloud_ssl = array(
+		'ssl_verify' => TRUE,
+		'ssl_ca'     => $cloud_env('FLOOD_CLOUD_DB_SSL_CA', ''),
+		'ssl_cert'   => $cloud_env('FLOOD_CLOUD_DB_SSL_CERT', ''),
+		'ssl_key'    => $cloud_env('FLOOD_CLOUD_DB_SSL_KEY', ''),
+	);
+}
+
 $db['cloud'] = array(
 	'dsn'	=> '',
-	'hostname' => $cloud_env('FLOOD_CLOUD_DB_HOST', 'localhost'),
+	'hostname' => $cloud_host,
 	'port' => (int) $cloud_env('FLOOD_CLOUD_DB_PORT', 3306),
 	'username' => $cloud_env('FLOOD_CLOUD_DB_USERNAME', 'root'),
 	'password' => $cloud_env('FLOOD_CLOUD_DB_PASSWORD', ''),
@@ -122,7 +136,7 @@ $db['cloud'] = array(
 	'char_set' => 'utf8mb4',
 	'dbcollat' => 'utf8mb4_unicode_ci',
 	'swap_pre' => '',
-	'encrypt' => FALSE,
+	'encrypt' => $cloud_ssl,
 	'compress' => FALSE,
 	'stricton' => FALSE,
 	'failover' => array(),
